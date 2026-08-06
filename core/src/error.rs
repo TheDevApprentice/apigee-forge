@@ -6,6 +6,18 @@ pub enum GatewayError {
     RequestFailed,
     #[error("gateway response was invalid")]
     InvalidResponse,
+    #[error("gateway request was unauthorized")]
+    Unauthorized,
+    #[error("gateway request was forbidden")]
+    Forbidden,
+    #[error("gateway resource was not found")]
+    NotFound,
+    #[error("gateway request timed out")]
+    Timeout,
+    #[error("gateway request was rate limited")]
+    RateLimited,
+    #[error("gateway server failed")]
+    Server,
 }
 
 #[derive(Debug, Error)]

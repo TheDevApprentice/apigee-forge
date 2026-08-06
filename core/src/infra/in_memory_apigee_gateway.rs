@@ -100,8 +100,15 @@ impl ApigeeGateway for InMemoryApigeeGateway {
             .ok_or(GatewayError::RequestFailed)
     }
 
-    async fn deploy(&self, org: &str, bundle: Vec<u8>) -> Result<Deployment, GatewayError> {
-        if bundle.is_empty() {
+    async fn deploy(
+        &self,
+        org: &str,
+        environment: &str,
+        proxy_name: &str,
+        revision: u32,
+        _override_existing: bool,
+    ) -> Result<Deployment, GatewayError> {
+        if proxy_name.is_empty() || revision == 0 {
             return Err(GatewayError::InvalidResponse);
         }
 
@@ -114,18 +121,20 @@ impl ApigeeGateway for InMemoryApigeeGateway {
             return Err(GatewayError::RequestFailed);
         }
 
-        let id = format!("deployment-{}", state.deployments.len() + 1);
-        let environment = state
+        if !state
             .environments
             .get(org)
-            .and_then(|environments| environments.first())
-            .cloned()
-            .unwrap_or_else(|| "default".to_owned());
+            .is_some_and(|environments| environments.iter().any(|item| item == environment))
+        {
+            return Err(GatewayError::RequestFailed);
+        }
+
+        let id = format!("deployment-{}", state.deployments.len() + 1);
         let deployment = Deployment {
             id: id.clone(),
-            proxy_name: "generated-proxy".to_owned(),
-            environment,
-            revision: 1,
+            proxy_name: proxy_name.to_owned(),
+            environment: environment.to_owned(),
+            revision,
             status: DeploymentStatus::Succeeded,
         };
         state.deployments.insert(id, deployment.clone());

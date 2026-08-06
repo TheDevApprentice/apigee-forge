@@ -152,13 +152,13 @@ feat(core): add desktop OAuth provider
 
 - [ ] Raffiner les modèles de domaine si les réponses Apigee ne tiennent pas dans `Vec<String>`, `Proxy` et `Deployment` actuels.
 - [ ] Confirmer les DTO internes nécessaires sans exposer les types de `reqwest` ou de l'API dans le domaine.
-- [ ] Ajouter `reqwest` avec TLS et timeout explicite.
-- [ ] Créer `core/src/infra/reqwest_apigee_gateway.rs`.
-- [ ] Injecter `Arc<dyn AuthProvider>`.
-- [ ] Réutiliser une seule instance de `reqwest::Client`.
-- [ ] Ajouter le header Bearer sans jamais le journaliser.
-- [ ] Mapper les statuts HTTP et réponses invalides vers `GatewayError`.
-- [ ] Définir retries et backoff bornés uniquement pour les erreurs transitoires.
+- [x] Ajouter `reqwest` avec TLS et timeout explicite.
+- [x] Créer `core/src/infra/reqwest_apigee_gateway.rs`.
+- [x] Injecter `Arc<dyn AuthProvider>`.
+- [x] Réutiliser une seule instance de `reqwest::Client`.
+- [x] Ajouter le header Bearer sans jamais le journaliser.
+- [x] Mapper les statuts HTTP et réponses invalides vers `GatewayError`.
+- [x] Définir retries et backoff bornés uniquement pour les erreurs transitoires.
 
 Commit prévu :
 
