@@ -130,17 +130,17 @@ feat(core): add headless GCP auth provider
 
 ### M2-04 — Provider OAuth desktop PKCE
 
-- [ ] Ajouter `oauth2` et `keyring` selon les versions validées.
-- [ ] Créer `core/src/infra/oauth_desktop_auth_provider.rs`.
-- [ ] Implémenter Authorization Code + PKCE.
-- [ ] Générer et vérifier le state CSRF.
-- [ ] Utiliser une redirection localhost limitée à la session.
-- [ ] Configurer l'échange OAuth sans redirections HTTP automatiques.
-- [ ] Stocker uniquement le refresh token dans le trousseau OS.
-- [ ] Conserver l'access token et son expiration uniquement en mémoire.
-- [ ] Gérer l'absence, la révocation et la suppression du refresh token.
-- [ ] Ne jamais mettre de secret client confidentiel en dur.
-- [ ] Tester les transitions avec des doubles contrôlables, sans navigateur ni compte réel.
+- [x] Ajouter `oauth2` et `keyring` selon les versions validées.
+- [x] Créer `core/src/infra/oauth_desktop_auth_provider.rs`.
+- [x] Implémenter Authorization Code + PKCE.
+- [x] Générer et vérifier le state CSRF.
+- [x] Utiliser une redirection localhost limitée à la session.
+- [x] Configurer l'échange OAuth sans redirections HTTP automatiques.
+- [x] Stocker uniquement le refresh token dans le trousseau OS.
+- [x] Conserver l'access token et son expiration uniquement en mémoire.
+- [x] Gérer l'absence, la révocation et la suppression du refresh token.
+- [x] Ne jamais mettre de secret client confidentiel en dur.
+- [x] Tester les transitions avec des doubles contrôlables, sans navigateur ni compte réel.
 
 Commit prévu :
 

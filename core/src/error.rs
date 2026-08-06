@@ -28,6 +28,18 @@ pub enum AuthError {
     AuthenticationFailed,
     #[error("access token is unavailable")]
     TokenUnavailable,
+    #[error("OAuth configuration is invalid")]
+    OAuthConfiguration,
+    #[error("the system browser could not be opened")]
+    BrowserLaunch,
+    #[error("the OAuth callback is invalid or timed out")]
+    Callback,
+    #[error("the OS credential store operation failed")]
+    CredentialStore,
+    #[error("the OAuth token exchange failed")]
+    TokenExchange,
+    #[error("the Google identity could not be resolved")]
+    IdentityLookup,
 }
 
 #[derive(Debug, Error)]
