@@ -34,6 +34,7 @@ core/
     ├── lib.rs
     ├── domain/
     │   ├── mod.rs
+    │   ├── auth.rs            # AuthContext, AuthMode, ProjectId, OrganizationId
     │   ├── proxy.rs           # struct Proxy, struct ProxyRevision
     │   ├── template.rs        # struct Template, enum PolicyType (conforme à schemas/template.schema.json)
     │   ├── deployment.rs      # struct Deployment, enum DeploymentStatus
