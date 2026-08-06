@@ -38,6 +38,7 @@ core/
     │   ├── template.rs        # struct Template, enum PolicyType (conforme à schemas/template.schema.json)
     │   ├── deployment.rs      # struct Deployment, enum DeploymentStatus
     │   └── role.rs            # enum ApigeeRole
+    ├── openapi.rs             # parsing OpenAPI et extraction routes/sécurité
     ├── use_cases/
     │   ├── mod.rs
     │   ├── generate_proxy_bundle.rs
