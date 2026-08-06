@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn deserializes_template_example() -> Result<(), serde_json::Error> {
-        let json = include_str!("../../../DOC_PROJECT/template.example.json");
+        let json = include_str!("../../../schemas/template.example.json");
         let template: Template = serde_json::from_str(json)?;
 
         assert_eq!(template.metadata.name, "template-standard-oauth");
