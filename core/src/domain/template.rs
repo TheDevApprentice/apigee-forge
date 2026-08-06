@@ -186,3 +186,19 @@ pub enum TransformDirection {
     #[serde(rename = "json_to_xml")]
     JsonToXml,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Template;
+
+    #[test]
+    fn deserializes_template_example() -> Result<(), serde_json::Error> {
+        let json = include_str!("../../../DOC_PROJECT/template.example.json");
+        let template: Template = serde_json::from_str(json)?;
+
+        assert_eq!(template.metadata.name, "template-standard-oauth");
+        assert_eq!(template.flow.conditional_flows.len(), 1);
+
+        Ok(())
+    }
+}
