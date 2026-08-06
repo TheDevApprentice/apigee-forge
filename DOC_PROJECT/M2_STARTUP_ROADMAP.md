@@ -82,13 +82,13 @@ docs(m2): add detailed client roadmap
 
 ### M2-01 — Refinement des contrats d'authentification
 
-- [ ] Examiner `AuthProvider` et éviter les `String` ambigus pour le contexte d'identité.
-- [ ] Décider comment représenter project ID, organisation sélectionnée, identité et expiration.
-- [ ] Séparer access token temporaire et refresh token persistant.
-- [ ] Conserver les secrets hors du domaine et hors de `LocalStateStore`.
-- [ ] Ajouter les erreurs typées nécessaires sans contenu sensible.
-- [ ] Ajouter les tests de contrat pour absence, expiration et token indisponible.
-- [ ] Vérifier tests et Clippy.
+- [x] Examiner `AuthProvider` et éviter les `String` ambigus pour le contexte d'identité.
+- [x] Décider comment représenter project ID, organisation sélectionnée, identité et expiration.
+- [x] Séparer access token temporaire et refresh token persistant.
+- [x] Conserver les secrets hors du domaine et hors de `LocalStateStore`.
+- [x] Ajouter les erreurs typées nécessaires sans contenu sensible.
+- [x] Ajouter les tests de contrat pour absence, expiration et token indisponible.
+- [x] Vérifier tests et Clippy.
 
 Commit prévu :
 
