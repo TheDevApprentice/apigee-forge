@@ -16,6 +16,10 @@ pub enum TemplateError {
     Serialization,
     #[error("template was not found")]
     NotFound,
+    #[error("a template with the same name already exists")]
+    AlreadyExists,
+    #[error("template name is not a safe file name")]
+    InvalidName,
 }
 
 #[derive(Debug, Error)]
