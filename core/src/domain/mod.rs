@@ -4,7 +4,7 @@ pub mod proxy;
 pub mod role;
 pub mod template;
 
-pub use auth::{AuthContext, AuthMode, OrganizationId, ProjectId};
+pub use auth::{AuthContext, AuthMode, GoogleIdentity, OrganizationId, ProjectId};
 pub use deployment::{Deployment, DeploymentStatus};
 pub use proxy::{Proxy, ProxyRevision};
 pub use role::ApigeeRole;

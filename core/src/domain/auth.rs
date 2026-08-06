@@ -18,6 +18,19 @@ impl ProjectId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GoogleIdentity(String);
+
+impl GoogleIdentity {
+    pub fn new(email: impl Into<String>) -> Self {
+        Self(email.into())
+    }
+
+    pub fn email(&self) -> &str {
+        &self.0
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrganizationId(String);
 
 impl OrganizationId {
@@ -33,6 +46,7 @@ impl OrganizationId {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthContext {
     pub mode: AuthMode,
+    pub identity: Option<GoogleIdentity>,
     pub project_id: Option<ProjectId>,
     pub selected_organization: Option<OrganizationId>,
 }
@@ -41,7 +55,17 @@ impl AuthContext {
     pub fn headless(project_id: ProjectId) -> Self {
         Self {
             mode: AuthMode::Headless,
+            identity: None,
             project_id: Some(project_id),
+            selected_organization: None,
+        }
+    }
+
+    pub fn desktop_authenticated(identity: GoogleIdentity) -> Self {
+        Self {
+            mode: AuthMode::Desktop,
+            identity: Some(identity),
+            project_id: None,
             selected_organization: None,
         }
     }
@@ -49,6 +73,7 @@ impl AuthContext {
     pub fn desktop(organization: OrganizationId) -> Self {
         Self {
             mode: AuthMode::Desktop,
+            identity: None,
             project_id: None,
             selected_organization: Some(organization),
         }
@@ -65,7 +90,7 @@ mod tests {
 
     use serde_json::{json, Value};
 
-    use super::{AuthContext, AuthMode, OrganizationId, ProjectId};
+    use super::{AuthContext, AuthMode, GoogleIdentity, OrganizationId, ProjectId};
 
     fn write_test_report(report_name: &str, report: &Value) -> Result<PathBuf, Box<dyn Error>> {
         let report_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -104,6 +129,33 @@ mod tests {
 
         assert_eq!(context.mode, AuthMode::Headless);
         assert_eq!(project_id, Some("project-id"));
+        assert!(context.selected_organization.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn desktop_context_contains_identity_without_organization() -> Result<(), Box<dyn Error>> {
+        let context = AuthContext::desktop_authenticated(GoogleIdentity::new("user@example.com"));
+        let identity = context.identity.as_ref().map(GoogleIdentity::email);
+
+        let report = json!({
+            "test": "desktop_context_contains_identity_without_organization",
+            "expected": {
+                "mode": "Desktop",
+                "identity": "user@example.com",
+                "selected_organization": null
+            },
+            "actual": {
+                "mode": format!("{:?}", context.mode),
+                "identity": identity,
+                "selected_organization": null
+            }
+        });
+        let report_path = write_test_report("auth_desktop_identity", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert_eq!(context.mode, AuthMode::Desktop);
+        assert_eq!(identity, Some("user@example.com"));
         assert!(context.selected_organization.is_none());
         Ok(())
     }
