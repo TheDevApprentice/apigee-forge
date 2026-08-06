@@ -166,7 +166,11 @@ fn parse_http_method(method: &str) -> Result<HttpMethod, OpenApiError> {
 
 #[cfg(test)]
 mod tests {
-    use std::{error::Error, fs, path::PathBuf};
+    use std::{
+        error::Error,
+        fs::{self, File},
+        path::PathBuf,
+    };
 
     use serde_json::{json, Value};
 
@@ -180,8 +184,8 @@ mod tests {
         fs::create_dir_all(&report_directory)?;
 
         let report_path = report_directory.join(format!("{report_name}.json"));
-        let serialized_report = serde_json::to_string_pretty(report)?;
-        fs::write(report_path, serialized_report)?;
+        let report_file = File::create(report_path)?;
+        serde_json::to_writer_pretty(report_file, report)?;
 
         Ok(())
     }
