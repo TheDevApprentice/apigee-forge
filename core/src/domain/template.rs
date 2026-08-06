@@ -189,13 +189,50 @@ pub enum TransformDirection {
 
 #[cfg(test)]
 mod tests {
+    use std::{error::Error, fs, path::PathBuf};
+
+    use serde_json::{json, Value};
+
     use super::Template;
 
-    #[test]
-    fn deserializes_template_example() -> Result<(), serde_json::Error> {
-        let json = include_str!("../../../schemas/template.example.json");
-        let template: Template = serde_json::from_str(json)?;
+    fn write_test_report(report_name: &str, report: &Value) -> Result<(), Box<dyn Error>> {
+        let report_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("target")
+            .join("test-results");
+        fs::create_dir_all(&report_directory)?;
 
+        let report_path = report_directory.join(format!("{report_name}.json"));
+        let serialized_report = serde_json::to_string_pretty(report)?;
+        fs::write(report_path, serialized_report)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn deserializes_template_example() -> Result<(), Box<dyn Error>> {
+        let json = include_str!("../../../schemas/template.example.json");
+        let parsed: Result<Template, serde_json::Error> = serde_json::from_str(json);
+
+        let report = match &parsed {
+            Ok(template) => json!({
+                "test": "deserializes_template_example",
+                "status": "parsed",
+                "expected": {
+                    "metadata_name": "template-standard-oauth",
+                    "conditional_flow_count": 1
+                },
+                "actual": template
+            }),
+            Err(error) => json!({
+                "test": "deserializes_template_example",
+                "status": "error",
+                "error": error.to_string()
+            }),
+        };
+        write_test_report("template_deserialization", &report)?;
+
+        let template = parsed?;
         assert_eq!(template.metadata.name, "template-standard-oauth");
         assert_eq!(template.flow.conditional_flows.len(), 1);
 

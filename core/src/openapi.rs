@@ -1,20 +1,21 @@
 use openapiv3::{OpenAPI, ReferenceOr, SecurityScheme};
+use serde::Serialize;
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ParsedOpenApi {
     pub routes: Vec<ApiRoute>,
     pub security_schemes: Vec<SecuritySchemeDefinition>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ApiRoute {
     pub path: String,
     pub method: HttpMethod,
     pub security_requirements: Vec<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum HttpMethod {
     Get,
     Put,
@@ -26,13 +27,13 @@ pub enum HttpMethod {
     Trace,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct SecuritySchemeDefinition {
     pub name: String,
     pub kind: SecuritySchemeKind,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum SecuritySchemeKind {
     ApiKey { location: ApiKeyLocation },
     Http { scheme: String },
@@ -40,7 +41,7 @@ pub enum SecuritySchemeKind {
     OpenIdConnect,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum ApiKeyLocation {
     Query,
     Header,
@@ -165,13 +166,60 @@ fn parse_http_method(method: &str) -> Result<HttpMethod, OpenApiError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_openapi, HttpMethod, SecuritySchemeKind};
+    use std::{error::Error, fs, path::PathBuf};
+
+    use serde_json::{json, Value};
+
+    use super::{parse_openapi, HttpMethod, OpenApiError, SecuritySchemeKind};
+
+    fn write_test_report(report_name: &str, report: &Value) -> Result<(), Box<dyn Error>> {
+        let report_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("target")
+            .join("test-results");
+        fs::create_dir_all(&report_directory)?;
+
+        let report_path = report_directory.join(format!("{report_name}.json"));
+        let serialized_report = serde_json::to_string_pretty(report)?;
+        fs::write(report_path, serialized_report)?;
+
+        Ok(())
+    }
 
     #[test]
-    fn extracts_routes_and_security_schemes() -> Result<(), super::OpenApiError> {
+    fn extracts_routes_and_security_schemes() -> Result<(), Box<dyn Error>> {
         let source = include_str!("../../DOC_PROJECT/openapi.exemple.yaml");
-        let parsed = parse_openapi(source)?;
+        let parsed: Result<super::ParsedOpenApi, OpenApiError> = parse_openapi(source);
 
+        let report = match &parsed {
+            Ok(document) => json!({
+                "test": "extracts_routes_and_security_schemes",
+                "status": "parsed",
+                "expected": {
+                    "route_count": 2,
+                    "first_route": {
+                        "path": "/users",
+                        "method": "Get",
+                        "security_requirements": ["bearerAuth"]
+                    },
+                    "security_scheme_count": 1,
+                    "security_scheme": {
+                        "name": "bearerAuth",
+                        "kind": "Http",
+                        "scheme": "bearer"
+                    }
+                },
+                "actual": document
+            }),
+            Err(error) => json!({
+                "test": "extracts_routes_and_security_schemes",
+                "status": "error",
+                "error": error.to_string()
+            }),
+        };
+        write_test_report("openapi_routes_security", &report)?;
+
+        let parsed = parsed?;
         assert_eq!(parsed.routes.len(), 2);
         assert_eq!(parsed.routes[0].path, "/users");
         assert_eq!(parsed.routes[0].method, HttpMethod::Get);
