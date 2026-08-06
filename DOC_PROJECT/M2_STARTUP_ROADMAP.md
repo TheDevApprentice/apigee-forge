@@ -98,12 +98,12 @@ refactor(core): refine M2 authentication contracts
 
 ### M2-02 — Configuration headless sécurisée
 
-- [ ] Lire uniquement `GOOGLE_APPLICATION_CREDENTIALS`.
-- [ ] Refuser les credentials en argument de commande.
-- [ ] Ne pas distinguer applicativement WIF et clé de service account.
-- [ ] Documenter que la pipeline produit le fichier de credentials.
-- [ ] Tester l'absence et l'invalidité de la variable sans appeler Google.
-- [ ] Vérifier l'absence de credentials dans les erreurs et logs.
+- [x] Lire uniquement `GOOGLE_APPLICATION_CREDENTIALS`.
+- [x] Refuser les credentials en argument de commande.
+- [x] Ne pas distinguer applicativement WIF et clé de service account.
+- [x] Documenter que la pipeline produit le fichier de credentials.
+- [x] Tester l'absence et l'invalidité de la variable sans appeler Google.
+- [x] Vérifier l'absence de credentials dans les erreurs et logs.
 
 Commit prévu :
 

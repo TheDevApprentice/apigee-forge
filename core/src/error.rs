@@ -31,6 +31,14 @@ pub enum AuthError {
 }
 
 #[derive(Debug, Error)]
+pub enum HeadlessAuthConfigError {
+    #[error("GOOGLE_APPLICATION_CREDENTIALS is not set")]
+    MissingCredentialsPath,
+    #[error("GOOGLE_APPLICATION_CREDENTIALS does not point to a regular file")]
+    CredentialsPathNotFile,
+}
+
+#[derive(Debug, Error)]
 pub enum LocalStateError {
     #[error("local state storage operation failed")]
     StorageFailed,

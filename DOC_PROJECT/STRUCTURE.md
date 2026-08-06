@@ -54,6 +54,7 @@ core/
     │   └── local_state_store.rs    # trait LocalStateStore
     ├── infra/
     │   ├── mod.rs
+    │   ├── headless_auth_config.rs
     │   ├── reqwest_apigee_gateway.rs
     │   ├── in_memory_apigee_gateway.rs      # fake, niveau 1 de la stratégie de test
     │   ├── filesystem_template_repository.rs
