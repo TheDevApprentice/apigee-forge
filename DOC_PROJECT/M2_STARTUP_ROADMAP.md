@@ -217,14 +217,14 @@ test(core): add WireMock Apigee coverage
 
 ### M2-09 — Validation finale M2
 
-- [ ] `cargo test --workspace --locked` passe.
-- [ ] `cargo clippy --workspace --all-targets --locked -- -D warnings` passe.
-- [ ] `cargo audit` passe dans la CI.
-- [ ] Les logs et rapports ne contiennent aucun credential.
-- [ ] La validation manuelle de l'organisation d'évaluation est documentée mais n'est pas requise par la CI.
-- [ ] Aucun CLI complet n'est ajouté avant M4.
-- [ ] Mettre à jour `ROADMAP.md` et ce document.
-- [ ] Committer la clôture M2.
+- [x] `cargo test --workspace --locked` passe.
+- [x] `cargo clippy --workspace --all-targets --locked -- -D warnings` passe.
+- [x] `cargo audit` passe dans la CI et a été exécuté localement avec `cargo-audit 0.22.1`.
+- [x] Les logs et rapports ne contiennent aucun credential.
+- [x] La validation manuelle de l'organisation d'évaluation est documentée mais n'est pas requise par la CI.
+- [x] Aucun CLI complet n'est ajouté avant M4.
+- [x] Mettre à jour `ROADMAP.md` et ce document.
+- [x] Committer la clôture M2.
 
 Commit prévu :
 
