@@ -6,7 +6,10 @@ use std::{
 use async_trait::async_trait;
 
 use crate::{
-    domain::{ApigeeRole, Deployment, DeploymentStatus, Proxy},
+    domain::{
+        ApigeeRole, Deployment, DeploymentStatus, Environment, Organization, OrganizationId,
+        ProjectId, Proxy,
+    },
     error::GatewayError,
     ports::ApigeeGateway,
 };
@@ -80,15 +83,30 @@ impl InMemoryApigeeGateway {
 
 #[async_trait]
 impl ApigeeGateway for InMemoryApigeeGateway {
-    async fn list_organizations(&self) -> Result<Vec<String>, GatewayError> {
-        Ok(self.lock_state()?.organizations.clone())
+    async fn list_organizations(&self) -> Result<Vec<Organization>, GatewayError> {
+        Ok(self
+            .lock_state()?
+            .organizations
+            .iter()
+            .map(|organization| Organization {
+                id: OrganizationId::new(organization.clone()),
+                project_id: ProjectId::new(organization.clone()),
+                location: None,
+            })
+            .collect())
     }
 
-    async fn list_environments(&self, org: &str) -> Result<Vec<String>, GatewayError> {
+    async fn list_environments(&self, org: &str) -> Result<Vec<Environment>, GatewayError> {
         self.lock_state()?
             .environments
             .get(org)
             .cloned()
+            .map(|environments| {
+                environments
+                    .into_iter()
+                    .map(|name| Environment { name })
+                    .collect()
+            })
             .ok_or(GatewayError::RequestFailed)
     }
 

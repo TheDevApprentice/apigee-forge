@@ -150,8 +150,8 @@ feat(core): add desktop OAuth provider
 
 ### M2-05 — Contrat et transport HTTP Apigee
 
-- [ ] Raffiner les modèles de domaine si les réponses Apigee ne tiennent pas dans `Vec<String>`, `Proxy` et `Deployment` actuels.
-- [ ] Confirmer les DTO internes nécessaires sans exposer les types de `reqwest` ou de l'API dans le domaine.
+- [x] Raffiner les modèles de domaine si les réponses Apigee ne tiennent pas dans `Vec<String>`, `Proxy` et `Deployment` actuels.
+- [x] Confirmer les DTO internes nécessaires sans exposer les types de `reqwest` ou de l'API dans le domaine.
 - [x] Ajouter `reqwest` avec TLS et timeout explicite.
 - [x] Créer `core/src/infra/reqwest_apigee_gateway.rs`.
 - [x] Injecter `Arc<dyn AuthProvider>`.
@@ -168,12 +168,12 @@ feat(core): add Apigee HTTP gateway
 
 ### M2-06 — Organisations, environnements et proxies
 
-- [ ] Implémenter le mapping de `organizations.list`.
-- [ ] Implémenter le mapping de `organizations.environments.list`.
-- [ ] Implémenter le mapping de `organizations.apis.list` avec les champs nécessaires aux révisions.
-- [ ] Gérer les réponses vides, champs absents et pagination si applicable.
-- [ ] Ne charger que les métadonnées nécessaires au MVP.
-- [ ] Tester chaque mapping avec des réponses JSON WireMock documentées.
+- [x] Implémenter le mapping de `organizations.list`.
+- [x] Implémenter le mapping de `organizations.environments.list`.
+- [x] Implémenter le mapping de `organizations.apis.list` avec les champs nécessaires aux révisions.
+- [ ] Gérer les réponses vides et champs absents ; la pagination reste à traiter si elle est requise par les réponses réelles ou les volumes Apigee.
+- [x] Ne charger que les métadonnées nécessaires au MVP.
+- [x] Tester chaque mapping avec des réponses JSON WireMock documentées.
 
 Endpoints de référence à consulter avant chaque implémentation :
 

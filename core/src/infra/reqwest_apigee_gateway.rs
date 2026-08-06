@@ -1,10 +1,14 @@
 use std::{sync::Arc, time::Duration};
 
 use reqwest::{Client, Method, StatusCode, Url};
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 
-use crate::{error::GatewayError, ports::auth_provider::AuthProvider};
+use crate::{
+    domain::{Environment, Organization, OrganizationId, ProjectId, Proxy, ProxyRevision},
+    error::GatewayError,
+    ports::auth_provider::AuthProvider,
+};
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 const DEFAULT_MAX_RETRIES: u32 = 3;
@@ -64,6 +68,34 @@ impl ReqwestApigeeGateway {
         T: DeserializeOwned,
     {
         self.request_json(Method::POST, path, Some(body)).await
+    }
+
+    pub async fn list_organizations(&self) -> Result<Vec<Organization>, GatewayError> {
+        let response: OrganizationsResponse = self.get_json("organizations").await?;
+        response
+            .organizations
+            .into_iter()
+            .map(OrganizationMapping::try_into_domain)
+            .collect()
+    }
+
+    pub async fn list_environments(
+        &self,
+        organization: &str,
+    ) -> Result<Vec<Environment>, GatewayError> {
+        let path = format!("organizations/{organization}/environments");
+        let response: EnvironmentsResponse = self.get_json(&path).await?;
+        response.into_domain()
+    }
+
+    pub async fn list_proxies(&self, organization: &str) -> Result<Vec<Proxy>, GatewayError> {
+        let path = format!("organizations/{organization}/apis?includeRevisions=true");
+        let response: ProxiesResponse = self.get_json(&path).await?;
+        response
+            .proxies
+            .into_iter()
+            .map(ProxyMapping::try_into_domain)
+            .collect()
     }
 
     async fn request_json<B, T>(
@@ -141,5 +173,261 @@ where
             .await
             .map_err(|_| GatewayError::InvalidResponse),
         _ => Err(GatewayError::RequestFailed),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct OrganizationsResponse {
+    #[serde(default)]
+    organizations: Vec<OrganizationMapping>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OrganizationMapping {
+    organization: String,
+    #[serde(rename = "projectId")]
+    project_id: String,
+    #[serde(default)]
+    location: Option<String>,
+}
+
+impl OrganizationMapping {
+    fn try_into_domain(self) -> Result<Organization, GatewayError> {
+        if self.organization.is_empty() || self.project_id.is_empty() {
+            return Err(GatewayError::InvalidResponse);
+        }
+
+        Ok(Organization {
+            id: OrganizationId::new(self.organization),
+            project_id: ProjectId::new(self.project_id),
+            location: self.location,
+        })
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum EnvironmentsResponse {
+    ListValue { values: Vec<StringValue> },
+    Named { environments: Vec<String> },
+    Array(Vec<String>),
+}
+
+#[derive(Debug, Deserialize)]
+struct StringValue {
+    #[serde(rename = "stringValue")]
+    value: String,
+}
+
+impl EnvironmentsResponse {
+    fn into_domain(self) -> Result<Vec<Environment>, GatewayError> {
+        let names = match self {
+            Self::ListValue { values } => values.into_iter().map(|value| value.value).collect(),
+            Self::Named { environments } => environments,
+            Self::Array(environments) => environments,
+        };
+
+        if names.iter().any(String::is_empty) {
+            return Err(GatewayError::InvalidResponse);
+        }
+        Ok(names.into_iter().map(|name| Environment { name }).collect())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct ProxiesResponse {
+    #[serde(default)]
+    proxies: Vec<ProxyMapping>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ProxyMapping {
+    name: String,
+    #[serde(default)]
+    revision: Vec<String>,
+}
+
+impl ProxyMapping {
+    fn try_into_domain(self) -> Result<Proxy, GatewayError> {
+        if self.name.is_empty() {
+            return Err(GatewayError::InvalidResponse);
+        }
+
+        let revisions = self
+            .revision
+            .into_iter()
+            .map(|number| {
+                number
+                    .parse::<u32>()
+                    .map(|number| ProxyRevision {
+                        number,
+                        deployed: false,
+                    })
+                    .map_err(|_| GatewayError::InvalidResponse)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(Proxy {
+            name: self.name,
+            revisions,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        error::Error,
+        fs::{self, File},
+        path::PathBuf,
+        sync::Arc,
+        time::{Duration, SystemTime},
+    };
+
+    use async_trait::async_trait;
+    use reqwest::Url;
+    use serde_json::{json, Value};
+    use wiremock::{
+        matchers::{header, method, path},
+        Mock, MockServer, ResponseTemplate,
+    };
+
+    use crate::{
+        domain::{AuthContext, ProjectId},
+        error::AuthError,
+        ports::auth_provider::{AccessToken, AuthProvider},
+    };
+
+    use super::ReqwestApigeeGateway;
+
+    struct TestAuthProvider;
+
+    #[async_trait]
+    impl AuthProvider for TestAuthProvider {
+        async fn authenticate(&self) -> Result<AuthContext, AuthError> {
+            Ok(AuthContext::headless(ProjectId::new("test-project")))
+        }
+
+        async fn access_token(&self) -> Result<AccessToken, AuthError> {
+            Ok(AccessToken::new(
+                "test-token",
+                SystemTime::now() + Duration::from_secs(60),
+            ))
+        }
+    }
+
+    fn write_test_report(report_name: &str, report: &Value) -> Result<PathBuf, Box<dyn Error>> {
+        let report_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("target")
+            .join("test-results");
+        fs::create_dir_all(&report_directory)?;
+
+        let report_path = report_directory.join(format!("{report_name}.json"));
+        let report_file = File::create(&report_path)?;
+        serde_json::to_writer_pretty(report_file, report)?;
+        Ok(report_path)
+    }
+
+    async fn gateway(server: &MockServer) -> Result<ReqwestApigeeGateway, Box<dyn Error>> {
+        let base_url = Url::parse(&format!("{}/v1/", server.uri()))?;
+        Ok(ReqwestApigeeGateway::with_settings(
+            base_url,
+            Arc::new(TestAuthProvider),
+            Duration::from_secs(5),
+            0,
+            Duration::ZERO,
+        )?)
+    }
+
+    #[tokio::test]
+    async fn maps_organizations_list() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/organizations"))
+            .and(header("authorization", "Bearer test-token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "organizations": [{
+                    "organization": "org-one",
+                    "projectId": "project-one",
+                    "location": "us-central1"
+                }]
+            })))
+            .mount(&server)
+            .await;
+
+        let organizations = gateway(&server).await?.list_organizations().await?;
+        let report = json!({
+            "test": "maps_organizations_list",
+            "expected": [{"id": "org-one", "project_id": "project-one", "location": "us-central1"}],
+            "actual": organizations
+        });
+        let report_path = write_test_report("apigee_organizations_mapping", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert_eq!(organizations.len(), 1);
+        assert_eq!(organizations[0].id.as_str(), "org-one");
+        assert_eq!(organizations[0].project_id.as_str(), "project-one");
+        assert_eq!(organizations[0].location.as_deref(), Some("us-central1"));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn maps_environment_list_value() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/organizations/org-one/environments"))
+            .and(header("authorization", "Bearer test-token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "values": [{"stringValue": "dev"}, {"stringValue": "prod"}]
+            })))
+            .mount(&server)
+            .await;
+
+        let environments = gateway(&server).await?.list_environments("org-one").await?;
+        let report = json!({
+            "test": "maps_environment_list_value",
+            "expected": [{"name": "dev"}, {"name": "prod"}],
+            "actual": environments
+        });
+        let report_path = write_test_report("apigee_environments_mapping", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert_eq!(
+            environments
+                .iter()
+                .map(|item| item.name.as_str())
+                .collect::<Vec<_>>(),
+            ["dev", "prod"]
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn maps_proxy_revisions() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/organizations/org-one/apis"))
+            .and(header("authorization", "Bearer test-token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "proxies": [{"name": "orders", "revision": ["1", "2"]}]
+            })))
+            .mount(&server)
+            .await;
+
+        let proxies = gateway(&server).await?.list_proxies("org-one").await?;
+        let report = json!({
+            "test": "maps_proxy_revisions",
+            "expected": [{"name": "orders", "revisions": [{"number": 1, "deployed": false}, {"number": 2, "deployed": false}]}],
+            "actual": proxies
+        });
+        let report_path = write_test_report("apigee_proxies_mapping", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert_eq!(proxies.len(), 1);
+        assert_eq!(proxies[0].name, "orders");
+        assert_eq!(proxies[0].revisions.len(), 2);
+        assert_eq!(proxies[0].revisions[1].number, 2);
+        Ok(())
     }
 }

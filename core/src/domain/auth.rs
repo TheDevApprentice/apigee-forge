@@ -4,7 +4,9 @@ pub enum AuthMode {
     Desktop,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProjectId(String);
 
 impl ProjectId {
@@ -17,7 +19,7 @@ impl ProjectId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GoogleIdentity(String);
 
 impl GoogleIdentity {
@@ -30,7 +32,7 @@ impl GoogleIdentity {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OrganizationId(String);
 
 impl OrganizationId {
