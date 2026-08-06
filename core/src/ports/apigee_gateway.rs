@@ -19,5 +19,5 @@ pub trait ApigeeGateway: Send + Sync {
         override_existing: bool,
     ) -> Result<Deployment, GatewayError>;
     async fn get_deployment_status(&self, deployment_id: &str) -> Result<Deployment, GatewayError>;
-    async fn get_role(&self, org: &str) -> Result<ApigeeRole, GatewayError>;
+    async fn get_roles(&self, org: &str) -> Result<Vec<ApigeeRole>, GatewayError>;
 }

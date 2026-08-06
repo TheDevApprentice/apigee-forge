@@ -185,12 +185,12 @@ Commit possible par frontière fonctionnelle si le changement devient trop large
 
 ### M2-07 — Lecture du rôle Apigee
 
-- [ ] Identifier l'endpoint officiel et les permissions exactes.
-- [ ] Confirmer s'il s'agit d'une lecture IAM ou d'un endpoint Apigee dédié.
-- [ ] Ne pas ajouter de création ou modification de bindings IAM.
-- [ ] Mapper uniquement les rôles Apigee autorisés par `ApigeeRole`.
-- [ ] Refuser explicitement un rôle inconnu.
-- [ ] Tester admin, read-only/deployer et réponse inconnue.
+- [x] Identifier l'endpoint officiel et les permissions exactes.
+- [x] Confirmer qu'il s'agit d'une lecture IAM Resource Manager, sans endpoint de gestion Apigee dédié utilisé ici.
+- [x] Ne pas ajouter de création ou modification de bindings IAM.
+- [x] Mapper uniquement les rôles Apigee autorisés par `ApigeeRole`.
+- [x] Refuser explicitement un rôle inconnu.
+- [x] Tester plusieurs rôles Apigee et une réponse inconnue.
 
 Commit prévu :
 

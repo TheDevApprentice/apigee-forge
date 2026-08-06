@@ -168,11 +168,12 @@ impl ApigeeGateway for InMemoryApigeeGateway {
             .ok_or(GatewayError::RequestFailed)
     }
 
-    async fn get_role(&self, org: &str) -> Result<ApigeeRole, GatewayError> {
+    async fn get_roles(&self, org: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
         self.lock_state()?
             .roles
             .get(org)
             .copied()
+            .map(|role| vec![role])
             .ok_or(GatewayError::RequestFailed)
     }
 }

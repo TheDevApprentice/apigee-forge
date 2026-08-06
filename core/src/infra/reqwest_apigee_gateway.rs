@@ -2,10 +2,13 @@ use std::{sync::Arc, time::Duration};
 
 use reqwest::{Client, Method, StatusCode, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::json;
 use tokio::time::sleep;
 
 use crate::{
-    domain::{Environment, Organization, OrganizationId, ProjectId, Proxy, ProxyRevision},
+    domain::{
+        ApigeeRole, Environment, Organization, OrganizationId, ProjectId, Proxy, ProxyRevision,
+    },
     error::GatewayError,
     ports::auth_provider::AuthProvider,
 };
@@ -17,6 +20,7 @@ const DEFAULT_BACKOFF: Duration = Duration::from_millis(250);
 pub struct ReqwestApigeeGateway {
     client: Client,
     base_url: Url,
+    iam_base_url: Url,
     auth: Arc<dyn AuthProvider>,
     max_retries: u32,
     retry_backoff: Duration,
@@ -24,13 +28,16 @@ pub struct ReqwestApigeeGateway {
 
 impl ReqwestApigeeGateway {
     pub fn new(base_url: Url, auth: Arc<dyn AuthProvider>) -> Result<Self, GatewayError> {
-        Self::with_settings(
+        let mut gateway = Self::with_settings(
             base_url,
             auth,
             DEFAULT_TIMEOUT,
             DEFAULT_MAX_RETRIES,
             DEFAULT_BACKOFF,
-        )
+        )?;
+        gateway.iam_base_url = Url::parse("https://cloudresourcemanager.googleapis.com/v3/")
+            .map_err(|_| GatewayError::InvalidResponse)?;
+        Ok(gateway)
     }
 
     pub fn with_settings(
@@ -44,10 +51,12 @@ impl ReqwestApigeeGateway {
             .timeout(timeout)
             .build()
             .map_err(|_| GatewayError::RequestFailed)?;
+        let iam_base_url = base_url.clone();
 
         Ok(Self {
             client,
             base_url,
+            iam_base_url,
             auth,
             max_retries,
             retry_backoff,
@@ -58,7 +67,7 @@ impl ReqwestApigeeGateway {
     where
         T: DeserializeOwned,
     {
-        self.request_json(Method::GET, path, Option::<&()>::None)
+        self.request_json_at(&self.base_url, Method::GET, path, Option::<&()>::None)
             .await
     }
 
@@ -67,7 +76,8 @@ impl ReqwestApigeeGateway {
         B: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        self.request_json(Method::POST, path, Some(body)).await
+        self.request_json_at(&self.base_url, Method::POST, path, Some(body))
+            .await
     }
 
     pub async fn list_organizations(&self) -> Result<Vec<Organization>, GatewayError> {
@@ -98,8 +108,43 @@ impl ReqwestApigeeGateway {
             .collect()
     }
 
-    async fn request_json<B, T>(
+    pub async fn get_roles(&self, project: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
+        let context = self
+            .auth
+            .authenticate()
+            .await
+            .map_err(|_| GatewayError::RequestFailed)?;
+        let identity = context.identity.ok_or(GatewayError::IdentityUnavailable)?;
+        let path = format!("projects/{project}:getIamPolicy");
+        let response: IamPolicyResponse = self
+            .request_json_at(&self.iam_base_url, Method::POST, &path, Some(&json!({})))
+            .await?;
+        let principal_user = format!("user:{}", identity.email());
+        let principal_service_account = format!("serviceAccount:{}", identity.email());
+
+        let mut roles = Vec::new();
+        for binding in response.bindings {
+            if binding
+                .members
+                .iter()
+                .any(|member| member == &principal_user || member == &principal_service_account)
+            {
+                if let Some(role) = ApigeeRole::from_iam_name(&binding.role) {
+                    if !roles.contains(&role) {
+                        roles.push(role);
+                    }
+                } else if binding.role.starts_with("roles/apigee.") {
+                    return Err(GatewayError::UnknownRole);
+                }
+            }
+        }
+
+        Ok(roles)
+    }
+
+    async fn request_json_at<B, T>(
         &self,
+        base_url: &Url,
         method: Method,
         path: &str,
         body: Option<&B>,
@@ -108,8 +153,7 @@ impl ReqwestApigeeGateway {
         B: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let url = self
-            .base_url
+        let url = base_url
             .join(path)
             .map_err(|_| GatewayError::InvalidResponse)?;
         let token = self
@@ -274,6 +318,19 @@ impl ProxyMapping {
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct IamPolicyResponse {
+    #[serde(default)]
+    bindings: Vec<IamBinding>,
+}
+
+#[derive(Debug, Deserialize)]
+struct IamBinding {
+    role: String,
+    #[serde(default)]
+    members: Vec<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use std::{
@@ -293,19 +350,24 @@ mod tests {
     };
 
     use crate::{
-        domain::{AuthContext, ProjectId},
+        domain::{AuthContext, GoogleIdentity, ProjectId},
         error::AuthError,
         ports::auth_provider::{AccessToken, AuthProvider},
     };
 
     use super::ReqwestApigeeGateway;
 
-    struct TestAuthProvider;
+    struct TestAuthProvider {
+        identity: Option<GoogleIdentity>,
+    }
 
     #[async_trait]
     impl AuthProvider for TestAuthProvider {
         async fn authenticate(&self) -> Result<AuthContext, AuthError> {
-            Ok(AuthContext::headless(ProjectId::new("test-project")))
+            Ok(match &self.identity {
+                Some(identity) => AuthContext::desktop_authenticated(identity.clone()),
+                None => AuthContext::headless(ProjectId::new("test-project")),
+            })
         }
 
         async fn access_token(&self) -> Result<AccessToken, AuthError> {
@@ -329,11 +391,15 @@ mod tests {
         Ok(report_path)
     }
 
-    async fn gateway(server: &MockServer) -> Result<ReqwestApigeeGateway, Box<dyn Error>> {
-        let base_url = Url::parse(&format!("{}/v1/", server.uri()))?;
+    async fn gateway(
+        server: &MockServer,
+        identity: Option<GoogleIdentity>,
+        base_path: &str,
+    ) -> Result<ReqwestApigeeGateway, Box<dyn Error>> {
+        let base_url = Url::parse(&format!("{}{base_path}", server.uri()))?;
         Ok(ReqwestApigeeGateway::with_settings(
             base_url,
-            Arc::new(TestAuthProvider),
+            Arc::new(TestAuthProvider { identity }),
             Duration::from_secs(5),
             0,
             Duration::ZERO,
@@ -356,7 +422,10 @@ mod tests {
             .mount(&server)
             .await;
 
-        let organizations = gateway(&server).await?.list_organizations().await?;
+        let organizations = gateway(&server, None, "/v1/")
+            .await?
+            .list_organizations()
+            .await?;
         let report = json!({
             "test": "maps_organizations_list",
             "expected": [{"id": "org-one", "project_id": "project-one", "location": "us-central1"}],
@@ -384,7 +453,10 @@ mod tests {
             .mount(&server)
             .await;
 
-        let environments = gateway(&server).await?.list_environments("org-one").await?;
+        let environments = gateway(&server, None, "/v1/")
+            .await?
+            .list_environments("org-one")
+            .await?;
         let report = json!({
             "test": "maps_environment_list_value",
             "expected": [{"name": "dev"}, {"name": "prod"}],
@@ -415,7 +487,10 @@ mod tests {
             .mount(&server)
             .await;
 
-        let proxies = gateway(&server).await?.list_proxies("org-one").await?;
+        let proxies = gateway(&server, None, "/v1/")
+            .await?
+            .list_proxies("org-one")
+            .await?;
         let report = json!({
             "test": "maps_proxy_revisions",
             "expected": [{"name": "orders", "revisions": [{"number": 1, "deployed": false}, {"number": 2, "deployed": false}]}],
@@ -428,6 +503,82 @@ mod tests {
         assert_eq!(proxies[0].name, "orders");
         assert_eq!(proxies[0].revisions.len(), 2);
         assert_eq!(proxies[0].revisions[1].number, 2);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn maps_multiple_apigee_roles_for_identity() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v3/projects/project-one:getIamPolicy"))
+            .and(header("authorization", "Bearer test-token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "bindings": [
+                    {"role": "roles/apigee.admin", "members": ["user:user@example.com"]},
+                    {"role": "roles/apigee.deployer", "members": ["user:user@example.com"]},
+                    {"role": "roles/storage.objectViewer", "members": ["user:user@example.com"]}
+                ]
+            })))
+            .mount(&server)
+            .await;
+
+        let roles = gateway(
+            &server,
+            Some(GoogleIdentity::new("user@example.com")),
+            "/v3/",
+        )
+        .await?
+        .get_roles("project-one")
+        .await?;
+        let report = json!({
+            "test": "maps_multiple_apigee_roles_for_identity",
+            "expected": ["Admin", "Deployer"],
+            "actual": roles
+        });
+        let report_path = write_test_report("apigee_roles_mapping", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert_eq!(
+            roles,
+            [
+                crate::domain::ApigeeRole::Admin,
+                crate::domain::ApigeeRole::Deployer
+            ]
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn rejects_unknown_apigee_role() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v3/projects/project-one:getIamPolicy"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "bindings": [{"role": "roles/apigee.futureRole", "members": ["user:user@example.com"]}]
+            })))
+            .mount(&server)
+            .await;
+
+        let result = gateway(
+            &server,
+            Some(GoogleIdentity::new("user@example.com")),
+            "/v3/",
+        )
+        .await?
+        .get_roles("project-one")
+        .await;
+        let report = json!({
+            "test": "rejects_unknown_apigee_role",
+            "expected_error": "UnknownRole",
+            "actual_error": result.as_ref().err().map(|error| format!("{error:?}"))
+        });
+        let report_path = write_test_report("apigee_unknown_role", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert!(matches!(
+            result,
+            Err(crate::error::GatewayError::UnknownRole)
+        ));
         Ok(())
     }
 }

@@ -18,6 +18,10 @@ pub enum GatewayError {
     RateLimited,
     #[error("gateway server failed")]
     Server,
+    #[error("authenticated identity is unavailable")]
+    IdentityUnavailable,
+    #[error("an Apigee role is unknown")]
+    UnknownRole,
 }
 
 #[derive(Debug, Error)]
