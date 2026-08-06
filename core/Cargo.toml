@@ -7,7 +7,9 @@ edition.workspace = true
 path = "src/lib.rs"
 
 [dependencies]
+openapiv3 = "2.2.0"
 serde = { version = "1.0.229", features = ["derive"] }
+serde_yaml = "0.9.34"
 thiserror = "2.0.19"
 
 [dev-dependencies]
