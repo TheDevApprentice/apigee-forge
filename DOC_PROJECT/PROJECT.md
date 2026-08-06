@@ -38,7 +38,7 @@ C'est sur ces trois points que ce projet se différencie.
 
 ## 4. Principes directeurs actés (à ne pas remettre en cause sans discussion)
 
-1. **Le CLI doit pouvoir tout faire, seul.** Toute fonctionnalité disponible dans le GUI doit d'abord exister dans le crate `core`, puis être exposée à l'identique en commande CLI. Aucune fonctionnalité ne doit exister uniquement côté GUI. Le CLI doit fonctionner de façon 100% autonome, sur un poste de dev ou dans une pipeline CI/CD, sans aucune interaction graphique.
+1. **Le CLI doit pouvoir tout faire, seul.** Toute fonctionnalité disponible dans le GUI doit d'abord exister dans le package partagé `apigee-forge-core` (dossier `core/`), puis être exposée à l'identique en commande CLI. Aucune fonctionnalité ne doit exister uniquement côté GUI. Le CLI doit fonctionner de façon 100% autonome, sur un poste de dev ou dans une pipeline CI/CD, sans aucune interaction graphique.
 2. **Scope IAM volontairement limité aux rôles Apigee** (`apigee.admin`, `apigee.readOnlyAdmin`, `apigee.developerAdmin`, `apigee.analyticsViewer`, etc.). Pas de gestion IAM générique Google Cloud (rôles custom, bindings au niveau projet/organisation) — ce périmètre est délibérément laissé à la console Google Cloud native.
 3. **Format de template ouvert et documenté** (JSON ou YAML avec schéma explicite), versionnable dans Git, lisible sans l'outil.
 4. **Développement assisté par IA avec compréhension systématique** : chaque pattern généré (ownership/lifetimes Rust, IPC Tauri, gestion async) doit être expliqué et compris avant d'être accepté.
@@ -46,7 +46,7 @@ C'est sur ces trois points que ce projet se différencie.
 
 ## 5. Décisions d'architecture actées
 
-- **Langage unique : Rust**, pour le CLI et le GUI (via Tauri), avec un crate `core` partagé pour éviter toute duplication de logique métier.
+- **Langage unique : Rust**, pour le CLI et le GUI (via Tauri), avec le package Cargo `apigee-forge-core` (dossier `core/`, bibliothèque Rust `apigee_forge_core`) partagé pour éviter toute duplication de logique métier.
 - **Workspace Cargo** :
   ```
   apigee-forge/

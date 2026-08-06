@@ -6,7 +6,7 @@
 
 ## 1. Pourquoi c'est possible sans effort de refonte
 
-`cli/` ne dépend que de `core/` — jamais de `gui/` (voir ARCHITECTURE.md section 2). Cette règle de dépendance, posée dès le départ, est ce qui rend les deux exports possibles sans code séparé à maintenir : le CLI se compile et se distribue seul, tel quel.
+`cli/` ne dépend que du package Cargo `apigee-forge-core` situé dans `core/` — jamais de `gui/` (voir ARCHITECTURE.md section 2). Cette règle de dépendance, posée dès le départ, est ce qui rend les deux exports possibles sans code séparé à maintenir : le CLI se compile et se distribue seul, tel quel.
 
 ---
 

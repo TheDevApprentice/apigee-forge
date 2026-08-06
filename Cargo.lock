@@ -3,11 +3,7 @@
 version = 4
 
 [[package]]
-name = "cli"
-version = "0.1.0"
-
-[[package]]
-name = "core"
+name = "apigee-forge-core"
 version = "0.1.0"
 dependencies = [
  "openapiv3",
@@ -16,6 +12,10 @@ dependencies = [
  "serde_yaml",
  "thiserror",
 ]
+
+[[package]]
+name = "cli"
+version = "0.1.0"
 
 [[package]]
 name = "equivalent"

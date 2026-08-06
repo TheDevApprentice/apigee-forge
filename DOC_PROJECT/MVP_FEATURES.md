@@ -4,7 +4,7 @@
 
 ---
 
-## Core (crate `core`)
+## Core (package Cargo `apigee-forge-core`, dossier `core/`)
 
 ### Parsing OpenAPI
 - [ ] Parsing OpenAPI 3.x (routes, verbes HTTP, paramètres, schémas de sécurité déclarés)

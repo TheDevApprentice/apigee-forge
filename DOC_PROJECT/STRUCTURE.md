@@ -9,7 +9,7 @@
 ```
 apigee-forge/
 ├── DOC_PROJECT/              # tous les documents de cadrage (ce dossier)
-├── core/                     # bibliothèque partagée — logique métier
+├── core/                     # package Cargo apigee-forge-core — logique métier partagée
 ├── cli/                      # binaire CLI, dépend de core uniquement
 ├── gui/                      # app Tauri (GUI), dépend de core uniquement
 ├── schemas/                  # JSON Schema du format de template + exemples

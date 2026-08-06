@@ -17,7 +17,7 @@ Clean Architecture reste l'objectif — elle s'implémente ici via les traits co
 
 ---
 
-## 2. Structure des dossiers — crate `core`
+## 2. Structure des dossiers — package Cargo `apigee-forge-core` (dossier `core/`)
 
 ```
 core/
@@ -43,6 +43,8 @@ core/
     ├── service_account_auth_provider.rs
     └── sqlcipher_local_store.rs
 ```
+
+Le dossier `core/` contient le package Cargo `apigee-forge-core`, dont le nom de bibliothèque Rust est `apigee_forge_core`. Le nom évite la collision avec le crate standard Rust `core`.
 
 **Règle stricte** : `domain/` ne dépend de rien. `use_cases/` ne dépend que de `domain/` et `ports/` (jamais de `infra/` directement). `infra/` implémente les traits de `ports/` et peut dépendre de crates externes (reqwest, etc.). Cette direction de dépendance ne doit jamais être inversée.
 
