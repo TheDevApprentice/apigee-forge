@@ -55,6 +55,7 @@ core/
     ├── infra/
     │   ├── mod.rs
     │   ├── headless_auth_config.rs
+    │   ├── service_account_auth_provider.rs
     │   ├── reqwest_apigee_gateway.rs
     │   ├── in_memory_apigee_gateway.rs      # fake, niveau 1 de la stratégie de test
     │   ├── filesystem_template_repository.rs

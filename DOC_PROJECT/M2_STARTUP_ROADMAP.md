@@ -113,14 +113,14 @@ feat(core): define headless authentication configuration
 
 ### M2-03 — Provider headless `gcp_auth`
 
-- [ ] Ajouter `gcp_auth` au package `apigee-forge-core`.
-- [ ] Créer `core/src/infra/service_account_auth_provider.rs`.
-- [ ] Utiliser `gcp_auth::provider()`.
-- [ ] Demander le scope `https://www.googleapis.com/auth/cloud-platform`.
-- [ ] Récupérer l'access token court uniquement en mémoire.
-- [ ] Utiliser `project_id()` pour la résolution headless de l'organisation.
-- [ ] Mapper les erreurs `gcp_auth` vers `AuthError` sans exposer le détail sensible.
-- [ ] Tester la configuration sans credential réel.
+- [x] Ajouter `gcp_auth` au package `apigee-forge-core`.
+- [x] Créer `core/src/infra/service_account_auth_provider.rs`.
+- [x] Utiliser `gcp_auth::provider()`.
+- [x] Demander le scope `https://www.googleapis.com/auth/cloud-platform`.
+- [x] Récupérer l'access token court uniquement en mémoire.
+- [x] Utiliser `project_id()` pour la résolution headless de l'organisation.
+- [x] Mapper les erreurs `gcp_auth` vers `AuthError` sans exposer le détail sensible.
+- [x] Tester la configuration sans credential réel.
 
 Commit prévu :
 
