@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apigee-forge/schemas/template.schema.json",
+  "title": "Apigee Forge Template",
+  "description": "Format ouvert de template Apigee Forge. Chaque champ correspond à un paramètre réel d'une policy Apigee documentée — voir les commentaires pour la correspondance exacte.",
+  "type": "object",
+  "required": ["metadata", "flow"],
+  "properties": {
+
+    "metadata": {
+      "type": "object",
+      "description": "Métadonnées de gouvernance, non envoyées à Apigee, utilisées pour le nommage et le suivi.",
+      "required": ["name", "owner", "naming_convention"],
+      "properties": {
+        "name": { "type": "string", "description": "Nom du template (pas du proxy généré)." },
+        "description": { "type": "string" },
+        "owner": { "type": "string", "description": "Équipe ou personne responsable du template." },
+        "target_environment": { "type": "string", "enum": ["dev", "test", "prod"] },
+        "naming_convention": {
+          "type": "object",
+          "description": "Convention de nommage imposée pour les proxies générés à partir de ce template.",
+          "properties": {
+            "prefix": { "type": "string", "examples": ["acme-"] },
+            "case": { "type": "string", "enum": ["kebab-case", "snake_case", "camelCase"] }
+          },
+          "required": ["prefix", "case"]
+        }
+      }
+    },
+
+    "flow": {
+      "type": "object",
+      "description": "Structure du flux du proxy, calquée sur le modèle réel Apigee PreFlow / Flows conditionnels / PostFlow.",
+      "required": ["pre_flow", "post_flow"],
+      "properties": {
+
+        "pre_flow": {
+          "type": "object",
+          "description": "Policies exécutées avant le routage — typiquement la sécurité.",
+          "properties": {
+            "request": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/policy" }
+            }
+          }
+        },
+
+        "conditional_flows": {
+          "type": "array",
+          "description": "Flows appliqués selon la route/verbe HTTP matché depuis la spec OpenAPI.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "condition": { "type": "string", "description": "Ex: (proxy.pathsuffix MatchesPath \"/users\") and (request.verb = \"GET\")" },
+              "request": { "type": "array", "items": { "$ref": "#/$defs/policy" } },
+              "response": { "type": "array", "items": { "$ref": "#/$defs/policy" } }
+            }
+          }
+        },
+
+        "post_flow": {
+          "type": "object",
+          "description": "Policies exécutées après la réponse du backend — typiquement transformations et logging.",
+          "properties": {
+            "response": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/policy" }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "policy": {
+      "type": "object",
+      "description": "Une policy = un objet discriminé par 'type'. Chaque type ci-dessous correspond à une policy Apigee réelle documentée.",
+      "oneOf": [
+        { "$ref": "#/$defs/policySecurityApiKey" },
+        { "$ref": "#/$defs/policySecurityOAuth2" },
+        { "$ref": "#/$defs/policySecurityJwt" },
+        { "$ref": "#/$defs/policyQuota" },
+        { "$ref": "#/$defs/policySpikeArrest" },
+        { "$ref": "#/$defs/policyCors" },
+        { "$ref": "#/$defs/policyTransform" }
+      ]
+    },
+
+    "policySecurityApiKey": {
+      "description": "→ policy Apigee VerifyAPIKey",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "security_api_key" },
+        "key_location": { "type": "string", "enum": ["header", "query_param"], "default": "header" },
+        "key_param_name": { "type": "string", "default": "apikey" }
+      }
+    },
+
+    "policySecurityOAuth2": {
+      "description": "→ policy Apigee OAuthV2, Operation=VerifyAccessToken",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "security_oauth2" },
+        "scopes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "policySecurityJwt": {
+      "description": "→ policy Apigee VerifyJWT",
+      "type": "object",
+      "required": ["type", "algorithm", "issuer", "audience"],
+      "properties": {
+        "type": { "const": "security_jwt" },
+        "algorithm": { "type": "string", "enum": ["RS256", "HS256"] },
+        "issuer": { "type": "string" },
+        "audience": { "type": "string" },
+        "public_key_source": { "type": "string", "enum": ["jwks_url", "static_public_key"] },
+        "jwks_url": { "type": "string", "format": "uri" }
+      }
+    },
+
+    "policyQuota": {
+      "description": "→ policy Apigee Quota",
+      "type": "object",
+      "required": ["type", "allow", "interval", "time_unit"],
+      "properties": {
+        "type": { "const": "quota" },
+        "allow": { "type": "integer", "minimum": 1, "description": "Nombre de requêtes autorisées." },
+        "interval": { "type": "integer", "minimum": 1 },
+        "time_unit": { "type": "string", "enum": ["hour", "day", "week", "month"] },
+        "quota_type": { "type": "string", "enum": ["default", "calendar", "flexi", "rollingwindow"], "default": "default" }
+      }
+    },
+
+    "policySpikeArrest": {
+      "description": "→ policy Apigee SpikeArrest",
+      "type": "object",
+      "required": ["type", "rate", "rate_unit"],
+      "properties": {
+        "type": { "const": "spike_arrest" },
+        "rate": { "type": "integer", "minimum": 1 },
+        "rate_unit": { "type": "string", "enum": ["ps", "pm"], "description": "ps = par seconde, pm = par minute." }
+      }
+    },
+
+    "policyCors": {
+      "description": "→ policy Apigee AssignMessage avec AM.CORSHeaders",
+      "type": "object",
+      "required": ["type", "allow_origins"],
+      "properties": {
+        "type": { "const": "cors" },
+        "allow_origins": { "type": "array", "items": { "type": "string" }, "default": ["*"] },
+        "allow_headers": { "type": "array", "items": { "type": "string" } },
+        "allow_methods": { "type": "array", "items": { "type": "string" }, "default": ["GET", "POST", "PUT", "DELETE"] },
+        "expose_headers": { "type": "array", "items": { "type": "string" } },
+        "max_age_seconds": { "type": "integer", "default": 3628800 },
+        "support_credentials": { "type": "boolean", "default": false }
+      }
+    },
+
+    "policyTransform": {
+      "description": "→ policy Apigee XMLToJSON / JSONToXML",
+      "type": "object",
+      "required": ["type", "direction"],
+      "properties": {
+        "type": { "const": "transform" },
+        "direction": { "type": "string", "enum": ["xml_to_json", "json_to_xml"] }
+      }
+    }
+  }
+}

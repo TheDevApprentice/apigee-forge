@@ -1,0 +1,34 @@
+{
+  "metadata": {
+    "name": "template-standard-oauth",
+    "description": "Template par défaut pour les API internes protégées par OAuth2, avec quota et CORS.",
+    "owner": "equipe-plateforme",
+    "target_environment": "prod",
+    "naming_convention": {
+      "prefix": "acme-",
+      "case": "kebab-case"
+    }
+  },
+  "flow": {
+    "pre_flow": {
+      "request": [
+        { "type": "security_oauth2", "scopes": ["read", "write"] },
+        { "type": "spike_arrest", "rate": 10, "rate_unit": "ps" },
+        { "type": "cors", "allow_origins": ["https://app.acme.com"], "allow_methods": ["GET", "POST"] }
+      ]
+    },
+    "conditional_flows": [
+      {
+        "condition": "(proxy.pathsuffix MatchesPath \"/orders\") and (request.verb = \"GET\")",
+        "request": [
+          { "type": "quota", "allow": 1000, "interval": 1, "time_unit": "hour" }
+        ]
+      }
+    ],
+    "post_flow": {
+      "response": [
+        { "type": "transform", "direction": "xml_to_json" }
+      ]
+    }
+  }
+}
