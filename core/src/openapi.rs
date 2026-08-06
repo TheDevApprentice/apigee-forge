@@ -176,7 +176,7 @@ mod tests {
 
     use super::{parse_openapi, HttpMethod, OpenApiError, SecuritySchemeKind};
 
-    fn write_test_report(report_name: &str, report: &Value) -> Result<(), Box<dyn Error>> {
+    fn write_test_report(report_name: &str, report: &Value) -> Result<PathBuf, Box<dyn Error>> {
         let report_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("..")
             .join("target")
@@ -184,10 +184,10 @@ mod tests {
         fs::create_dir_all(&report_directory)?;
 
         let report_path = report_directory.join(format!("{report_name}.json"));
-        let report_file = File::create(report_path)?;
+        let report_file = File::create(&report_path)?;
         serde_json::to_writer_pretty(report_file, report)?;
 
-        Ok(())
+        Ok(report_path)
     }
 
     #[test]
@@ -221,7 +221,8 @@ mod tests {
                 "error": error.to_string()
             }),
         };
-        write_test_report("openapi_routes_security", &report)?;
+        let report_path = write_test_report("openapi_routes_security", &report)?;
+        eprintln!("test report: {}", report_path.display());
 
         let parsed = parsed?;
         assert_eq!(parsed.routes.len(), 2);
