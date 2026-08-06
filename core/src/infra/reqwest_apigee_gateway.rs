@@ -183,6 +183,7 @@ impl ReqwestApigeeGateway {
                 Err(error) if is_retryable_error(&error) && attempt < self.max_retries => {
                     sleep(self.retry_backoff * 2_u32.saturating_pow(attempt)).await;
                 }
+                Err(error) if error.is_timeout() => return Err(GatewayError::Timeout),
                 Err(_) => return Err(GatewayError::RequestFailed),
             }
         }
@@ -545,6 +546,147 @@ mod tests {
                 crate::domain::ApigeeRole::Deployer
             ]
         );
+        Ok(())
+    }
+
+    async fn gateway_with_settings(
+        server: &MockServer,
+        timeout: Duration,
+        max_retries: u32,
+    ) -> Result<ReqwestApigeeGateway, Box<dyn Error>> {
+        let base_url = Url::parse(&format!("{}/v1/", server.uri()))?;
+        Ok(ReqwestApigeeGateway::with_settings(
+            base_url,
+            Arc::new(TestAuthProvider { identity: None }),
+            timeout,
+            max_retries,
+            Duration::ZERO,
+        )?)
+    }
+
+    #[tokio::test]
+    async fn maps_http_error_statuses_without_recording_bodies() -> Result<(), Box<dyn Error>> {
+        let cases = [
+            (401, "Unauthorized"),
+            (403, "Forbidden"),
+            (404, "NotFound"),
+            (408, "Timeout"),
+            (429, "RateLimited"),
+            (500, "Server"),
+        ];
+        let mut actual = Vec::new();
+
+        for (status, expected) in cases {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/v1/organizations"))
+                .and(header("authorization", "Bearer test-token"))
+                .respond_with(
+                    ResponseTemplate::new(status)
+                        .set_body_string("authorization body must not be recorded"),
+                )
+                .mount(&server)
+                .await;
+
+            let result = gateway(&server, None, "/v1/")
+                .await?
+                .get_json::<Value>("organizations")
+                .await;
+            let error = result.err().map(|error| format!("{error:?}"));
+            assert_eq!(error.as_deref(), Some(expected));
+            actual.push(json!({ "status": status, "error": error }));
+        }
+
+        let report = json!({
+            "test": "maps_http_error_statuses_without_recording_bodies",
+            "expected_statuses": [401, 403, 404, 408, 429, 500],
+            "actual": actual
+        });
+        let report_path = write_test_report("apigee_http_statuses", &report)?;
+        eprintln!("test report: {}", report_path.display());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn maps_invalid_json_response() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/organizations"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("not-json"))
+            .mount(&server)
+            .await;
+
+        let result = gateway(&server, None, "/v1/")
+            .await?
+            .get_json::<Value>("organizations")
+            .await;
+        let error = result.err().map(|error| format!("{error:?}"));
+        let report = json!({
+            "test": "maps_invalid_json_response",
+            "expected_error": "InvalidResponse",
+            "actual_error": error
+        });
+        let report_path = write_test_report("apigee_invalid_json", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert_eq!(error.as_deref(), Some("InvalidResponse"));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn maps_timeout_without_retrying_non_transiently() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/organizations"))
+            .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_millis(100)))
+            .mount(&server)
+            .await;
+
+        let result = gateway_with_settings(&server, Duration::from_millis(10), 0)
+            .await?
+            .get_json::<Value>("organizations")
+            .await;
+        let error = result.err().map(|error| format!("{error:?}"));
+        let report = json!({
+            "test": "maps_timeout_without_retrying_non_transiently",
+            "expected_error": "Timeout",
+            "actual_error": error
+        });
+        let report_path = write_test_report("apigee_timeout", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert_eq!(error.as_deref(), Some("Timeout"));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn bounds_transient_retries() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/organizations"))
+            .respond_with(ResponseTemplate::new(503))
+            .mount(&server)
+            .await;
+
+        let result = gateway_with_settings(&server, Duration::from_secs(5), 2)
+            .await?
+            .get_json::<Value>("organizations")
+            .await;
+        let requests = server
+            .received_requests()
+            .await
+            .ok_or_else(|| std::io::Error::other("request recording is disabled"))?;
+        let error = result.err().map(|error| format!("{error:?}"));
+        let report = json!({
+            "test": "bounds_transient_retries",
+            "expected": { "error": "Server", "request_count": 3 },
+            "actual": { "error": error, "request_count": requests.len() }
+        });
+        let report_path = write_test_report("apigee_retry_bound", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert_eq!(error.as_deref(), Some("Server"));
+        assert_eq!(requests.len(), 3);
         Ok(())
     }
 

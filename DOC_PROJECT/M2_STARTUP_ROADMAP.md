@@ -200,14 +200,14 @@ feat(core): resolve Apigee role
 
 ### M2-08 — Tests HTTP simulés et sécurité
 
-- [ ] Ajouter `wiremock` en dépendance de test uniquement.
-- [ ] Simuler les endpoints selon les réponses de la documentation officielle.
-- [ ] Vérifier les headers sans imprimer de token.
-- [ ] Tester 200, 401, 403, 404, 429, 5xx et JSON invalide.
-- [ ] Tester les timeouts et le nombre maximal de retries.
-- [ ] Vérifier le backoff sans boucle infinie.
-- [ ] Produire un rapport spécifique par test dans `target/test-results/`.
-- [ ] Vérifier qu'aucun rapport ne contient de secret.
+- [x] Ajouter `wiremock` en dépendance de test uniquement.
+- [x] Simuler les endpoints selon les réponses de la documentation officielle.
+- [x] Vérifier les headers sans imprimer de token.
+- [x] Tester 200, 401, 403, 404, 429, 5xx et JSON invalide.
+- [x] Tester les timeouts et le nombre maximal de retries.
+- [x] Vérifier le backoff sans boucle infinie.
+- [x] Produire un rapport spécifique par test dans `target/test-results/`.
+- [x] Vérifier qu'aucun rapport ne contient de secret.
 
 Commit prévu :
 
