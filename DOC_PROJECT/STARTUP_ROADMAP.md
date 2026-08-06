@@ -12,16 +12,16 @@ Avant de commencer un jalon (M1, M2, ... M10 dans ROADMAP.md), le découper en �
 
 ## Étapes atomiques — Jalon M1 (Fondations `core`)
 
-- [ ] **Étape 0 — Squelette vide** : créer l'arborescence de dossiers vide (voir STRUCTURE.md), initialiser Git, `Cargo.toml` racine du workspace avec les membres déclarés (`core`, `cli`, `gui/src-tauri`). Vérifier que `cargo build` compile un workspace vide sans erreur. Aucune ligne de logique métier à ce stade.
-- [ ] **Étape 1 — Dépendances de base `core`** : ajouter `serde`, `thiserror` au `Cargo.toml` de `core`. Rien d'autre.
-- [ ] **Étape 2 — Entités `domain`** : créer les structs de `domain/` (`Proxy`, `Template`, `Deployment`, `ApigeeRole`) — uniquement les types et leurs dérivations Serde, aucun comportement, aucune méthode complexe.
-- [ ] **Étape 3 — Validation du schéma de template** : écrire un test qui désérialise `schemas/template.example.json` vers le struct `Template` et vérifie que ça fonctionne sans erreur. Confirme que le modèle Rust colle au schéma JSON déjà défini.
-- [ ] **Étape 4 — Parsing OpenAPI** : implémenter la lecture d'un fichier OpenAPI minimal (crate `oas3` ou `openapiv3`) et l'extraction des routes + schémas de sécurité déclarés. Tester avec un exemple OpenAPI simple (2-3 routes).
-- [ ] **Étape 5 — Traits `ports`** : définir les signatures des quatre traits (`ApigeeGateway`, `TemplateRepository`, `AuthProvider`, `LocalStateStore`) — uniquement les signatures de méthodes, sans aucune implémentation.
-- [ ] **Étape 6 — Fakes `infra`** : implémenter `InMemoryApigeeGateway` et `FilesystemTemplateRepository` — les deux implémentations qui permettent de tester sans réseau ni Apigee réel (niveau 1 de la stratégie de test, ARCHITECTURE.md section 12).
-- [ ] **Étape 7 — Premier use case** : implémenter `create_template` dans `use_cases/`, avec un test qui l'exerce via les fakes de l'étape 6.
-- [ ] **Étape 8 — CI minimale** : ajouter `.github/workflows/ci.yml` qui lance `cargo test` et `cargo clippy` à chaque push. Vérifier que ça passe au vert avant de continuer.
-- [ ] **Étape 9 — Point de contrôle M1** : `cargo test` passe sur le parsing OpenAPI, la validation du schéma de template, et le use case `create_template`. Si tout est vert, M1 est terminé — passer à M2 (ARCHITECTURE.md/ROADMAP.md) en le découpant à son tour selon la même méthode.
+- [x] **Étape 0 — Squelette vide** : créer l'arborescence de dossiers vide (voir STRUCTURE.md), initialiser Git, `Cargo.toml` racine du workspace avec les membres déclarés (`core`, `cli`, `gui/src-tauri`). Vérifier que `cargo build` compile un workspace vide sans erreur. Aucune ligne de logique métier à ce stade.
+- [x] **Étape 1 — Dépendances de base `core`** : ajouter `serde`, `thiserror` au `Cargo.toml` de `core`. Rien d'autre.
+- [x] **Étape 2 — Entités `domain`** : créer les structs de `domain/` (`Proxy`, `Template`, `Deployment`, `ApigeeRole`) — uniquement les types et leurs dérivations Serde, aucun comportement, aucune méthode complexe.
+- [x] **Étape 3 — Validation du schéma de template** : écrire un test qui désérialise `schemas/template.example.json` vers le struct `Template` et vérifie que ça fonctionne sans erreur. Confirme que le modèle Rust colle au schéma JSON déjà défini.
+- [x] **Étape 4 — Parsing OpenAPI** : implémenter la lecture d'un fichier OpenAPI minimal (crate `oas3` ou `openapiv3`) et l'extraction des routes + schémas de sécurité déclarés. Tester avec un exemple OpenAPI simple (2-3 routes).
+- [x] **Étape 5 — Traits `ports`** : définir les signatures des quatre traits (`ApigeeGateway`, `TemplateRepository`, `AuthProvider`, `LocalStateStore`) — uniquement les signatures de méthodes, sans aucune implémentation.
+- [x] **Étape 6 — Fakes `infra`** : implémenter `InMemoryApigeeGateway` et `FilesystemTemplateRepository` — les deux implémentations qui permettent de tester sans réseau ni Apigee réel (niveau 1 de la stratégie de test, ARCHITECTURE.md section 12).
+- [x] **Étape 7 — Premier use case** : implémenter `create_template` dans `use_cases/`, avec un test qui l'exerce via les fakes de l'étape 6.
+- [x] **Étape 8 — CI minimale** : ajouter `.github/workflows/ci.yml` qui lance `cargo test` et `cargo clippy` à chaque push. Vérifier que ça passe au vert avant de continuer.
+- [x] **Étape 9 — Point de contrôle M1** : `cargo test` passe sur le parsing OpenAPI, la validation du schéma de template, et le use case `create_template`. Si tout est vert, M1 est terminé — passer à M2 (ARCHITECTURE.md/ROADMAP.md) en le découpant à son tour selon la même méthode.
 
 ---
 
