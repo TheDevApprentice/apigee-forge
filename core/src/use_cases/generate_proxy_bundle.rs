@@ -257,6 +257,43 @@ mod tests {
     }
 
     #[test]
+    fn rejects_invalid_template_before_any_write() -> Result<(), Box<dyn Error>> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let use_case = GenerateProxyBundleUseCase::new(
+            Arc::new(FakeRenderer {
+                calls: calls.clone(),
+                fail: false,
+            }),
+            Arc::new(FakeWriter {
+                calls: calls.clone(),
+                fail: false,
+            }),
+            Arc::new(FakeArchiver {
+                calls: calls.clone(),
+                fail: false,
+            }),
+        );
+        let input = test_input()?;
+        let mut template = test_template()?;
+        template.metadata.owner.clear();
+        let runtime = Runtime::new()?;
+        let result = runtime.block_on(use_case.execute(
+            &input,
+            &template,
+            Path::new("output"),
+            Path::new("output/proxy.zip"),
+        ));
+        assert!(matches!(
+            result,
+            Err(GenerateProxyBundleError::Template(
+                crate::error::TemplateError::InvalidContent
+            ))
+        ));
+        assert!(calls.lock().map_err(|_| "calls mutex poisoned")?.is_empty());
+        Ok(())
+    }
+
+    #[test]
     fn stops_before_writing_when_rendering_fails() -> Result<(), Box<dyn Error>> {
         let calls = Arc::new(Mutex::new(Vec::new()));
         let result = execute_with(
