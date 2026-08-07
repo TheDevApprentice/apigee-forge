@@ -1,4 +1,6 @@
-use std::{error::Error, fs, path::PathBuf, sync::Arc};
+use std::{env, error::Error, fs, path::PathBuf, sync::Arc};
+
+mod output;
 
 use apigee_forge_core::{
     domain::{ProxyName, RenderInput, RenderMethod, RenderRoute, TargetUrl, Template},
@@ -7,6 +9,9 @@ use apigee_forge_core::{
     use_cases::GenerateProxyBundleUseCase,
 };
 use clap::{Args, Parser, Subcommand};
+use output::{
+    classify_error, failure_json, human_message, success_json, CommandNotImplemented, ExitCode,
+};
 use serde_json::json;
 
 #[derive(Debug, Parser, PartialEq, Eq)]
@@ -128,23 +133,50 @@ struct ListProxiesArgs {
 }
 
 fn main() {
-    let cli = Cli::parse();
-    let json_output = cli.json;
-    if let Err(error) = run(cli) {
-        if json_output {
-            eprintln!(
-                "{}",
-                json!({
-                    "ok": false,
-                    "command": "unknown",
-                    "data": null,
-                    "error": { "code": "COMMAND_FAILED", "message": error.to_string() }
-                })
-            );
-        } else {
-            eprintln!("error: {error}");
+    let arguments = env::args_os().collect::<Vec<_>>();
+    let json_output = arguments.iter().any(|argument| argument == "--json");
+    let cli = match Cli::try_parse_from(arguments) {
+        Ok(cli) => cli,
+        Err(_) => {
+            if json_output {
+                let failure = output::SafeFailure {
+                    code: "INVALID_ARGUMENTS",
+                    exit_code: ExitCode::Usage,
+                    message: "command line arguments are invalid",
+                };
+                if let Ok(document) = failure_json("parse", &failure) {
+                    println!("{document}");
+                }
+            } else {
+                eprintln!("error: invalid command line arguments");
+            }
+            std::process::exit(ExitCode::Usage.as_i32());
         }
-        std::process::exit(1);
+    };
+    let json_output = cli.json;
+    let command = command_name(&cli.command);
+    if let Err(error) = run(cli) {
+        let failure = classify_error(error.as_ref());
+        if json_output {
+            if let Ok(document) = failure_json(command, &failure) {
+                println!("{document}");
+            }
+        } else {
+            eprintln!("error: {}", human_message(&failure));
+        }
+        std::process::exit(failure.exit_code.as_i32());
+    }
+    std::process::exit(ExitCode::Success.as_i32());
+}
+
+fn command_name(command: &Commands) -> &'static str {
+    match command {
+        Commands::Login(_) => "login",
+        Commands::Template { .. } => "template",
+        Commands::Generate(_) => "generate",
+        Commands::Deploy(_) => "deploy",
+        Commands::Status(_) => "status",
+        Commands::ListProxies(_) => "list-proxies",
     }
 }
 
@@ -155,9 +187,7 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
         | Commands::Template { .. }
         | Commands::Deploy(_)
         | Commands::Status(_)
-        | Commands::ListProxies(_) => {
-            Err(std::io::Error::other("command is reserved for a later M4 step").into())
-        }
+        | Commands::ListProxies(_) => Err(CommandNotImplemented.into()),
     }
 }
 
@@ -194,20 +224,16 @@ fn run_generate(arguments: GenerateArgs, json_output: bool) -> Result<(), Box<dy
     ))?;
 
     if json_output {
-        println!(
-            "{}",
+        let document = success_json(
+            "generate",
             json!({
-                "ok": true,
-                "command": "generate",
-                "data": {
-                    "proxy_name": result.proxy_name,
-                    "rendered_file_count": result.rendered_file_count,
-                    "bundle_directory": result.bundle_directory,
-                    "archive_path": result.archive_path
-                },
-                "error": null
-            })
-        );
+                "proxy_name": result.proxy_name,
+                "rendered_file_count": result.rendered_file_count,
+                "bundle_directory": result.bundle_directory,
+                "archive_path": result.archive_path
+            }),
+        )?;
+        println!("{document}");
     } else {
         println!(
             "generated proxy={} files={} directory={} archive={}",

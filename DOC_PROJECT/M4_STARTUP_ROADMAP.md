@@ -167,9 +167,9 @@ docs(m4): add detailed CLI roadmap
 
 ### M4-01 — Arbre de commandes et composition root
 
-- [ ] Remplacer le parsing manuel M3 par un parser CLI typé.
-- [ ] Définir les commandes et sous-commandes M4 sans implémenter leur logique métier dans `cli`.
-- [ ] Conserver `generate` comme commande fonctionnelle pendant la migration.
+- [x] Remplacer le parsing manuel M3 par un parser CLI typé.
+- [x] Définir les commandes et sous-commandes M4 sans implémenter leur logique métier dans `cli`.
+- [x] Conserver `generate` comme commande fonctionnelle pendant la migration.
 - [x] Centraliser `--json`, usage et erreurs de parsing.
 - [ ] Définir les codes de sortie stables — prévu dans M4-02.
 - [x] Ajouter des tests de parsing des commandes valides, options manquantes, doublons et commandes hors périmètre.
@@ -183,11 +183,11 @@ feat(cli): define typed M4 command tree
 
 ### M4-02 — Contrat de sortie, erreurs et codes de sortie
 
-- [ ] Définir les enveloppes stdout humaine/JSON.
-- [ ] Mapper les erreurs `AuthError`, `GatewayError`, `TemplateError`, erreurs OpenAPI et erreurs filesystem vers des codes stables.
-- [ ] Ne jamais afficher les sources d’erreur contenant des secrets ou des corps HTTP.
-- [ ] Tester chaque catégorie d’erreur en mode texte et JSON.
-- [ ] Vérifier que stdout reste parseable en `--json` et que les diagnostics vont sur stderr.
+- [x] Définir les enveloppes stdout humaine/JSON.
+- [x] Mapper les erreurs `AuthError`, `GatewayError`, `TemplateError`, erreurs OpenAPI et erreurs filesystem vers des codes stables.
+- [x] Ne jamais afficher les sources d’erreur contenant des secrets ou des corps HTTP.
+- [x] Tester chaque catégorie d’erreur en mode texte et JSON.
+- [x] Vérifier que stdout reste parseable en `--json` et que les diagnostics vont sur stderr.
 
 Commit prévu :
 
