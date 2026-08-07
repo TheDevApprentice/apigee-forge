@@ -15,7 +15,8 @@ Avant d'écrire une seule ligne de code, lis l'intégralité des documents suiva
 9. **`M2_STARTUP_ROADMAP.md`** — étapes atomiques détaillées du jalon M2, à suivre après la fusion de M1 dans `dev`
 10. **`M3_STARTUP_ROADMAP.md`** — étapes atomiques détaillées du moteur de rendu et du packaging de bundle Apigee
 11. **`M4_STARTUP_ROADMAP.md`** — étapes atomiques détaillées du CLI complet, de l’authentification et des sorties scriptables
-12. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
+12. **`M4-04_checkpoint.md`** — décision de différer le test réel Apigee et méthode de validation ultérieure
+13. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
 13. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
 14. **`schemas/template.schema.json`** et **`schemas/template.example.json`** — format de données central du projet
 

@@ -223,7 +223,7 @@ feat(cli): add template management commands
 - [x] Résoudre l'organisation depuis le project ID headless ou une sélection/option explicite en desktop.
 - [x] Refuser toute ambiguïté d'organisation au lieu de deviner.
 - [x] Tester avec un double de `AuthProvider` ; les doubles `BrowserLauncher` et `RefreshTokenStore` existants de M2 couvrent le provider OAuth.
-- [ ] **Checkpoint de provisionnement** : c'est le bon moment pour suivre `GCP_SETUP.md` et provisionner le projet Google Cloud + l'organisation d'évaluation Apigee — pas avant (le compteur de 60 jours démarre à la création, inutile de le lancer plus tôt), pas après (M4-05 a besoin d'un compte réel pour être vérifié en conditions réelles).
+- [ ] **Checkpoint de provisionnement différé** : suivre `M4-04_checkpoint.md` et `GCP_SETUP.md` lorsque l'environnement réel sera nécessaire. Ce checkpoint ne bloque pas l'implémentation automatisée de M4 ; il est requis avant la première validation réelle et tout déploiement réel.
 
 Commit prévu :
 
@@ -326,7 +326,7 @@ docs(m4): record automated CLI validation
 
 ### M4-11 — Validation end-to-end réelle : proxy Helloworld
 
-*Dernière étape de M4, distincte de M4-10 : celle-ci est manuelle et ne remplace ni ne bloque la CI. C'est la preuve concrète que l'outil fonctionne réellement, pas seulement contre des doubles.*
+*Checkpoint réel différé, distinct de M4-10 : cette étape est manuelle et ne bloque ni la CI ni la poursuite de l'implémentation automatisée de M4. Elle constitue la preuve concrète avant le premier usage réel, pas un prérequis pour coder les contrats et use cases.*
 
 - [ ] Confirmer que le projet GCP et l'organisation d'évaluation sont bien provisionnés (M4-04) et toujours dans leur fenêtre de 60 jours.
 - [ ] Créer une spec OpenAPI minimale Helloworld (une seule route `GET /hello`) sous `examples/helloworld/openapi.yaml`.
@@ -342,7 +342,7 @@ Commit prévu :
 docs(m4): record real Apigee end-to-end validation (helloworld)
 ```
 
-M4 n'est marqué terminé dans `ROADMAP.md` qu'une fois M4-10 **et** M4-11 tous les deux validés.
+La fin technique automatisée de M4 peut être marquée après M4-10. M4-11 reste un checkpoint de preuve réelle à valider avant le premier déploiement réel ; il ne bloque pas les étapes de développement local.
 
 ---
 
@@ -358,7 +358,7 @@ M4 sera considéré terminé lorsque :
 6. les opérations Apigee réelles passent par `ApigeeGateway` et non par des appels HTTP dans `cli` ;
 7. les fakes et WireMock couvrent les scénarios d'erreur importants ;
 8. la suite workspace, Clippy et audit passent ;
-9. **un proxy Helloworld a été généré, déployé et confirmé avec succès contre l'organisation d'évaluation Apigee réelle (M4-11)** ;
+9. le checkpoint réel M4-11 est documenté comme prérequis avant le premier déploiement réel, sans être requis pour la clôture technique automatisée ;
 10. aucun changement GUI, déploiement réel automatisé en CI, ou release packaging M10 n'est ajouté par erreur au jalon.
 
 ---

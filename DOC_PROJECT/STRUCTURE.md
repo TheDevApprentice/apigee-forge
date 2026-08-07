@@ -159,6 +159,7 @@ DOC_PROJECT/
 ├── M2_STARTUP_ROADMAP.md
 ├── M3_STARTUP_ROADMAP.md
 ├── M4_STARTUP_ROADMAP.md
+├── M4-04_checkpoint.md
 ├── SECURITY.md
 ├── STRUCTURE.md                 # ce document
 ├── PACKAGING.md
