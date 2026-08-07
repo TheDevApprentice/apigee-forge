@@ -79,6 +79,50 @@ impl RenderInput {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RenderedFile {
+    pub relative_path: String,
+    pub contents: String,
+}
+
+impl RenderedFile {
+    pub fn try_new(
+        relative_path: impl Into<String>,
+        contents: impl Into<String>,
+    ) -> Result<Self, RenderInputError> {
+        let relative_path = relative_path.into();
+        let path = std::path::Path::new(&relative_path);
+        if relative_path.is_empty()
+            || path.is_absolute()
+            || relative_path.contains('\\')
+            || path.components().any(|component| {
+                matches!(
+                    component,
+                    std::path::Component::ParentDir | std::path::Component::RootDir
+                )
+            })
+        {
+            return Err(RenderInputError::InvalidOutputPath);
+        }
+
+        Ok(Self {
+            relative_path,
+            contents: contents.into(),
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RenderedBundle {
+    pub files: Vec<RenderedFile>,
+}
+
+impl RenderedBundle {
+    pub fn new(files: Vec<RenderedFile>) -> Self {
+        Self { files }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{
@@ -89,7 +133,7 @@ mod tests {
 
     use serde_json::{json, Value};
 
-    use super::{ProxyName, TargetUrl};
+    use super::{ProxyName, RenderedFile, TargetUrl};
 
     fn write_test_report(report_name: &str, report: &Value) -> Result<PathBuf, Box<dyn Error>> {
         let report_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -118,6 +162,21 @@ mod tests {
 
         assert_eq!(proxy_name.as_str(), "orders-v1");
         assert_eq!(target_url.as_str(), "https://api.example.com/v1");
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_unsafe_output_path() -> Result<(), Box<dyn Error>> {
+        let result = RenderedFile::try_new("../apiproxy/proxies/default.xml", "<ProxyEndpoint />");
+        let report = json!({
+            "test": "rejects_unsafe_output_path",
+            "expected_error": "InvalidOutputPath",
+            "actual_error": result.as_ref().err().map(|error| format!("{error:?}"))
+        });
+        let report_path = write_test_report("render_output_path_invalid", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert!(result.is_err());
         Ok(())
     }
 

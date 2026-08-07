@@ -78,4 +78,26 @@ pub enum RenderInputError {
     InvalidProxyName,
     #[error("target URL must be an HTTP(S) URL without whitespace")]
     InvalidTargetUrl,
+    #[error("rendered output path is invalid")]
+    InvalidOutputPath,
+}
+
+#[derive(Debug, Error)]
+pub enum RenderError {
+    #[error("render input is invalid")]
+    InvalidInput,
+    #[error("template rendering failed")]
+    Template,
+    #[error("rendered XML is invalid")]
+    InvalidXml,
+}
+
+#[derive(Debug, Error)]
+pub enum BundleError {
+    #[error("bundle output path is invalid")]
+    InvalidOutputPath,
+    #[error("bundle I/O failed")]
+    Io,
+    #[error("ZIP archive creation failed")]
+    Zip,
 }
