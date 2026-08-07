@@ -95,6 +95,16 @@ pub enum RenderError {
 }
 
 #[derive(Debug, Error)]
+pub enum GenerateProxyBundleError {
+    #[error("proxy bundle rendering failed")]
+    Render(#[source] RenderError),
+    #[error("proxy bundle directory writing failed")]
+    Write(#[source] BundleError),
+    #[error("proxy bundle archiving failed")]
+    Archive(#[source] BundleError),
+}
+
+#[derive(Debug, Error)]
 pub enum BundleError {
     #[error("bundle output path is invalid")]
     InvalidOutputPath,

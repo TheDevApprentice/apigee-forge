@@ -233,13 +233,13 @@ feat(core): package proxy bundle as ZIP
 
 ### M3-08 — Use case `generate_proxy_bundle`
 
-- [ ] Ajouter `generate_proxy_bundle.rs` dans `use_cases/`.
-- [ ] Injecter les ports de rendu et d’archivage, jamais Tera/ZIP directement.
-- [ ] Orchestrer validation → modèle interne → rendu → écriture → packaging.
-- [ ] Éviter toute écriture partielle si une étape échoue.
-- [ ] Retourner un résultat typé contenant le chemin du bundle et ses métadonnées non sensibles.
-- [ ] Tester le use case avec fakes des ports, sans disque réel si possible.
-- [ ] Ajouter un rapport de test spécifique.
+- [x] Ajouter `generate_proxy_bundle.rs` dans `use_cases/`.
+- [x] Injecter les ports de rendu et d’archivage, jamais Tera/ZIP directement.
+- [x] Orchestrer validation → modèle interne → rendu → écriture → packaging.
+- [x] Éviter toute écriture partielle si une étape échoue.
+- [x] Retourner un résultat typé contenant le chemin du bundle et ses métadonnées non sensibles.
+- [x] Tester le use case avec fakes des ports, sans disque réel si possible.
+- [x] Ajouter un rapport de test spécifique.
 
 Commit prévu :
 
