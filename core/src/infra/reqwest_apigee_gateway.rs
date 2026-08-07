@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use async_trait::async_trait;
 use reqwest::{Client, Method, StatusCode, Url};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
@@ -10,7 +11,7 @@ use crate::{
         ApigeeRole, Environment, Organization, OrganizationId, ProjectId, Proxy, ProxyRevision,
     },
     error::GatewayError,
-    ports::auth_provider::AuthProvider,
+    ports::{auth_provider::AuthProvider, ApigeeGateway},
 };
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
@@ -189,6 +190,28 @@ impl ReqwestApigeeGateway {
         }
 
         Err(GatewayError::RequestFailed)
+    }
+}
+
+#[async_trait]
+impl ApigeeGateway for ReqwestApigeeGateway {
+    async fn list_organizations(&self) -> Result<Vec<Organization>, GatewayError> {
+        Self::list_organizations(self).await
+    }
+
+    async fn list_environments(
+        &self,
+        organization: &str,
+    ) -> Result<Vec<Environment>, GatewayError> {
+        Self::list_environments(self, organization).await
+    }
+
+    async fn list_proxies(&self, organization: &str) -> Result<Vec<Proxy>, GatewayError> {
+        Self::list_proxies(self, organization).await
+    }
+
+    async fn get_roles(&self, organization: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
+        Self::get_roles(self, organization).await
     }
 }
 

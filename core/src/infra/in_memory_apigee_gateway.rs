@@ -11,7 +11,7 @@ use crate::{
         ProjectId, Proxy,
     },
     error::GatewayError,
-    ports::ApigeeGateway,
+    ports::{ApigeeDeploymentGateway, ApigeeGateway},
 };
 
 #[derive(Debug, Default)]
@@ -118,6 +118,18 @@ impl ApigeeGateway for InMemoryApigeeGateway {
             .ok_or(GatewayError::RequestFailed)
     }
 
+    async fn get_roles(&self, org: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
+        self.lock_state()?
+            .roles
+            .get(org)
+            .copied()
+            .map(|role| vec![role])
+            .ok_or(GatewayError::RequestFailed)
+    }
+}
+
+#[async_trait]
+impl ApigeeDeploymentGateway for InMemoryApigeeGateway {
     async fn deploy(
         &self,
         org: &str,
@@ -165,15 +177,6 @@ impl ApigeeGateway for InMemoryApigeeGateway {
             .deployments
             .get(deployment_id)
             .cloned()
-            .ok_or(GatewayError::RequestFailed)
-    }
-
-    async fn get_roles(&self, org: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
-        self.lock_state()?
-            .roles
-            .get(org)
-            .copied()
-            .map(|role| vec![role])
             .ok_or(GatewayError::RequestFailed)
     }
 }

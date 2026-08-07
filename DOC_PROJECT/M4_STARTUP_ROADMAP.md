@@ -233,13 +233,13 @@ feat(cli): add secure authentication composition
 
 ### M4-05 — Use cases de lecture Apigee
 
-- [ ] Implémenter `ListOrganizationsUseCase`.
-- [ ] Implémenter `ListEnvironmentsUseCase`.
-- [ ] Implémenter `ListProxiesUseCase`.
-- [ ] Implémenter l'adaptation `ReqwestApigeeGateway: ApigeeGateway` pour ces opérations (endpoints confirmés dans `APIGEE_API_MAP.md`).
-- [ ] Conserver `InMemoryApigeeGateway` comme double et compléter ses données de test si nécessaire.
-- [ ] Ajouter tests de use cases avec fake gateway et tests HTTP WireMock déjà alignés sur les endpoints officiels.
-- [ ] Brancher `list-proxies` avec org explicite ou résolue par auth.
+- [x] Implémenter `ListOrganizationsUseCase`.
+- [x] Implémenter `ListEnvironmentsUseCase`.
+- [x] Implémenter `ListProxiesUseCase`.
+- [x] Implémenter l'adaptation `ReqwestApigeeGateway: ApigeeGateway` pour ces opérations (endpoints confirmés dans `APIGEE_API_MAP.md`).
+- [x] Conserver `InMemoryApigeeGateway` comme double et compléter ses données de test si nécessaire.
+- [x] Ajouter tests de use cases avec fake gateway et tests HTTP WireMock déjà alignés sur les endpoints officiels.
+- [x] Brancher `list-proxies` avec org explicite ou résolue par auth.
 - [ ] **Checkpoint de connectivité réelle (première validation manuelle contre Apigee)** : une fois l'implémentation testée par doubles/WireMock, exécuter manuellement `login` puis `list-proxies` contre l'organisation d'évaluation réelle provisionnée en M4-04. Objectif : confirmer que l'authentification et la lecture fonctionnent réellement avant de construire l'écriture (M4-06) par-dessus une fondation non vérifiée. Ne pas automatiser ce test en CI — c'est une vérification manuelle, ponctuelle, documentée dans le commit ou une note (sans credential ni détail sensible).
 
 Commit possible :

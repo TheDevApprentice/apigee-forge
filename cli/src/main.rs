@@ -6,13 +6,14 @@ mod output;
 use apigee_forge_core::{
     domain::{ProxyName, RenderInput, RenderMethod, RenderRoute, TargetUrl, Template},
     infra::{
-        FilesystemBundleWriter, FilesystemTemplateRepository, TeraBundleRenderer, ZipBundleArchiver,
+        FilesystemBundleWriter, FilesystemTemplateRepository, ReqwestApigeeGateway,
+        TeraBundleRenderer, ZipBundleArchiver,
     },
     openapi::{parse_openapi, HttpMethod},
-    ports::TemplateRepository,
+    ports::{ApigeeGateway, TemplateRepository},
     use_cases::{
         CreateTemplateUseCase, DeleteTemplateUseCase, GenerateProxyBundleUseCase,
-        GetTemplateUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
+        GetTemplateUseCase, ListProxiesUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
     },
 };
 use auth::{authenticate, build_auth_provider, select_auth_mode};
@@ -21,6 +22,7 @@ use output::{
     classify_error, failure_json, human_message, success_json, CommandNotImplemented, ExitCode,
 };
 use serde_json::json;
+use url::Url;
 
 #[derive(Debug, Parser, PartialEq, Eq)]
 #[command(
@@ -154,6 +156,10 @@ struct StatusArgs {
 
 #[derive(Debug, Args, PartialEq, Eq)]
 struct ListProxiesArgs {
+    #[arg(long, conflicts_with = "interactive")]
+    headless: bool,
+    #[arg(long, conflicts_with = "headless")]
+    interactive: bool,
     #[arg(long)]
     org: Option<String>,
 }
@@ -211,9 +217,8 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
         Commands::Generate(arguments) => run_generate(arguments, cli.json),
         Commands::Template(arguments) => run_template(arguments, cli.json),
         Commands::Login(arguments) => run_login(arguments, cli.json),
-        Commands::Deploy(_) | Commands::Status(_) | Commands::ListProxies(_) => {
-            Err(CommandNotImplemented.into())
-        }
+        Commands::ListProxies(arguments) => run_list_proxies(arguments, cli.json),
+        Commands::Deploy(_) | Commands::Status(_) => Err(CommandNotImplemented.into()),
     }
 }
 
@@ -235,6 +240,26 @@ fn run_login(arguments: LoginArgs, json_output: bool) -> Result<(), Box<dyn Erro
             summary.project_id.as_deref().unwrap_or("none"),
             summary.selected_organization.as_deref().unwrap_or("none")
         );
+    }
+    Ok(())
+}
+
+fn run_list_proxies(arguments: ListProxiesArgs, json_output: bool) -> Result<(), Box<dyn Error>> {
+    let selection = select_auth_mode(arguments.headless, arguments.interactive)?;
+    let provider = build_auth_provider(selection)?;
+    let runtime = tokio::runtime::Runtime::new()?;
+    let context = runtime.block_on(authenticate(provider.clone()))?;
+    let organization = auth::resolve_organization(&context, arguments.org.as_deref())?;
+    let gateway_url = Url::parse("https://apigee.googleapis.com/v1/")?;
+    let gateway: Arc<dyn ApigeeGateway> =
+        Arc::new(ReqwestApigeeGateway::new(gateway_url, provider)?);
+    let proxies = runtime.block_on(ListProxiesUseCase::new(gateway).execute(&organization))?;
+    if json_output {
+        println!("{}", success_json("list-proxies", proxies)?);
+    } else {
+        for proxy in proxies {
+            println!("{}", proxy.name);
+        }
     }
     Ok(())
 }
