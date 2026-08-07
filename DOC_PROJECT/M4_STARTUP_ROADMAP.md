@@ -297,11 +297,11 @@ test(cli): validate non-interactive command behavior
 
 ### M4-09 — Doubles, intégration et matrice de commandes
 
-- [ ] Ajouter un fake de sortie/runner pour tester le CLI sans réseau ni credential.
-- [ ] Couvrir les commandes avec `InMemoryApigeeGateway`, repository filesystem isolé, auth doubles et WireMock.
-- [ ] Produire un rapport de matrice des commandes et catégories d'erreurs dans `target/test-results/`.
-- [ ] Vérifier qu'aucun bundle, token ou credential n'est versionné.
-- [ ] Tester les commandes inconnues et les chemins dangereux.
+- [x] Ajouter un fake de sortie/runner pour tester le CLI sans réseau ni credential.
+- [ ] Couvrir les commandes avec `InMemoryApigeeGateway`, repository filesystem isolé, auth doubles et WireMock — les scénarios d'état InMemory restent à compléter.
+- [x] Produire un rapport de matrice des commandes et catégories d'erreurs dans `target/test-results/`.
+- [x] Vérifier qu'aucun bundle, token ou credential n'est versionné.
+- [x] Tester les commandes inconnues et les chemins dangereux.
 
 Commit prévu :
 
