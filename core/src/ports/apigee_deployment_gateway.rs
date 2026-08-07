@@ -13,5 +13,11 @@ pub trait ApigeeDeploymentGateway: Send + Sync {
         override_existing: bool,
     ) -> Result<Deployment, GatewayError>;
 
-    async fn get_deployment_status(&self, deployment_id: &str) -> Result<Deployment, GatewayError>;
+    async fn get_deployment_status(
+        &self,
+        org: &str,
+        environment: &str,
+        proxy_name: &str,
+        revision: u32,
+    ) -> Result<Deployment, GatewayError>;
 }

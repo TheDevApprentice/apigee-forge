@@ -45,6 +45,7 @@ core/
     ├── use_cases/
     │   ├── mod.rs
     │   ├── apigee_read.rs             # use cases de lecture Apigee M4
+    │   ├── apigee_write.rs            # import, déploiement et statut Apigee M4
     │   ├── generate_proxy_bundle.rs
     │   ├── deploy_proxy.rs
     │   ├── create_template.rs
@@ -52,7 +53,8 @@ core/
     ├── ports/
     │   ├── mod.rs
     │   ├── apigee_gateway.rs       # trait ApigeeGateway lecture
-    │   ├── apigee_deployment_gateway.rs # trait opérations d’écriture Apigee
+    │   ├── apigee_deployment_gateway.rs # trait déploiement/statut Apigee
+    │   ├── apigee_proxy_bundle_gateway.rs # trait import bundle Apigee
     │   ├── bundle_renderer.rs      # port de rendu M3
     │   ├── bundle_writer.rs        # port d’écriture contrôlée du bundle M3
     │   ├── bundle_archiver.rs      # port de packaging M3

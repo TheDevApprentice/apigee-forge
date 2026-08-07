@@ -10,17 +10,16 @@ use apigee_forge_core::{
         TeraBundleRenderer, ZipBundleArchiver,
     },
     openapi::{parse_openapi, HttpMethod},
-    ports::{ApigeeGateway, TemplateRepository},
+    ports::{ApigeeDeploymentGateway, ApigeeGateway, TemplateRepository},
     use_cases::{
-        CreateTemplateUseCase, DeleteTemplateUseCase, GenerateProxyBundleUseCase,
-        GetTemplateUseCase, ListProxiesUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
+        CreateTemplateUseCase, DeleteTemplateUseCase, DeployProxyUseCase,
+        GenerateProxyBundleUseCase, GetDeploymentStatusUseCase, GetTemplateUseCase,
+        ImportProxyBundleUseCase, ListProxiesUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
     },
 };
 use auth::{authenticate, build_auth_provider, select_auth_mode};
 use clap::{Args, Parser, Subcommand};
-use output::{
-    classify_error, failure_json, human_message, success_json, CommandNotImplemented, ExitCode,
-};
+use output::{classify_error, failure_json, human_message, success_json, ExitCode};
 use serde_json::json;
 use url::Url;
 
@@ -135,14 +134,16 @@ struct GenerateArgs {
 
 #[derive(Debug, Args, PartialEq, Eq)]
 struct DeployArgs {
+    #[arg(long, conflicts_with = "interactive")]
+    headless: bool,
+    #[arg(long, conflicts_with = "headless")]
+    interactive: bool,
     #[arg(long)]
-    org: String,
+    org: Option<String>,
     #[arg(long)]
     environment: String,
     #[arg(long)]
     proxy_name: String,
-    #[arg(long)]
-    revision: u32,
     #[arg(long, value_name = "FILE")]
     bundle: PathBuf,
     #[arg(long)]
@@ -151,7 +152,18 @@ struct DeployArgs {
 
 #[derive(Debug, Args, PartialEq, Eq)]
 struct StatusArgs {
-    deployment_id: String,
+    #[arg(long, conflicts_with = "interactive")]
+    headless: bool,
+    #[arg(long, conflicts_with = "headless")]
+    interactive: bool,
+    #[arg(long)]
+    org: Option<String>,
+    #[arg(long)]
+    environment: String,
+    #[arg(long)]
+    proxy_name: String,
+    #[arg(long)]
+    revision: u32,
 }
 
 #[derive(Debug, Args, PartialEq, Eq)]
@@ -218,7 +230,8 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
         Commands::Template(arguments) => run_template(arguments, cli.json),
         Commands::Login(arguments) => run_login(arguments, cli.json),
         Commands::ListProxies(arguments) => run_list_proxies(arguments, cli.json),
-        Commands::Deploy(_) | Commands::Status(_) => Err(CommandNotImplemented.into()),
+        Commands::Deploy(arguments) => run_deploy(arguments, cli.json),
+        Commands::Status(arguments) => run_status(arguments, cli.json),
     }
 }
 
@@ -239,6 +252,64 @@ fn run_login(arguments: LoginArgs, json_output: bool) -> Result<(), Box<dyn Erro
             summary.identity.as_deref().unwrap_or("none"),
             summary.project_id.as_deref().unwrap_or("none"),
             summary.selected_organization.as_deref().unwrap_or("none")
+        );
+    }
+    Ok(())
+}
+
+fn run_deploy(arguments: DeployArgs, json_output: bool) -> Result<(), Box<dyn Error>> {
+    let selection = select_auth_mode(arguments.headless, arguments.interactive)?;
+    let provider = build_auth_provider(selection)?;
+    let runtime = tokio::runtime::Runtime::new()?;
+    let context = runtime.block_on(authenticate(provider.clone()))?;
+    let organization = auth::resolve_organization(&context, arguments.org.as_deref())?;
+    let bundle = fs::read(&arguments.bundle)?;
+    let gateway_url = Url::parse("https://apigee.googleapis.com/v1/")?;
+    let gateway = Arc::new(ReqwestApigeeGateway::new(gateway_url, provider)?);
+    let imported = runtime.block_on(ImportProxyBundleUseCase::new(gateway.clone()).execute(
+        &organization,
+        &arguments.proxy_name,
+        bundle,
+    ))?;
+    let deployment = runtime.block_on(DeployProxyUseCase::new(gateway).execute(
+        &organization,
+        &arguments.environment,
+        &arguments.proxy_name,
+        imported.number,
+        arguments.override_existing,
+    ))?;
+    if json_output {
+        println!("{}", success_json("deploy", deployment)?);
+    } else {
+        println!(
+            "deployed proxy={} environment={} revision={} status={:?}",
+            deployment.proxy_name, deployment.environment, deployment.revision, deployment.status
+        );
+    }
+    Ok(())
+}
+
+fn run_status(arguments: StatusArgs, json_output: bool) -> Result<(), Box<dyn Error>> {
+    let selection = select_auth_mode(arguments.headless, arguments.interactive)?;
+    let provider = build_auth_provider(selection)?;
+    let runtime = tokio::runtime::Runtime::new()?;
+    let context = runtime.block_on(authenticate(provider.clone()))?;
+    let organization = auth::resolve_organization(&context, arguments.org.as_deref())?;
+    let gateway_url = Url::parse("https://apigee.googleapis.com/v1/")?;
+    let gateway: Arc<dyn ApigeeDeploymentGateway> =
+        Arc::new(ReqwestApigeeGateway::new(gateway_url, provider)?);
+    let deployment = runtime.block_on(GetDeploymentStatusUseCase::new(gateway).execute(
+        &organization,
+        &arguments.environment,
+        &arguments.proxy_name,
+        arguments.revision,
+    ))?;
+    if json_output {
+        println!("{}", success_json("status", deployment)?);
+    } else {
+        println!(
+            "status proxy={} environment={} revision={} state={:?}",
+            deployment.proxy_name, deployment.environment, deployment.revision, deployment.status
         );
     }
     Ok(())
@@ -432,6 +503,20 @@ mod tests {
             vec![
                 "apigee-forge",
                 "deploy",
+                "--headless",
+                "--org",
+                "acme",
+                "--environment",
+                "prod",
+                "--proxy-name",
+                "orders",
+                "--bundle",
+                "orders.zip",
+            ],
+            vec![
+                "apigee-forge",
+                "status",
+                "--headless",
                 "--org",
                 "acme",
                 "--environment",
@@ -440,11 +525,14 @@ mod tests {
                 "orders",
                 "--revision",
                 "1",
-                "--bundle",
-                "orders.zip",
             ],
-            vec!["apigee-forge", "status", "deployment-1"],
-            vec!["apigee-forge", "list-proxies", "--org", "acme"],
+            vec![
+                "apigee-forge",
+                "list-proxies",
+                "--headless",
+                "--org",
+                "acme",
+            ],
         ] {
             assert!(Cli::try_parse_from(arguments).is_ok());
         }

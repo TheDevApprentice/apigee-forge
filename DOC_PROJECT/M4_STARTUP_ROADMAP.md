@@ -251,13 +251,13 @@ feat(cli): add list proxies command
 
 ### M4-06 — Déploiement et statut
 
-- [ ] Vérifier et compléter le contrat réel de déploiement Apigee : upload/import du bundle, révision et déploiement ne doivent pas être confondus (voir `APIGEE_API_MAP.md` — import et déploiement sont deux appels distincts).
-- [ ] Étendre `ApigeeGateway` ou créer des ports séparés si le trait devient trop large.
-- [ ] Implémenter `DeployProxyUseCase` et `GetDeploymentStatusUseCase`.
-- [ ] Implémenter les méthodes HTTP manquantes de `ReqwestApigeeGateway` selon la documentation officielle (import bundle, déploiement, statut).
+- [x] Vérifier et compléter le contrat réel de déploiement Apigee : upload/import du bundle, révision et déploiement ne doivent pas être confondus (voir `APIGEE_API_MAP.md` — import et déploiement sont deux appels distincts).
+- [x] Étendre `ApigeeGateway` ou créer des ports séparés si le trait devient trop large.
+- [x] Implémenter `DeployProxyUseCase` et `GetDeploymentStatusUseCase`.
+- [x] Implémenter les méthodes HTTP manquantes de `ReqwestApigeeGateway` selon la documentation officielle (import bundle, déploiement, statut).
 - [ ] Compléter `InMemoryApigeeGateway` pour les scénarios pending/in-progress/succeeded/failed.
-- [ ] Tester erreurs d'authentification, permission, ressource absente, timeout, rate limit et serveur.
-- [ ] Ajouter `deploy` et `status` sans afficher de credential ni de corps HTTP.
+- [x] Tester erreurs d'authentification, permission, ressource absente, timeout, rate limit et serveur.
+- [x] Ajouter `deploy` et `status` sans afficher de credential ni de corps HTTP.
 - [ ] **Checkpoint de connectivité réelle (écriture)** : une fois testé par doubles/WireMock, exécuter manuellement un déploiement contre l'org réelle avec un bundle trivial (pas nécessairement Helloworld à ce stade — un bundle minimal suffit pour confirmer que l'import et le déploiement fonctionnent réellement). Le test Helloworld complet est fait en M4-11, une fois `generate` migré en M4-07.
 
 Commit possible :
