@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ProxyEndpoint name="default">
-  <Description>{{ proxy_name | escape }}</Description>
+  <Description>{{ proxy_name | escape_xml }}</Description>
   <PreFlow name="PreFlow">
     <Request>
 {% for policy in pre_flow.request %}      <Step><Name>{{ policy }}</Name></Step>
@@ -11,8 +11,8 @@
   </PreFlow>
 {% if conditional_flows %}  <Flows>
 {% for flow in conditional_flows %}    <Flow name="{{ flow.name }}">
-      <Description>{{ flow.condition | escape }}</Description>
-      <Condition>{{ flow.condition | escape }}</Condition>
+      <Description>{{ flow.condition | escape_xml }}</Description>
+      <Condition>{{ flow.condition | escape_xml }}</Condition>
       <Request>
 {% for policy in flow.request %}        <Step><Name>{{ policy }}</Name></Step>
 {% endfor %}      </Request>
@@ -30,7 +30,7 @@
 {% endfor %}    </Response>
   </PostFlow>
   <HTTPProxyConnection>
-    <BasePath>/{{ proxy_name | escape }}</BasePath>
+    <BasePath>/{{ proxy_name | escape_xml }}</BasePath>
     <Properties />
   </HTTPProxyConnection>
   <RouteRule name="default">

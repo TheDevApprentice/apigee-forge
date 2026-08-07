@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Quota name="{{ policy.name | escape }}">
-  <DisplayName>{{ policy.name | escape }}</DisplayName>
+<Quota name="{{ policy.name | escape_xml }}">
+  <DisplayName>{{ policy.name | escape_xml }}</DisplayName>
   <Allow count="{{ policy.allow }}"/>
   <Interval>{{ policy.interval }}</Interval>
-  <TimeUnit>{{ policy.time_unit | escape }}</TimeUnit>
+  <TimeUnit>{{ policy.time_unit | escape_xml }}</TimeUnit>
   <Distributed>true</Distributed>
   <Synchronous>true</Synchronous>
 </Quota>

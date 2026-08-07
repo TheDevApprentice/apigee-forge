@@ -249,13 +249,13 @@ feat(core): add generate proxy bundle use case
 
 ### M3-09 — Vérification XML, ZIP et fixture de référence
 
-- [ ] Vérifier que chaque XML généré est bien formé avec `quick-xml`.
-- [ ] Vérifier les éléments obligatoires ProxyEndpoint/TargetEndpoint.
-- [ ] Vérifier la présence des policies attendues.
-- [ ] Vérifier que l’archive se décompresse et possède la racine `apiproxy/`.
-- [ ] Vérifier qu’aucun secret ou contenu non prévu n’est rendu.
-- [ ] Produire les rapports d’artefacts sous `target/test-results/` sans commit des bundles générés.
-- [ ] Définir un fixture golden stable et lisible pour les revues.
+- [x] Vérifier que chaque XML généré est bien formé avec `quick-xml`.
+- [x] Vérifier les éléments obligatoires ProxyEndpoint/TargetEndpoint.
+- [x] Vérifier la présence des policies attendues.
+- [x] Vérifier que l’archive se décompresse et possède la racine `apiproxy/`.
+- [x] Vérifier qu’aucun secret ou contenu non prévu n’est rendu.
+- [x] Produire les rapports d’artefacts sous `target/test-results/` sans commit des bundles générés.
+- [x] Définir un fixture golden stable et lisible pour les revues.
 
 Commit prévu :
 

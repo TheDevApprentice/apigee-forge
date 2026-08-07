@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<VerifyJWT name="{{ policy.name | escape }}">
-  <DisplayName>{{ policy.name | escape }}</DisplayName>
-  <Algorithm>{{ policy.algorithm | escape }}</Algorithm>
+<VerifyJWT name="{{ policy.name | escape_xml }}">
+  <DisplayName>{{ policy.name | escape_xml }}</DisplayName>
+  <Algorithm>{{ policy.algorithm | escape_xml }}</Algorithm>
   <Source>request.header.authorization</Source>
-  <Issuer>{{ policy.issuer | escape }}</Issuer>
-  <Audience>{{ policy.audience | escape }}</Audience>
+  <Issuer>{{ policy.issuer | escape_xml }}</Issuer>
+  <Audience>{{ policy.audience | escape_xml }}</Audience>
 {% if policy.jwks_url %}  <PublicKey>
-    <JWKS uri="{{ policy.jwks_url | escape }}"/>
+    <JWKS uri="{{ policy.jwks_url | escape_xml }}"/>
   </PublicKey>
 {% else %}  <PublicKey>
     <Value ref="private.jwt.public_key"/>

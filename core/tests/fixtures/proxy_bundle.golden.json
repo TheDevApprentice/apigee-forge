@@ -1,0 +1,62 @@
+{
+  "input": {
+    "proxy_name": "orders-v1",
+    "target_url": "https://api.example.test/v1?a=1&b=2",
+    "routes": [
+      {
+        "path": "/orders",
+        "method": "Get",
+        "security_requirements": ["security_oauth2"]
+      }
+    ]
+  },
+  "expected_files": [
+    {
+      "path": "apiproxy/policies/CORS.xml",
+      "root": "CORS",
+      "contains": ["https://app.acme.com"]
+    },
+    {
+      "path": "apiproxy/policies/OAuthV2.xml",
+      "root": "OAuthV2",
+      "contains": ["<Operation>VerifyAccessToken</Operation>", "<Scope>read</Scope>"]
+    },
+    {
+      "path": "apiproxy/policies/Quota.xml",
+      "root": "Quota",
+      "contains": ["<Allow count=\"1000\"/>", "<TimeUnit>hour</TimeUnit>"]
+    },
+    {
+      "path": "apiproxy/policies/SpikeArrest.xml",
+      "root": "SpikeArrest",
+      "contains": ["<Rate>10ps</Rate>"]
+    },
+    {
+      "path": "apiproxy/policies/XMLToJSON.xml",
+      "root": "XMLToJSON",
+      "contains": ["<OutputVariable>response.content</OutputVariable>"]
+    },
+    {
+      "path": "apiproxy/proxies/default.xml",
+      "root": "ProxyEndpoint",
+      "contains": [
+        "<BasePath>/orders-v1</BasePath>",
+        "<Name>OAuthV2</Name>",
+        "<Name>Quota</Name>",
+        "<Name>XMLToJSON</Name>"
+      ]
+    },
+    {
+      "path": "apiproxy/targets/default.xml",
+      "root": "TargetEndpoint",
+      "contains": ["https://api.example.test/v1?a=1&amp;b=2"]
+    }
+  ],
+  "forbidden_fragments": [
+    "BEGIN PRIVATE KEY",
+    "access_token=",
+    "refresh_token",
+    "client_secret",
+    "-----BEGIN"
+  ]
+}

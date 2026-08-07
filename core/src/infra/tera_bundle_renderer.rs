@@ -29,6 +29,7 @@ pub struct TeraBundleRenderer {
 impl TeraBundleRenderer {
     pub fn new() -> Result<Self, RenderError> {
         let mut tera = Tera::default();
+        tera.autoescape_on(vec![]);
         for (name, source) in [
             ("proxy_endpoint.xml", PROXY_ENDPOINT_TEMPLATE),
             ("target_endpoint.xml", TARGET_ENDPOINT_TEMPLATE),
