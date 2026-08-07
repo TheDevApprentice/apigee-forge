@@ -157,7 +157,7 @@ Les valeurs devront être figées dans un module CLI testé.
 - [x] Créer `feature/m4-cli` depuis `dev` et basculer dessus.
 - [x] Vérifier que le working tree est propre à l’entrée du jalon.
 - [x] Créer ce document et le référencer dans `STRUCTURE.md` et `PROMPT.md`.
-- [ ] Committer uniquement la documentation M4.
+- [x] Committer uniquement la documentation M4.
 
 Commit prévu :
 
@@ -170,9 +170,10 @@ docs(m4): add detailed CLI roadmap
 - [ ] Remplacer le parsing manuel M3 par un parser CLI typé.
 - [ ] Définir les commandes et sous-commandes M4 sans implémenter leur logique métier dans `cli`.
 - [ ] Conserver `generate` comme commande fonctionnelle pendant la migration.
-- [ ] Centraliser `--json`, usage, erreurs de parsing et codes de sortie.
-- [ ] Ajouter des tests de parsing des commandes valides, options manquantes, doublons et commandes hors périmètre.
-- [ ] Vérifier que le CLI ne dépend pas de `gui` et que `core` ne dépend pas de `cli`.
+- [x] Centraliser `--json`, usage et erreurs de parsing.
+- [ ] Définir les codes de sortie stables — prévu dans M4-02.
+- [x] Ajouter des tests de parsing des commandes valides, options manquantes, doublons et commandes hors périmètre.
+- [x] Vérifier que le CLI ne dépend pas de `gui` et que `core` ne dépend pas de `cli`.
 
 Commit prévu :
 

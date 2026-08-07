@@ -25,6 +25,7 @@ Une fois ces documents lus, **résume-moi en quelques phrases** ce que tu as com
 
 - **Une étape atomique à la fois**, selon `STARTUP_ROADMAP.md`. Jamais "je crée le projet, je le peuple, et je code une fonctionnalité" en un seul geste.
 - **Arrête-toi après chaque étape** : présente ce qui a été fait, puis attends ma validation avant de continuer — même si la suite te semble évidente.
+- **Mets à jour la roadmap du jalon après chaque étape** : coche uniquement les critères effectivement implémentés et vérifiés, laisse les étapes futures décochées, et documente toute décision ou report sans réécrire l’historique.
 - **Explique chaque pattern Rust non trivial** (ownership, lifetimes, `Arc<dyn Trait>`, `async-trait`, tout ce qui touche à l'IPC Tauri) avant que je considère le code accepté.
 - **Ne dévie jamais silencieusement** d'`ARCHITECTURE.md`, `SECURITY.md` ou `STRUCTURE.md`. Si une étape semble exiger de s'en écarter, arrête-toi et explique pourquoi avant d'agir — ne décide jamais ça seul.
 - Repasse par la checklist de fin d'`ARCHITECTURE.md` (section 14) à chaque session de travail, pas seulement à la première.

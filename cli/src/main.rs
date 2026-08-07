@@ -307,9 +307,26 @@ mod tests {
     }
 
     #[test]
-    fn rejects_missing_required_generate_arguments_and_unknown_commands() {
+    fn rejects_missing_required_generate_arguments_unknown_commands_and_duplicates() {
         assert!(Cli::try_parse_from(["apigee-forge", "generate"]).is_err());
         assert!(Cli::try_parse_from(["apigee-forge", "login", "--unknown"]).is_err());
         assert!(Cli::try_parse_from(["apigee-forge", "future-command"]).is_err());
+        assert!(Cli::try_parse_from([
+            "apigee-forge",
+            "generate",
+            "--spec",
+            "one.yaml",
+            "--spec",
+            "two.yaml",
+            "--template",
+            "template.json",
+            "--proxy-name",
+            "orders-v1",
+            "--output",
+            "out",
+            "--archive",
+            "out/orders.zip"
+        ])
+        .is_err());
     }
 }
