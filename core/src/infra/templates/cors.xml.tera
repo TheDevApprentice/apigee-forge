@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<CORS name="{{ policy.name | escape_xml }}">
+  <DisplayName>{{ policy.name | escape_xml }}</DisplayName>
+  <AllowOrigins>
+{% for origin in policy.allow_origins %}    <Origin>{{ origin | escape_xml }}</Origin>
+{% endfor %}  </AllowOrigins>
+  <AllowMethods>
+{% for method in policy.allow_methods %}    <Verb>{{ method | escape_xml }}</Verb>
+{% endfor %}  </AllowMethods>
+  <AllowHeaders>
+{% for header in policy.allow_headers %}    <Header>{{ header | escape_xml }}</Header>
+{% endfor %}  </AllowHeaders>
+  <ExposeHeaders>
+{% for header in policy.expose_headers %}    <Header>{{ header | escape_xml }}</Header>
+{% endfor %}  </ExposeHeaders>
+{% if policy.max_age_seconds %}  <MaxAge>{{ policy.max_age_seconds }}</MaxAge>
+{% endif %}  <AllowCredentials>{{ policy.support_credentials }}</AllowCredentials>
+  <GeneratePreflightResponse>true</GeneratePreflightResponse>
+</CORS>

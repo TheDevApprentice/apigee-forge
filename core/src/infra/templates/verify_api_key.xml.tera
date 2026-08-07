@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<VerifyAPIKey name="{{ policy.name | escape_xml }}">
+  <DisplayName>{{ policy.name | escape_xml }}</DisplayName>
+  <APIKey ref="{{ policy.key_variable | escape_xml }}"/>
+</VerifyAPIKey>

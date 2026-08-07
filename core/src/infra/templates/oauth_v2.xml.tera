@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OAuthV2 name="{{ policy.name | escape_xml }}">
+  <DisplayName>{{ policy.name | escape_xml }}</DisplayName>
+  <Operation>VerifyAccessToken</Operation>
+{% for scope in policy.scopes %}  <Scope>{{ scope | escape_xml }}</Scope>
+{% endfor %}</OAuthV2>

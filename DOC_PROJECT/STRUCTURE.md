@@ -35,6 +35,8 @@ core/
     ├── domain/
     │   ├── mod.rs
     │   ├── auth.rs            # AuthContext, AuthMode, GoogleIdentity, ProjectId, OrganizationId
+    │   ├── organization.rs    # Organization, Environment
+    │   ├── render.rs          # modèles internes de rendu M3
     │   ├── proxy.rs           # struct Proxy, struct ProxyRevision
     │   ├── template.rs        # struct Template, enum PolicyType (conforme à schemas/template.schema.json)
     │   ├── deployment.rs      # struct Deployment, enum DeploymentStatus
@@ -49,6 +51,9 @@ core/
     ├── ports/
     │   ├── mod.rs
     │   ├── apigee_gateway.rs       # trait ApigeeGateway
+    │   ├── bundle_renderer.rs      # port de rendu M3
+    │   ├── bundle_writer.rs        # port d’écriture contrôlée du bundle M3
+    │   ├── bundle_archiver.rs      # port de packaging M3
     │   ├── template_repository.rs  # trait TemplateRepository
     │   ├── auth_provider.rs        # trait AuthProvider
     │   └── local_state_store.rs    # trait LocalStateStore
@@ -58,11 +63,12 @@ core/
     │   ├── service_account_auth_provider.rs
     │   ├── oauth_desktop_auth_provider.rs
     │   ├── reqwest_apigee_gateway.rs       # transport HTTP partagé Apigee
-
-    │   ├── in_memory_apigee_gateway.rs      # fake, niveau 1 de la stratégie de test
+    │   ├── in_memory_apigee_gateway.rs     # fake, niveau 1 de la stratégie de test
+    │   ├── filesystem_bundle_writer.rs     # écriture transactionnelle du bundle M3
     │   ├── filesystem_template_repository.rs
-    │   ├── oauth_desktop_auth_provider.rs
-    │   ├── service_account_auth_provider.rs
+    │   ├── tera_bundle_renderer.rs       # moteur Tera/XML M3
+    │   ├── zip_bundle_archiver.rs        # packaging ZIP M3
+    │   ├── templates/                    # templates XML internes M3
     │   └── sqlcipher_local_store.rs
     └── error.rs                # types d'erreur partagés (thiserror)
 └── tests/
@@ -151,6 +157,7 @@ DOC_PROJECT/
 ├── ROADMAP.md
 ├── STARTUP_ROADMAP.md
 ├── M2_STARTUP_ROADMAP.md
+├── M3_STARTUP_ROADMAP.md
 ├── SECURITY.md
 ├── STRUCTURE.md                 # ce document
 ├── PACKAGING.md

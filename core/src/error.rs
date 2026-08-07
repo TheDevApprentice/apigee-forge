@@ -71,3 +71,55 @@ pub enum LocalStateError {
     #[error("local state storage operation failed")]
     StorageFailed,
 }
+
+#[derive(Debug, Error)]
+pub enum RenderInputError {
+    #[error("proxy name is not a safe Apigee identifier")]
+    InvalidProxyName,
+    #[error("target URL must be an HTTP(S) URL without whitespace")]
+    InvalidTargetUrl,
+    #[error("rendered output path is invalid")]
+    InvalidOutputPath,
+}
+
+#[derive(Debug, Error)]
+pub enum RenderError {
+    #[error("render input is invalid")]
+    InvalidInput,
+    #[error("template rendering failed")]
+    Template,
+    #[error("rendered XML is invalid")]
+    InvalidXml,
+    #[error("policy parameters are invalid")]
+    InvalidPolicy,
+}
+
+#[derive(Debug, Error)]
+pub enum GenerateProxyBundleError {
+    #[error("proxy bundle rendering failed")]
+    Render(#[source] RenderError),
+    #[error("proxy bundle directory writing failed")]
+    Write(#[source] BundleError),
+    #[error("proxy bundle archiving failed")]
+    Archive(#[source] BundleError),
+}
+
+#[derive(Debug, Error)]
+pub enum BundleError {
+    #[error("bundle output path is invalid")]
+    InvalidOutputPath,
+    #[error("bundle contains an invalid file path")]
+    InvalidFilePath,
+    #[error("bundle file exceeds the maximum allowed size")]
+    FileTooLarge,
+    #[error("bundle must contain at least one file")]
+    EmptyBundle,
+    #[error("bundle is missing a required endpoint")]
+    IncompleteBundle,
+    #[error("the bundle output already exists")]
+    OutputAlreadyExists,
+    #[error("bundle I/O failed")]
+    Io,
+    #[error("ZIP archive creation failed")]
+    Zip,
+}
