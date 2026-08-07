@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<TargetEndpoint name="default">
+  <Description>{{ proxy_name }} target</Description>
+  <HTTPTargetConnection>
+    <URL>{{ target_url | escape }}</URL>
+  </HTTPTargetConnection>
+</TargetEndpoint>

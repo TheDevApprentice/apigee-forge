@@ -87,8 +87,8 @@ Les chemins exacts devront être validés contre `STRUCTURE.md` avant création.
 
 Versions à vérifier avec Cargo et le toolchain Rust avant ajout :
 
-- `tera = "=2.1.0"` pour le rendu ;
-- `zip = "=7.2.0"` avec uniquement les features nécessaires, afin de rester compatible avec Rust 1.85.1 ;
+- `tera = { version = "=1.20.1", default-features = false }` pour le rendu ;
+- `zip = { version = "=7.2.0", default-features = false, features = ["deflate"] }` avec uniquement les features nécessaires, afin de rester compatible avec Rust 1.85.1 ;
 - `quick-xml = "=0.40.1"` pour parser/valider la structure XML dans les tests ;
 - aucune dépendance réseau ou Apigee supplémentaire dans M3.
 
@@ -147,13 +147,13 @@ feat(core): define bundle rendering contracts
 
 ### M3-03 — Dépendances et templates XML internes
 
-- [ ] Ajouter Tera, `zip` et `quick-xml` avec versions compatibles et lockfile mis à jour.
-- [ ] Créer les templates XML internes versionnés sous `core/src/infra/templates/`.
+- [x] Ajouter Tera, `zip` et `quick-xml` avec versions compatibles et lockfile mis à jour.
+- [x] Créer les templates XML internes versionnés sous `core/src/infra/templates/`.
 - [ ] Activer un mode de rendu strict et éviter les insertions qui paniquent sur une erreur de sérialisation.
-- [ ] Utiliser `Context::try_insert` ou `Context::from_serialize` avec propagation d’erreur.
-- [ ] Ne pas permettre l’exécution de fonctions arbitraires dans les templates utilisateurs.
-- [ ] Définir les échappements XML attendus pour les noms, URLs, conditions et valeurs de policy.
-- [ ] Ajouter un test de syntaxe Tera et un test d’échappement XML.
+- [x] Utiliser `Context::try_insert` ou `Context::from_serialize` avec propagation d’erreur.
+- [x] Ne pas permettre l’exécution de fonctions arbitraires dans les templates utilisateurs.
+- [x] Définir les échappements XML attendus pour les noms, URLs, conditions et valeurs de policy.
+- [x] Ajouter un test de syntaxe Tera et un test d’échappement XML.
 
 Commit prévu :
 

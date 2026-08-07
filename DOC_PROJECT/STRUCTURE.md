@@ -66,6 +66,7 @@ core/
     │   ├── filesystem_template_repository.rs
     │   ├── tera_bundle_renderer.rs       # moteur Tera/XML M3
     │   ├── zip_bundle_archiver.rs        # packaging ZIP M3
+    │   ├── templates/                    # templates XML internes M3
     │   └── sqlcipher_local_store.rs
     └── error.rs                # types d'erreur partagés (thiserror)
 └── tests/
