@@ -269,11 +269,11 @@ feat(cli): add deploy and status commands
 
 ### M4-07 — Génération CLI complète
 
-- [ ] Migrer le flux M3 `generate` vers l'arbre de commandes typé.
-- [ ] Supporter template inline validé ou template référencé par le repository local.
-- [ ] Préserver l'écriture atomique du bundle et le packaging ZIP M3.
-- [ ] Produire un résultat humain/JSON stable.
-- [ ] Tester les entrées invalides, template absent, spec invalide, sortie existante et succès complet.
+- [x] Migrer le flux M3 `generate` vers l'arbre de commandes typé.
+- [x] Supporter template inline validé ou template référencé par le repository local.
+- [x] Préserver l'écriture atomique du bundle et le packaging ZIP M3.
+- [x] Produire un résultat humain/JSON stable.
+- [ ] Tester les entrées invalides, template absent, spec invalide, sortie existante et succès complet — couverture subprocess prévue en M4-08.
 
 Commit prévu :
 

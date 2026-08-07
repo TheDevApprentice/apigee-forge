@@ -122,8 +122,17 @@ struct TemplateUpdateArgs {
 struct GenerateArgs {
     #[arg(long, value_name = "FILE")]
     spec: PathBuf,
-    #[arg(long, value_name = "FILE")]
-    template: PathBuf,
+    #[arg(long, value_name = "FILE", conflicts_with = "template_name")]
+    template: Option<PathBuf>,
+    #[arg(long, value_name = "NAME", conflicts_with = "template")]
+    template_name: Option<String>,
+    #[arg(
+        long,
+        value_name = "DIRECTORY",
+        default_value = ".apigee-forge/templates",
+        requires = "template_name"
+    )]
+    template_dir: PathBuf,
     #[arg(long, value_name = "NAME")]
     proxy_name: String,
     #[arg(long, value_name = "DIRECTORY")]
@@ -388,6 +397,22 @@ fn print_template_result<T: serde::Serialize>(
     Ok(())
 }
 
+fn load_generate_template(arguments: &GenerateArgs) -> Result<Template, Box<dyn Error>> {
+    match (&arguments.template, &arguments.template_name) {
+        (Some(path), None) => load_template(path),
+        (None, Some(name)) => {
+            let repository = FilesystemTemplateRepository::new(&arguments.template_dir);
+            Ok(GetTemplateUseCase::new(Arc::new(repository)).execute(name)?)
+        }
+        (Some(_), Some(_)) => {
+            Err(std::io::Error::other("--template and --template-name cannot be combined").into())
+        }
+        (None, None) => {
+            Err(std::io::Error::other("one of --template or --template-name is required").into())
+        }
+    }
+}
+
 fn run_generate(arguments: GenerateArgs, json_output: bool) -> Result<(), Box<dyn Error>> {
     let openapi_source = fs::read_to_string(&arguments.spec)?;
     let parsed_openapi = parse_openapi(&openapi_source)?;
@@ -401,12 +426,12 @@ fn run_generate(arguments: GenerateArgs, json_output: bool) -> Result<(), Box<dy
             security_requirements: route.security_requirements,
         })
         .collect();
+    let template = load_generate_template(&arguments)?;
     let input = RenderInput::new(
         ProxyName::try_new(arguments.proxy_name)?,
         target_url,
         routes,
     );
-    let template = load_template(&arguments.template)?;
 
     let renderer = Arc::new(TeraBundleRenderer::new()?);
     let writer = Arc::new(FilesystemBundleWriter::new());
@@ -484,12 +509,57 @@ mod tests {
             cli.command,
             Commands::Generate(GenerateArgs {
                 spec: PathBuf::from("openapi.yaml"),
-                template: PathBuf::from("template.json"),
+                template: Some(PathBuf::from("template.json")),
+                template_name: None,
+                template_dir: PathBuf::from(".apigee-forge/templates"),
                 proxy_name: "orders-v1".to_owned(),
                 output: PathBuf::from("out"),
                 archive: PathBuf::from("out/orders.zip"),
             })
         );
+        Ok(())
+    }
+
+    #[test]
+    fn parses_generate_with_repository_template_name() -> Result<(), Box<dyn std::error::Error>> {
+        let cli = Cli::try_parse_from([
+            "apigee-forge",
+            "generate",
+            "--spec",
+            "openapi.yaml",
+            "--template-name",
+            "standard",
+            "--template-dir",
+            "templates",
+            "--proxy-name",
+            "orders-v1",
+            "--output",
+            "out",
+            "--archive",
+            "out/orders.zip",
+        ])?;
+        assert!(matches!(cli.command, Commands::Generate(GenerateArgs {
+            template: None,
+            template_name: Some(name),
+            ..
+        }) if name == "standard"));
+        assert!(Cli::try_parse_from([
+            "apigee-forge",
+            "generate",
+            "--spec",
+            "openapi.yaml",
+            "--template",
+            "template.json",
+            "--template-name",
+            "standard",
+            "--proxy-name",
+            "orders-v1",
+            "--output",
+            "out",
+            "--archive",
+            "out/orders.zip",
+        ])
+        .is_err());
         Ok(())
     }
 
