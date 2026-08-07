@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use crate::auth::CliAuthError;
 use apigee_forge_core::{
     error::{
         AuthError, BundleError, GatewayError, GenerateProxyBundleError, HeadlessAuthConfigError,
@@ -85,6 +86,9 @@ pub fn human_message(failure: &SafeFailure) -> &'static str {
 }
 
 pub fn classify_error(error: &(dyn Error + 'static)) -> SafeFailure {
+    if let Some(error) = error.downcast_ref::<CliAuthError>() {
+        return classify_cli_auth_error(error);
+    }
     if error.downcast_ref::<CommandNotImplemented>().is_some() {
         return SafeFailure {
             code: "NOT_IMPLEMENTED",
@@ -141,6 +145,29 @@ pub fn classify_error(error: &(dyn Error + 'static)) -> SafeFailure {
         code: "COMMAND_FAILED",
         exit_code: ExitCode::Generic,
         message: "command failed",
+    }
+}
+
+fn classify_cli_auth_error(error: &CliAuthError) -> SafeFailure {
+    let (code, message) = match error {
+        CliAuthError::ModeRequired | CliAuthError::ConflictingModes => (
+            "INVALID_AUTH_MODE",
+            "select exactly one explicit authentication mode",
+        ),
+        CliAuthError::MissingOAuthClientId | CliAuthError::MissingOAuthUsername => {
+            ("AUTH_CONFIGURATION", "OAuth configuration is missing")
+        }
+        CliAuthError::OrganizationRequired
+        | CliAuthError::OrganizationConflict
+        | CliAuthError::InvalidOrganization => (
+            "ORGANIZATION_REQUIRED",
+            "organization context is invalid or ambiguous",
+        ),
+    };
+    SafeFailure {
+        code,
+        exit_code: ExitCode::Configuration,
+        message,
     }
 }
 

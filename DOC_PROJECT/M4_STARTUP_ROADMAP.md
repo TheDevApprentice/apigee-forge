@@ -17,13 +17,15 @@ Le CLI doit couvrir :
 - `login` — authentification desktop ou headless selon le contexte ;
 - `template create`, `template list`, `template show`, `template update`, `template delete` ;
 - `generate` — spec OpenAPI + template → bundle local ;
-- `deploy` — déploiement d’une révision vers une organisation et un environnement ;
-- `status` — lecture du statut d’un déploiement ;
+- `deploy` — déploiement d'une révision vers une organisation et un environnement ;
+- `status` — lecture du statut d'un déploiement ;
 - `list-proxies` — liste des proxies accessibles ;
-- un mode `--json` stable pour l’intégration CI/CD ;
+- un mode `--json` stable pour l'intégration CI/CD ;
 - des codes de sortie explicites et une absence totale de prompt bloquant en mode non-interactif.
 
 M4 ne doit pas ajouter de logique métier dans `cli/`. Le CLI reste un adaptateur : parsing des arguments, composition root, formatage de sortie et traduction des erreurs en codes de sortie.
+
+**Ajout important à ce jalon** : M4 est aussi le premier point du projet où le CLI est validé contre un environnement Apigee **réel**, pas seulement contre des doubles (`InMemoryApigeeGateway`) ou des réponses simulées (WireMock). Voir section 7 pour la méthode complète, `DOC_PROJECT/GCP_SETUP.md` pour le provisionnement, et `DOC_PROJECT/APIGEE_API_MAP.md` pour la référence des endpoints. **Aucun mécanisme de bascule fake/réel n'est à coder dans le CLI** : le binaire livré utilise toujours `ReqwestApigeeGateway` — les fakes restent confinés à la suite de tests automatisée (ARCHITECTURE.md section 12, niveau 1). "Tester en réel" signifie exécuter le vrai CLI, une fois l'environnement provisionné, pas ajouter un flag de simulation au produit.
 
 ---
 
@@ -51,11 +53,12 @@ M4 ne doit pas ajouter de logique métier dans `cli/`. Le CLI reste un adaptateu
 - aucun `--json` ou code de sortie documenté ;
 - aucun use case pour lister les templates, afficher, modifier ou supprimer ;
 - aucun use case pour lister organisations/environnements/proxies, déployer ou lire un statut ;
-- `ReqwestApigeeGateway` fournit actuellement des méthodes concrètes de lecture mais n’implémente pas encore le trait `ApigeeGateway` complet ;
-- aucune composition root CLI pour injecter l’authentification headless ou desktop dans le gateway ;
+- `ReqwestApigeeGateway` fournit actuellement des méthodes concrètes de lecture mais n'implémente pas encore le trait `ApigeeGateway` complet (import de bundle et déploiement manquants — voir `APIGEE_API_MAP.md`) ;
+- aucune composition root CLI pour injecter l'authentification headless ou desktop dans le gateway ;
 - `LocalStateStore` est un port sans implémentation CLI nécessaire au périmètre M4 ; le refresh token OAuth reste dans le keyring ;
 - les doubles existants ne couvrent pas encore tous les nouveaux use cases ;
-- la validation stricte du template contre `schemas/template.schema.json` doit être traitée avant d’accepter des fichiers utilisateur en CLI.
+- la validation stricte du template contre `schemas/template.schema.json` doit être traitée avant d'accepter des fichiers utilisateur en CLI ;
+- **aucun test n'a encore été exécuté contre un environnement Apigee réel** — tout ce qui existe à ce stade est validé par doubles/WireMock uniquement.
 
 ---
 
@@ -64,7 +67,7 @@ M4 ne doit pas ajouter de logique métier dans `cli/`. Le CLI reste un adaptateu
 - Une seule étape atomique à la fois.
 - Après chaque étape : tests ciblés, inspection du diff, commit, arrêt au point de validation.
 - Aucun `.unwrap()`/`.expect()` dans `core/` ; le CLI doit également retourner une erreur plutôt que paniquer sur une entrée utilisateur.
-- Le domaine ne dépend d’aucune crate de CLI.
+- Le domaine ne dépend d'aucune crate de CLI.
 - Les use cases dépendent uniquement du domaine et des ports.
 - `cli/` peut connaître `core::infra` uniquement dans `main.rs`, qui est le composition root.
 - Aucun token, refresh token, header Authorization ou contenu de credential dans les sorties, logs, rapports ou erreurs.
@@ -73,6 +76,7 @@ M4 ne doit pas ajouter de logique métier dans `cli/`. Le CLI reste un adaptateu
 - Toute commande doit proposer une sortie humaine et une sortie JSON structurée sans mélange stdout/stderr.
 - Les fichiers utilisateur, templates et chemins de sortie sont validés avant toute écriture ou appel réseau.
 - Les tests de use cases utilisent des doubles ; les tests du gateway HTTP utilisent WireMock ; les tests de composition CLI utilisent des fixtures sans credential réel.
+- **La validation contre l'environnement Apigee réel (section 7) est manuelle, exécutée par l'humain, et n'entre jamais dans la suite `cargo test` automatisée ou la CI.**
 - Aucun push distant ni merge distant sans demande explicite.
 
 ---
@@ -102,9 +106,9 @@ Les options transverses sont limitées à ce qui est nécessaire :
 
 - `--json` ;
 - `--quiet` si nécessaire pour CI ;
-- organisation/environnement explicitement sélectionnés quand l’authentification ne permet pas de les déduire ;
+- organisation/environnement explicitement sélectionnés quand l'authentification ne permet pas de les déduire ;
 - chemins de fichiers explicites ;
-- `--non-interactive` ou détection documentée de l’absence de terminal si une voie interactive existe.
+- `--non-interactive` ou détection documentée de l'absence de terminal si une voie interactive existe.
 
 ### Sortie
 
@@ -133,12 +137,12 @@ En erreur :
 }
 ```
 
-Le JSON ne doit jamais contenir de source error brute susceptible d’exposer une URL interne, un token ou une réponse HTTP.
+Le JSON ne doit jamais contenir de source error brute susceptible d'exposer une URL interne, un token ou une réponse HTTP.
 
 ### Codes de sortie proposés
 
 - `0` : succès ;
-- `1` : erreur d’entrée ou d’exécution générique ;
+- `1` : erreur d'entrée ou d'exécution générique ;
 - `2` : arguments/usage invalides ;
 - `3` : configuration ou authentification absente/invalide ;
 - `4` : accès refusé ou ressource inexistante ;
@@ -155,7 +159,7 @@ Les valeurs devront être figées dans un module CLI testé.
 
 - [x] Merger `feature/m3-rendering-engine` dans `dev` avec un merge commit explicite.
 - [x] Créer `feature/m4-cli` depuis `dev` et basculer dessus.
-- [x] Vérifier que le working tree est propre à l’entrée du jalon.
+- [x] Vérifier que le working tree est propre à l'entrée du jalon.
 - [x] Créer ce document et le référencer dans `STRUCTURE.md` et `PROMPT.md`.
 - [x] Committer uniquement la documentation M4.
 
@@ -185,8 +189,8 @@ feat(cli): define typed M4 command tree
 
 - [x] Définir les enveloppes stdout humaine/JSON.
 - [x] Mapper les erreurs `AuthError`, `GatewayError`, `TemplateError`, erreurs OpenAPI et erreurs filesystem vers des codes stables.
-- [x] Ne jamais afficher les sources d’erreur contenant des secrets ou des corps HTTP.
-- [x] Tester chaque catégorie d’erreur en mode texte et JSON.
+- [x] Ne jamais afficher les sources d'erreur contenant des secrets ou des corps HTTP.
+- [x] Tester chaque catégorie d'erreur en mode texte et JSON.
 - [x] Vérifier que stdout reste parseable en `--json` et que les diagnostics vont sur stderr.
 
 Commit prévu :
@@ -213,12 +217,13 @@ feat(cli): add template management commands
 
 ### M4-04 — Authentification CLI et résolution du contexte
 
-- [ ] Définir le choix d’authentification CLI : headless via `GOOGLE_APPLICATION_CREDENTIALS`, desktop OAuth uniquement sur demande interactive explicite.
-- [ ] Composer `AuthProvider` dans `cli/main.rs` sans exposer les credentials.
-- [ ] Implémenter `login` avec résultat non sensible et comportement clair en mode headless.
-- [ ] Résoudre l’organisation depuis le project ID headless ou une sélection/option explicite en desktop.
-- [ ] Refuser toute ambiguïté d’organisation au lieu de deviner.
-- [ ] Tester avec doubles de `AuthProvider`, `BrowserLauncher` et `RefreshTokenStore`.
+- [x] Définir le choix d'authentification CLI : headless via `GOOGLE_APPLICATION_CREDENTIALS`, desktop OAuth uniquement sur demande interactive explicite.
+- [x] Composer `AuthProvider` dans la composition root CLI sans exposer les credentials.
+- [x] Implémenter `login` avec résultat non sensible et comportement clair en mode headless.
+- [x] Résoudre l'organisation depuis le project ID headless ou une sélection/option explicite en desktop.
+- [x] Refuser toute ambiguïté d'organisation au lieu de deviner.
+- [x] Tester avec un double de `AuthProvider` ; les doubles `BrowserLauncher` et `RefreshTokenStore` existants de M2 couvrent le provider OAuth.
+- [ ] **Checkpoint de provisionnement** : c'est le bon moment pour suivre `GCP_SETUP.md` et provisionner le projet Google Cloud + l'organisation d'évaluation Apigee — pas avant (le compteur de 60 jours démarre à la création, inutile de le lancer plus tôt), pas après (M4-05 a besoin d'un compte réel pour être vérifié en conditions réelles).
 
 Commit prévu :
 
@@ -231,10 +236,11 @@ feat(cli): add secure authentication composition
 - [ ] Implémenter `ListOrganizationsUseCase`.
 - [ ] Implémenter `ListEnvironmentsUseCase`.
 - [ ] Implémenter `ListProxiesUseCase`.
-- [ ] Implémenter l’adaptation `ReqwestApigeeGateway: ApigeeGateway` pour ces opérations.
+- [ ] Implémenter l'adaptation `ReqwestApigeeGateway: ApigeeGateway` pour ces opérations (endpoints confirmés dans `APIGEE_API_MAP.md`).
 - [ ] Conserver `InMemoryApigeeGateway` comme double et compléter ses données de test si nécessaire.
 - [ ] Ajouter tests de use cases avec fake gateway et tests HTTP WireMock déjà alignés sur les endpoints officiels.
 - [ ] Brancher `list-proxies` avec org explicite ou résolue par auth.
+- [ ] **Checkpoint de connectivité réelle (première validation manuelle contre Apigee)** : une fois l'implémentation testée par doubles/WireMock, exécuter manuellement `login` puis `list-proxies` contre l'organisation d'évaluation réelle provisionnée en M4-04. Objectif : confirmer que l'authentification et la lecture fonctionnent réellement avant de construire l'écriture (M4-06) par-dessus une fondation non vérifiée. Ne pas automatiser ce test en CI — c'est une vérification manuelle, ponctuelle, documentée dans le commit ou une note (sans credential ni détail sensible).
 
 Commit possible :
 
@@ -245,13 +251,14 @@ feat(cli): add list proxies command
 
 ### M4-06 — Déploiement et statut
 
-- [ ] Vérifier et compléter le contrat réel de déploiement Apigee : upload/import du bundle, révision et déploiement ne doivent pas être confondus.
+- [ ] Vérifier et compléter le contrat réel de déploiement Apigee : upload/import du bundle, révision et déploiement ne doivent pas être confondus (voir `APIGEE_API_MAP.md` — import et déploiement sont deux appels distincts).
 - [ ] Étendre `ApigeeGateway` ou créer des ports séparés si le trait devient trop large.
 - [ ] Implémenter `DeployProxyUseCase` et `GetDeploymentStatusUseCase`.
-- [ ] Implémenter les méthodes HTTP manquantes de `ReqwestApigeeGateway` selon la documentation officielle.
+- [ ] Implémenter les méthodes HTTP manquantes de `ReqwestApigeeGateway` selon la documentation officielle (import bundle, déploiement, statut).
 - [ ] Compléter `InMemoryApigeeGateway` pour les scénarios pending/in-progress/succeeded/failed.
-- [ ] Tester erreurs d’authentification, permission, ressource absente, timeout, rate limit et serveur.
+- [ ] Tester erreurs d'authentification, permission, ressource absente, timeout, rate limit et serveur.
 - [ ] Ajouter `deploy` et `status` sans afficher de credential ni de corps HTTP.
+- [ ] **Checkpoint de connectivité réelle (écriture)** : une fois testé par doubles/WireMock, exécuter manuellement un déploiement contre l'org réelle avec un bundle trivial (pas nécessairement Helloworld à ce stade — un bundle minimal suffit pour confirmer que l'import et le déploiement fonctionnent réellement). Le test Helloworld complet est fait en M4-11, une fois `generate` migré en M4-07.
 
 Commit possible :
 
@@ -262,9 +269,9 @@ feat(cli): add deploy and status commands
 
 ### M4-07 — Génération CLI complète
 
-- [ ] Migrer le flux M3 `generate` vers l’arbre de commandes typé.
+- [ ] Migrer le flux M3 `generate` vers l'arbre de commandes typé.
 - [ ] Supporter template inline validé ou template référencé par le repository local.
-- [ ] Préserver l’écriture atomique du bundle et le packaging ZIP M3.
+- [ ] Préserver l'écriture atomique du bundle et le packaging ZIP M3.
 - [ ] Produire un résultat humain/JSON stable.
 - [ ] Tester les entrées invalides, template absent, spec invalide, sortie existante et succès complet.
 
@@ -276,7 +283,7 @@ feat(cli): complete generate command
 
 ### M4-08 — Non-interactif et sorties scriptables
 
-- [ ] Vérifier que chaque commande fonctionne avec flags et variables d’environnement sans prompt.
+- [ ] Vérifier que chaque commande fonctionne avec flags et variables d'environnement sans prompt.
 - [ ] Définir explicitement les valeurs interdites en pipeline : credential en argument, sélection implicite, confirmation interactive.
 - [ ] Ajouter tests de subprocess CLI pour succès, erreur et JSON.
 - [ ] Vérifier stdout/stderr, codes de sortie et stabilité des clés JSON.
@@ -292,8 +299,8 @@ test(cli): validate non-interactive command behavior
 
 - [ ] Ajouter un fake de sortie/runner pour tester le CLI sans réseau ni credential.
 - [ ] Couvrir les commandes avec `InMemoryApigeeGateway`, repository filesystem isolé, auth doubles et WireMock.
-- [ ] Produire un rapport de matrice des commandes et catégories d’erreurs dans `target/test-results/`.
-- [ ] Vérifier qu’aucun bundle, token ou credential n’est versionné.
+- [ ] Produire un rapport de matrice des commandes et catégories d'erreurs dans `target/test-results/`.
+- [ ] Vérifier qu'aucun bundle, token ou credential n'est versionné.
 - [ ] Tester les commandes inconnues et les chemins dangereux.
 
 Commit prévu :
@@ -302,34 +309,67 @@ Commit prévu :
 test(cli): cover complete command matrix
 ```
 
-### M4-10 — Point de contrôle final M4
+### M4-10 — Point de contrôle final M4 (suite automatisée)
 
 - [ ] Exécuter `cargo fmt --all -- --check`.
 - [ ] Exécuter `cargo test --workspace --locked`.
 - [ ] Exécuter Clippy avec `-D warnings`.
 - [ ] Exécuter `cargo audit`.
 - [ ] Vérifier les builds CLI ciblés prévus par `PACKAGING.md` sans lancer de release.
-- [ ] Vérifier l’absence de secrets dans code, fixtures, rapports et sorties capturées.
-- [ ] Marquer M4 terminé dans `ROADMAP.md` uniquement après validation de toutes les commandes.
+- [ ] Vérifier l'absence de secrets dans code, fixtures, rapports et sorties capturées.
 
 Commit prévu :
 
 ```text
-docs(m4): record complete CLI validation
+docs(m4): record automated CLI validation
 ```
+
+### M4-11 — Validation end-to-end réelle : proxy Helloworld
+
+*Dernière étape de M4, distincte de M4-10 : celle-ci est manuelle et ne remplace ni ne bloque la CI. C'est la preuve concrète que l'outil fonctionne réellement, pas seulement contre des doubles.*
+
+- [ ] Confirmer que le projet GCP et l'organisation d'évaluation sont bien provisionnés (M4-04) et toujours dans leur fenêtre de 60 jours.
+- [ ] Créer une spec OpenAPI minimale Helloworld (une seule route `GET /hello`) sous `examples/helloworld/openapi.yaml`.
+- [ ] Créer un template minimal correspondant sous `examples/helloworld/template.json`, conforme à `schemas/template.schema.json` (sécurité API Key suffit pour ce premier test — pas besoin de couvrir toutes les policies MVP ici).
+- [ ] Exécuter dans l'ordre, avec le CLI réel (pas de double) : `login`, `generate`, `deploy`, `status`, `list-proxies`.
+- [ ] Confirmer que le proxy apparaît bien dans la console Apigee (ou via `list-proxies`) avec le statut déployé attendu.
+- [ ] Documenter le résultat dans un court rapport (succès/échec, sans aucun credential ni détail sensible) — sert de preuve de validation MVP, pas seulement de checklist cochée.
+- [ ] Si un écart apparaît entre le comportement réel et ce que WireMock simulait, corriger le mapping dans `APIGEE_API_MAP.md` et le code correspondant avant de considérer M4 terminé.
+
+Commit prévu :
+
+```text
+docs(m4): record real Apigee end-to-end validation (helloworld)
+```
+
+M4 n'est marqué terminé dans `ROADMAP.md` qu'une fois M4-10 **et** M4-11 tous les deux validés.
 
 ---
 
-## 6. Critères d’acceptation M4
+## 6. Critères d'acceptation M4
 
 M4 sera considéré terminé lorsque :
 
 1. chaque commande documentée possède un chemin heureux et des erreurs typées ;
-2. le CLI fonctionne sans GUI et sans credentials réels dans les tests ;
+2. le CLI fonctionne sans GUI et sans credentials réels dans les tests automatisés ;
 3. le mode headless utilise uniquement `GOOGLE_APPLICATION_CREDENTIALS` ;
 4. `--json` est parseable et ne contient aucun secret ;
 5. les codes de sortie sont stables et testés ;
 6. les opérations Apigee réelles passent par `ApigeeGateway` et non par des appels HTTP dans `cli` ;
-7. les fakes et WireMock couvrent les scénarios d’erreur importants ;
+7. les fakes et WireMock couvrent les scénarios d'erreur importants ;
 8. la suite workspace, Clippy et audit passent ;
-9. aucun changement GUI, déploiement réel ou release packaging M10 n’est ajouté par erreur au jalon.
+9. **un proxy Helloworld a été généré, déployé et confirmé avec succès contre l'organisation d'évaluation Apigee réelle (M4-11)** ;
+10. aucun changement GUI, déploiement réel automatisé en CI, ou release packaging M10 n'est ajouté par erreur au jalon.
+
+---
+
+## 7. Méthode de validation contre Apigee réel — résumé
+
+| Étape | Ce qui est validé | Contre quoi |
+|---|---|---|
+| M4-04 | Provisionnement de l'environnement | GCP_SETUP.md, projet + org eval réels |
+| M4-05 | Authentification + lecture | Org réelle (`login`, `list-proxies`) |
+| M4-06 | Écriture (import/déploiement) | Org réelle, bundle trivial |
+| M4-11 | Bout en bout complet | Org réelle, proxy Helloworld généré par le CLI lui-même |
+
+Aucune de ces validations n'entre dans `cargo test` ou la CI — elles restent manuelles, exécutées par l'humain, documentées sans secret. La CI continue de reposer uniquement sur les niveaux 1 à 3 de la stratégie de test (ARCHITECTURE.md section 12).

@@ -1,5 +1,6 @@
 use std::{env, error::Error, fs, path::PathBuf, sync::Arc};
 
+mod auth;
 mod output;
 
 use apigee_forge_core::{
@@ -14,6 +15,7 @@ use apigee_forge_core::{
         GetTemplateUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
     },
 };
+use auth::{authenticate, build_auth_provider, select_auth_mode};
 use clap::{Args, Parser, Subcommand};
 use output::{
     classify_error, failure_json, human_message, success_json, CommandNotImplemented, ExitCode,
@@ -57,9 +59,18 @@ enum Commands {
 struct LoginArgs {
     #[arg(
         long,
+        conflicts_with = "interactive",
         help = "Use GOOGLE_APPLICATION_CREDENTIALS without opening a browser"
     )]
     headless: bool,
+    #[arg(
+        long,
+        conflicts_with = "headless",
+        help = "Explicitly start the desktop OAuth browser flow"
+    )]
+    interactive: bool,
+    #[arg(long, help = "Select the Apigee organization explicitly")]
+    org: Option<String>,
 }
 
 #[derive(Debug, Args, PartialEq, Eq)]
@@ -199,11 +210,33 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     match cli.command {
         Commands::Generate(arguments) => run_generate(arguments, cli.json),
         Commands::Template(arguments) => run_template(arguments, cli.json),
-        Commands::Login(_)
-        | Commands::Deploy(_)
-        | Commands::Status(_)
-        | Commands::ListProxies(_) => Err(CommandNotImplemented.into()),
+        Commands::Login(arguments) => run_login(arguments, cli.json),
+        Commands::Deploy(_) | Commands::Status(_) | Commands::ListProxies(_) => {
+            Err(CommandNotImplemented.into())
+        }
     }
+}
+
+fn run_login(arguments: LoginArgs, json_output: bool) -> Result<(), Box<dyn Error>> {
+    let selection = select_auth_mode(arguments.headless, arguments.interactive)?;
+    let provider = build_auth_provider(selection)?;
+    let runtime = tokio::runtime::Runtime::new()?;
+    let context = runtime.block_on(authenticate(provider))?;
+    let organization = auth::resolve_organization(&context, arguments.org.as_deref())?;
+    let mut summary = auth::summary(&context);
+    summary.selected_organization = Some(organization);
+    if json_output {
+        println!("{}", success_json("login", summary)?);
+    } else {
+        println!(
+            "authenticated mode={} identity={} project_id={} organization={}",
+            summary.mode,
+            summary.identity.as_deref().unwrap_or("none"),
+            summary.project_id.as_deref().unwrap_or("none"),
+            summary.selected_organization.as_deref().unwrap_or("none")
+        );
+    }
+    Ok(())
 }
 
 fn run_template(arguments: TemplateArgs, json_output: bool) -> Result<(), Box<dyn Error>> {
