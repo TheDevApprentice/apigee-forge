@@ -255,7 +255,7 @@ feat(cli): add list proxies command
 - [x] Étendre `ApigeeGateway` ou créer des ports séparés si le trait devient trop large.
 - [x] Implémenter `DeployProxyUseCase` et `GetDeploymentStatusUseCase`.
 - [x] Implémenter les méthodes HTTP manquantes de `ReqwestApigeeGateway` selon la documentation officielle (import bundle, déploiement, statut).
-- [ ] Compléter `InMemoryApigeeGateway` pour les scénarios pending/in-progress/succeeded/failed.
+- [ ] Compléter `InMemoryApigeeGateway` pour les scénarios pending/in-progress/succeeded/failed — correction ciblée reportée, le fichier est actuellement modifié localement par l'utilisateur.
 - [x] Tester erreurs d'authentification, permission, ressource absente, timeout, rate limit et serveur.
 - [x] Ajouter `deploy` et `status` sans afficher de credential ni de corps HTTP.
 - [ ] **Checkpoint de connectivité réelle (écriture)** : une fois testé par doubles/WireMock, exécuter manuellement un déploiement contre l'org réelle avec un bundle trivial (pas nécessairement Helloworld à ce stade — un bundle minimal suffit pour confirmer que l'import et le déploiement fonctionnent réellement). Le test Helloworld complet est fait en M4-11, une fois `generate` migré en M4-07.
@@ -298,7 +298,7 @@ test(cli): validate non-interactive command behavior
 ### M4-09 — Doubles, intégration et matrice de commandes
 
 - [x] Ajouter un fake de sortie/runner pour tester le CLI sans réseau ni credential.
-- [ ] Couvrir les commandes avec `InMemoryApigeeGateway`, repository filesystem isolé, auth doubles et WireMock — les scénarios d'état InMemory restent à compléter.
+- [ ] Couvrir les commandes avec `InMemoryApigeeGateway`, repository filesystem isolé, auth doubles et WireMock — couverture d'états InMemory reportée.
 - [x] Produire un rapport de matrice des commandes et catégories d'erreurs dans `target/test-results/`.
 - [x] Vérifier qu'aucun bundle, token ou credential n'est versionné.
 - [x] Tester les commandes inconnues et les chemins dangereux.
@@ -311,12 +311,12 @@ test(cli): cover complete command matrix
 
 ### M4-10 — Point de contrôle final M4 (suite automatisée)
 
-- [ ] Exécuter `cargo fmt --all -- --check`.
-- [ ] Exécuter `cargo test --workspace --locked`.
-- [ ] Exécuter Clippy avec `-D warnings`.
-- [ ] Exécuter `cargo audit`.
-- [ ] Vérifier les builds CLI ciblés prévus par `PACKAGING.md` sans lancer de release.
-- [ ] Vérifier l'absence de secrets dans code, fixtures, rapports et sorties capturées.
+- [x] Exécuter `cargo fmt --all -- --check`.
+- [x] Exécuter `cargo test --workspace --locked`.
+- [x] Exécuter Clippy avec `-D warnings`.
+- [x] Exécuter `cargo audit`.
+- [x] Vérifier les builds CLI ciblés prévus par `PACKAGING.md` sans lancer de release.
+- [x] Vérifier l'absence de secrets dans code, fixtures, rapports et sorties capturées.
 
 Commit prévu :
 
