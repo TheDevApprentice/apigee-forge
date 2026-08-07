@@ -13,9 +13,10 @@ Avant d'écrire une seule ligne de code, lis l'intégralité des documents suiva
 7. **`ROADMAP.md`** — jalons M1 à M10, et idées volontairement repoussées post-MVP
 8. **`STARTUP_ROADMAP.md`** — étapes atomiques détaillées pour démarrer (jalon M1), et méthode à réappliquer pour découper chaque jalon suivant
 9. **`M2_STARTUP_ROADMAP.md`** — étapes atomiques détaillées du jalon M2, à suivre après la fusion de M1 dans `dev`
-10. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
-11. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
-12. **`schemas/template.schema.json`** et **`schemas/template.example.json`** — format de données central du projet
+10. **`M3_STARTUP_ROADMAP.md`** — étapes atomiques détaillées du moteur de rendu et du packaging de bundle Apigee
+11. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
+12. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
+13. **`schemas/template.schema.json`** et **`schemas/template.example.json`** — format de données central du projet
 
 Une fois ces documents lus, **résume-moi en quelques phrases** ce que tu as compris du projet, de son périmètre MVP, et de la méthode de travail attendue — avant de proposer quoi que ce soit. Je veux confirmer que le contexte est bien assimilé avant qu'on commence.
 
