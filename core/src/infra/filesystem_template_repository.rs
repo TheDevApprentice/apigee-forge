@@ -34,6 +34,7 @@ impl FilesystemTemplateRepository {
     }
 
     fn write_template(&self, path: &Path, template: &Template) -> Result<(), TemplateError> {
+        template.validate()?;
         let file = File::create(path).map_err(|_| TemplateError::Io)?;
         serde_json::to_writer_pretty(file, template).map_err(|_| TemplateError::Serialization)
     }
@@ -57,9 +58,8 @@ impl TemplateRepository for FilesystemTemplateRepository {
         }
 
         let file = File::open(path).map_err(|_| TemplateError::Io)?;
-        serde_json::from_reader(file)
-            .map(Some)
-            .map_err(|_| TemplateError::Serialization)
+        let value = serde_json::from_reader(file).map_err(|_| TemplateError::Serialization)?;
+        Template::from_json_value(value).map(Some)
     }
 
     fn list(&self) -> Result<Vec<Template>, TemplateError> {
@@ -74,9 +74,8 @@ impl TemplateRepository for FilesystemTemplateRepository {
             }
 
             let file = File::open(path).map_err(|_| TemplateError::Io)?;
-            let template =
-                serde_json::from_reader(file).map_err(|_| TemplateError::Serialization)?;
-            templates.push(template);
+            let value = serde_json::from_reader(file).map_err(|_| TemplateError::Serialization)?;
+            templates.push(Template::from_json_value(value)?);
         }
 
         templates.sort_by(|left: &Template, right: &Template| {

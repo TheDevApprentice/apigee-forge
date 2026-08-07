@@ -4,9 +4,15 @@ mod output;
 
 use apigee_forge_core::{
     domain::{ProxyName, RenderInput, RenderMethod, RenderRoute, TargetUrl, Template},
-    infra::{FilesystemBundleWriter, TeraBundleRenderer, ZipBundleArchiver},
+    infra::{
+        FilesystemBundleWriter, FilesystemTemplateRepository, TeraBundleRenderer, ZipBundleArchiver,
+    },
     openapi::{parse_openapi, HttpMethod},
-    use_cases::GenerateProxyBundleUseCase,
+    ports::TemplateRepository,
+    use_cases::{
+        CreateTemplateUseCase, DeleteTemplateUseCase, GenerateProxyBundleUseCase,
+        GetTemplateUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
+    },
 };
 use clap::{Args, Parser, Subcommand};
 use output::{
@@ -36,10 +42,7 @@ enum Commands {
     /// Authenticate the CLI for interactive or headless use
     Login(LoginArgs),
     /// Manage local proxy templates
-    Template {
-        #[command(subcommand)]
-        command: TemplateCommand,
-    },
+    Template(TemplateArgs),
     /// Generate a local Apigee proxy bundle
     Generate(GenerateArgs),
     /// Deploy a proxy bundle to Apigee
@@ -57,6 +60,18 @@ struct LoginArgs {
         help = "Use GOOGLE_APPLICATION_CREDENTIALS without opening a browser"
     )]
     headless: bool,
+}
+
+#[derive(Debug, Args, PartialEq, Eq)]
+struct TemplateArgs {
+    #[arg(
+        long,
+        default_value = ".apigee-forge/templates",
+        value_name = "DIRECTORY"
+    )]
+    directory: PathBuf,
+    #[command(subcommand)]
+    command: TemplateCommand,
 }
 
 #[derive(Debug, Subcommand, PartialEq, Eq)]
@@ -172,7 +187,7 @@ fn main() {
 fn command_name(command: &Commands) -> &'static str {
     match command {
         Commands::Login(_) => "login",
-        Commands::Template { .. } => "template",
+        Commands::Template(_) => "template",
         Commands::Generate(_) => "generate",
         Commands::Deploy(_) => "deploy",
         Commands::Status(_) => "status",
@@ -183,12 +198,65 @@ fn command_name(command: &Commands) -> &'static str {
 fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     match cli.command {
         Commands::Generate(arguments) => run_generate(arguments, cli.json),
+        Commands::Template(arguments) => run_template(arguments, cli.json),
         Commands::Login(_)
-        | Commands::Template { .. }
         | Commands::Deploy(_)
         | Commands::Status(_)
         | Commands::ListProxies(_) => Err(CommandNotImplemented.into()),
     }
+}
+
+fn run_template(arguments: TemplateArgs, json_output: bool) -> Result<(), Box<dyn Error>> {
+    let repository: Arc<dyn TemplateRepository> =
+        Arc::new(FilesystemTemplateRepository::new(arguments.directory));
+    match arguments.command {
+        TemplateCommand::Create(arguments) => {
+            let template = load_template(&arguments.from)?;
+            let name = template.metadata.name.clone();
+            CreateTemplateUseCase::new(repository).execute(template)?;
+            print_template_result(json_output, "create", json!({ "name": name }))?;
+        }
+        TemplateCommand::List => {
+            let templates = ListTemplatesUseCase::new(repository).execute()?;
+            print_template_result(json_output, "list", templates)?;
+        }
+        TemplateCommand::Show(arguments) => {
+            let template = GetTemplateUseCase::new(repository).execute(&arguments.name)?;
+            print_template_result(json_output, "show", template)?;
+        }
+        TemplateCommand::Update(arguments) => {
+            let template = load_template(&arguments.from)?;
+            if template.metadata.name != arguments.name {
+                return Err(std::io::Error::other("template name does not match --name").into());
+            }
+            UpdateTemplateUseCase::new(repository).execute(template)?;
+            print_template_result(json_output, "update", json!({ "name": arguments.name }))?;
+        }
+        TemplateCommand::Delete(arguments) => {
+            DeleteTemplateUseCase::new(repository).execute(&arguments.name)?;
+            print_template_result(json_output, "delete", json!({ "name": arguments.name }))?;
+        }
+    }
+    Ok(())
+}
+
+fn load_template(path: &std::path::Path) -> Result<Template, Box<dyn Error>> {
+    Ok(Template::from_json_str(&fs::read_to_string(path)?)?)
+}
+
+fn print_template_result<T: serde::Serialize>(
+    json_output: bool,
+    action: &str,
+    data: T,
+) -> Result<(), Box<dyn Error>> {
+    if json_output {
+        println!("{}", success_json(&format!("template {action}"), data)?);
+    } else if matches!(action, "list" | "show") {
+        println!("{}", serde_json::to_string_pretty(&data)?);
+    } else {
+        println!("template {action} succeeded");
+    }
+    Ok(())
 }
 
 fn run_generate(arguments: GenerateArgs, json_output: bool) -> Result<(), Box<dyn Error>> {
@@ -209,7 +277,7 @@ fn run_generate(arguments: GenerateArgs, json_output: bool) -> Result<(), Box<dy
         target_url,
         routes,
     );
-    let template: Template = serde_json::from_str(&fs::read_to_string(&arguments.template)?)?;
+    let template = load_template(&arguments.template)?;
 
     let renderer = Arc::new(TeraBundleRenderer::new()?);
     let writer = Arc::new(FilesystemBundleWriter::new());
@@ -261,7 +329,7 @@ fn render_method(method: HttpMethod) -> RenderMethod {
 
 #[cfg(test)]
 mod tests {
-    use super::{Cli, Commands, GenerateArgs, TemplateCommand};
+    use super::{Cli, Commands, GenerateArgs, TemplateArgs, TemplateCommand};
     use clap::Parser;
     use std::path::PathBuf;
 
@@ -325,9 +393,10 @@ mod tests {
         let template = Cli::try_parse_from(["apigee-forge", "template", "list"])?;
         assert!(matches!(
             template.command,
-            Commands::Template {
-                command: TemplateCommand::List
-            }
+            Commands::Template(TemplateArgs {
+                command: TemplateCommand::List,
+                ..
+            })
         ));
         Ok(())
     }

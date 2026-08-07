@@ -35,6 +35,9 @@ impl GenerateProxyBundleUseCase {
         output_directory: &Path,
         archive_path: &Path,
     ) -> Result<GenerateProxyBundleResult, GenerateProxyBundleError> {
+        template
+            .validate()
+            .map_err(GenerateProxyBundleError::Template)?;
         let bundle = self
             .renderer
             .render(input, template)

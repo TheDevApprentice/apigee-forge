@@ -12,6 +12,7 @@ impl CreateTemplateUseCase {
     }
 
     pub fn execute(&self, template: Template) -> Result<(), TemplateError> {
+        template.validate()?;
         self.repository.create(template)
     }
 }

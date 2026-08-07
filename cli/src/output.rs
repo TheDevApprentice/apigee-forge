@@ -212,7 +212,7 @@ fn classify_template_error(error: &TemplateError) -> SafeFailure {
             ExitCode::Generic,
             "the template already exists",
         ),
-        TemplateError::Serialization => (
+        TemplateError::Serialization | TemplateError::InvalidContent => (
             "INVALID_INPUT",
             ExitCode::Generic,
             "template content is invalid",
@@ -227,11 +227,13 @@ fn classify_template_error(error: &TemplateError) -> SafeFailure {
 
 fn classify_bundle_use_case_error(error: &GenerateProxyBundleError) -> SafeFailure {
     match error {
-        GenerateProxyBundleError::Render(_) => SafeFailure {
-            code: "INVALID_INPUT",
-            exit_code: ExitCode::Generic,
-            message: "bundle rendering failed",
-        },
+        GenerateProxyBundleError::Template(_) | GenerateProxyBundleError::Render(_) => {
+            SafeFailure {
+                code: "INVALID_INPUT",
+                exit_code: ExitCode::Generic,
+                message: "bundle rendering failed",
+            }
+        }
         GenerateProxyBundleError::Write(_) | GenerateProxyBundleError::Archive(_) => SafeFailure {
             code: "FILESYSTEM_ERROR",
             exit_code: ExitCode::Filesystem,

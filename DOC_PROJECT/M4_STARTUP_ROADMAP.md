@@ -197,12 +197,12 @@ feat(cli): add stable output and exit code contracts
 
 ### M4-03 — Use cases de gestion des templates
 
-- [ ] Ajouter les use cases `list`, `get/show`, `update` et `delete` derrière `TemplateRepository`.
-- [ ] Définir la validation de nom et de contenu avant écriture.
-- [ ] Ajouter la validation stricte contre `schemas/template.schema.json` avant create/update/generate.
-- [ ] Supporter `template create --from <file>` comme voie non-interactive.
-- [ ] Garder les prompts guidés optionnels et impossibles en mode non-interactif.
-- [ ] Tester avec `FilesystemTemplateRepository` isolé et doubles de repository.
+- [x] Ajouter les use cases `list`, `get/show`, `update` et `delete` derrière `TemplateRepository`.
+- [x] Définir la validation de nom et de contenu avant écriture.
+- [x] Ajouter la validation stricte contre `schemas/template.schema.json` avant create/update/generate.
+- [x] Supporter `template create --from <file>` comme voie non-interactive.
+- [x] Garder la création importée non-interactive et sans prompt bloquant ; les prompts guidés restent optionnels et sont reportés.
+- [x] Tester avec `FilesystemTemplateRepository` isolé et un double mémoire de repository.
 
 Commit possible :
 

@@ -36,6 +36,8 @@ pub enum TemplateError {
     AlreadyExists,
     #[error("template name is not a safe file name")]
     InvalidName,
+    #[error("template content is invalid")]
+    InvalidContent,
 }
 
 #[derive(Debug, Error)]
@@ -96,6 +98,8 @@ pub enum RenderError {
 
 #[derive(Debug, Error)]
 pub enum GenerateProxyBundleError {
+    #[error("proxy bundle template is invalid")]
+    Template(#[source] TemplateError),
     #[error("proxy bundle rendering failed")]
     Render(#[source] RenderError),
     #[error("proxy bundle directory writing failed")]
