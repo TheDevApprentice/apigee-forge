@@ -11,7 +11,7 @@ use crate::{
         ProjectId, Proxy,
     },
     error::GatewayError,
-    ports::ApigeeGateway,
+    ports::{ApigeeDeploymentGateway, ApigeeGateway, ApigeeProxyBundleGateway},
 };
 
 #[derive(Debug, Default)]
@@ -118,6 +118,67 @@ impl ApigeeGateway for InMemoryApigeeGateway {
             .ok_or(GatewayError::RequestFailed)
     }
 
+    async fn get_roles(&self, org: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
+        self.lock_state()?
+            .roles
+            .get(org)
+            .copied()
+            .map(|role| vec![role])
+            .ok_or(GatewayError::RequestFailed)
+    }
+}
+
+#[async_trait]
+impl ApigeeProxyBundleGateway for InMemoryApigeeGateway {
+    async fn import_bundle(
+        &self,
+        org: &str,
+        proxy_name: &str,
+        bundle: Vec<u8>,
+    ) -> Result<crate::domain::ProxyRevision, GatewayError> {
+        if bundle.is_empty() || proxy_name.is_empty() {
+            return Err(GatewayError::InvalidResponse);
+        }
+        let mut state = self.lock_state()?;
+        if !state.organizations.iter().any(|item| item == org) {
+            return Err(GatewayError::RequestFailed);
+        }
+        let revisions = state.proxies.entry(org.to_owned()).or_default();
+        let proxy = revisions.iter_mut().find(|proxy| proxy.name == proxy_name);
+        let revision = proxy
+            .map(|proxy| {
+                let number = proxy
+                    .revisions
+                    .iter()
+                    .map(|item| item.number)
+                    .max()
+                    .map_or(0, |number| number)
+                    + 1;
+                proxy.revisions.push(crate::domain::ProxyRevision {
+                    number,
+                    deployed: false,
+                });
+                number
+            })
+            .unwrap_or_else(|| {
+                revisions.push(Proxy {
+                    name: proxy_name.to_owned(),
+                    revisions: vec![crate::domain::ProxyRevision {
+                        number: 1,
+                        deployed: false,
+                    }],
+                });
+                1
+            });
+        Ok(crate::domain::ProxyRevision {
+            number: revision,
+            deployed: false,
+        })
+    }
+}
+
+#[async_trait]
+impl ApigeeDeploymentGateway for InMemoryApigeeGateway {
     async fn deploy(
         &self,
         org: &str,
@@ -147,7 +208,10 @@ impl ApigeeGateway for InMemoryApigeeGateway {
             return Err(GatewayError::RequestFailed);
         }
 
-        let id = format!("deployment-{}", state.deployments.len() + 1);
+        let id = format!(
+            "{org}/deployments/deployment-{}",
+            state.deployments.len() + 1
+        );
         let deployment = Deployment {
             id: id.clone(),
             proxy_name: proxy_name.to_owned(),
@@ -160,20 +224,23 @@ impl ApigeeGateway for InMemoryApigeeGateway {
         Ok(deployment)
     }
 
-    async fn get_deployment_status(&self, deployment_id: &str) -> Result<Deployment, GatewayError> {
+    async fn get_deployment_status(
+        &self,
+        org: &str,
+        environment: &str,
+        proxy_name: &str,
+        revision: u32,
+    ) -> Result<Deployment, GatewayError> {
         self.lock_state()?
             .deployments
-            .get(deployment_id)
+            .values()
+            .find(|deployment| {
+                deployment.environment == environment
+                    && deployment.proxy_name == proxy_name
+                    && deployment.revision == revision
+                    && deployment.id.starts_with(&format!("{org}/"))
+            })
             .cloned()
-            .ok_or(GatewayError::RequestFailed)
-    }
-
-    async fn get_roles(&self, org: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
-        self.lock_state()?
-            .roles
-            .get(org)
-            .copied()
-            .map(|role| vec![role])
             .ok_or(GatewayError::RequestFailed)
     }
 }

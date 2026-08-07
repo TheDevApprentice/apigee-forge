@@ -450,6 +450,7 @@ impl BundleRenderer for TeraBundleRenderer {
         input: &RenderInput,
         template: &Template,
     ) -> Result<RenderedBundle, RenderError> {
+        template.validate().map_err(|_| RenderError::InvalidInput)?;
         let catalog = PolicyCatalog::from_template(template);
         let context = self.render_context(input, template, &catalog)?;
         let proxy_endpoint = self
@@ -661,7 +662,27 @@ mod tests {
             runtime.block_on(async { TeraBundleRenderer::new()?.render(&input, &template).await });
         assert!(matches!(
             result,
-            Err(crate::error::RenderError::InvalidPolicy)
+            Err(crate::error::RenderError::InvalidInput)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_invalid_template_before_rendering() -> Result<(), Box<dyn Error>> {
+        let mut template: crate::domain::Template =
+            serde_json::from_str(include_str!("../../../schemas/template.example.json"))?;
+        template.metadata.owner.clear();
+        let input = RenderInput::new(
+            ProxyName::try_new("orders-v1")?,
+            TargetUrl::try_new("https://api.example.test")?,
+            Vec::new(),
+        );
+        let runtime = Runtime::new()?;
+        let result =
+            runtime.block_on(async { TeraBundleRenderer::new()?.render(&input, &template).await });
+        assert!(matches!(
+            result,
+            Err(crate::error::RenderError::InvalidInput)
         ));
         Ok(())
     }

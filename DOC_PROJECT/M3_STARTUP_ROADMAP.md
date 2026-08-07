@@ -131,13 +131,15 @@ refactor(core): define rendering input model
 
 ### M3-02 — Contrat du moteur de rendu et validation du template
 
-- [ ] Définir `BundleRenderer` comme port indépendant de Tera.
-- [ ] Définir `BundleArchiver` comme port indépendant de ZIP.
-- [ ] Définir les erreurs `RenderError`, `BundleError` ou types équivalents.
-- [ ] Valider le template contre `schemas/template.schema.json` avant tout rendu.
-- [ ] Refuser les policies ou champs inconnus au lieu de les ignorer silencieusement.
-- [ ] Définir un contexte de rendu sérialisable et stable.
-- [ ] Tester les erreurs de validation sans écriture partielle.
+- [x] Définir `BundleRenderer` comme port indépendant de Tera.
+- [x] Définir `BundleArchiver` comme port indépendant de ZIP.
+- [x] Définir les erreurs `RenderError`, `BundleError` ou types équivalents.
+- [x] Valider le template avant tout rendu avec une validation structurée alignée sur `schemas/template.schema.json`.
+- [x] Refuser les policies ou champs inconnus au lieu de les ignorer silencieusement.
+- [x] Définir un contexte de rendu sérialisable et stable.
+- [x] Tester les erreurs de validation sans écriture partielle.
+
+Note de vérification : la validation est exécutée lors du chargement JSON, dans les use cases et à la frontière du renderer. Elle ne dépend pas d’une crate JSON Schema externe ; les clés autorisées et invariants du schéma versionné sont contrôlés explicitement dans le domaine.
 
 Commit prévu :
 

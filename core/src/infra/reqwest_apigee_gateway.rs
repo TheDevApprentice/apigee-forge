@@ -1,6 +1,10 @@
 use std::{sync::Arc, time::Duration};
 
-use reqwest::{Client, Method, StatusCode, Url};
+use async_trait::async_trait;
+use reqwest::{
+    multipart::{Form, Part},
+    Client, Method, StatusCode, Url,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use tokio::time::sleep;
@@ -10,7 +14,10 @@ use crate::{
         ApigeeRole, Environment, Organization, OrganizationId, ProjectId, Proxy, ProxyRevision,
     },
     error::GatewayError,
-    ports::auth_provider::AuthProvider,
+    ports::{
+        auth_provider::AuthProvider, ApigeeDeploymentGateway, ApigeeGateway,
+        ApigeeProxyBundleGateway,
+    },
 };
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
@@ -142,6 +149,47 @@ impl ReqwestApigeeGateway {
         Ok(roles)
     }
 
+    async fn request_multipart<T>(&self, url: Url, bundle: Vec<u8>) -> Result<T, GatewayError>
+    where
+        T: DeserializeOwned,
+    {
+        let token = self
+            .auth
+            .access_token()
+            .await
+            .map_err(|_| GatewayError::RequestFailed)?;
+        for attempt in 0..=self.max_retries {
+            let part = Part::bytes(bundle.clone())
+                .file_name("proxy-bundle.zip")
+                .mime_str("application/zip")
+                .map_err(|_| GatewayError::InvalidResponse)?;
+            let form = Form::new().part("file", part);
+            match self
+                .client
+                .request(Method::POST, url.clone())
+                .bearer_auth(token.as_str())
+                .multipart(form)
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    let status = response.status();
+                    if should_retry_status(status) && attempt < self.max_retries {
+                        sleep(self.retry_backoff * 2_u32.saturating_pow(attempt)).await;
+                        continue;
+                    }
+                    return parse_response(response).await;
+                }
+                Err(error) if is_retryable_error(&error) && attempt < self.max_retries => {
+                    sleep(self.retry_backoff * 2_u32.saturating_pow(attempt)).await;
+                }
+                Err(error) if error.is_timeout() => return Err(GatewayError::Timeout),
+                Err(_) => return Err(GatewayError::RequestFailed),
+            }
+        }
+        Err(GatewayError::RequestFailed)
+    }
+
     async fn request_json_at<B, T>(
         &self,
         base_url: &Url,
@@ -189,6 +237,187 @@ impl ReqwestApigeeGateway {
         }
 
         Err(GatewayError::RequestFailed)
+    }
+}
+
+#[async_trait]
+impl ApigeeGateway for ReqwestApigeeGateway {
+    async fn list_organizations(&self) -> Result<Vec<Organization>, GatewayError> {
+        Self::list_organizations(self).await
+    }
+
+    async fn list_environments(
+        &self,
+        organization: &str,
+    ) -> Result<Vec<Environment>, GatewayError> {
+        Self::list_environments(self, organization).await
+    }
+
+    async fn list_proxies(&self, organization: &str) -> Result<Vec<Proxy>, GatewayError> {
+        Self::list_proxies(self, organization).await
+    }
+
+    async fn get_roles(&self, organization: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
+        Self::get_roles(self, organization).await
+    }
+}
+
+#[async_trait]
+impl ApigeeProxyBundleGateway for ReqwestApigeeGateway {
+    async fn import_bundle(
+        &self,
+        organization: &str,
+        proxy_name: &str,
+        bundle: Vec<u8>,
+    ) -> Result<ProxyRevision, GatewayError> {
+        validate_segment(organization)?;
+        validate_proxy_name(proxy_name)?;
+        if bundle.is_empty() {
+            return Err(GatewayError::InvalidResponse);
+        }
+        let mut url = self
+            .base_url
+            .join(&format!("organizations/{organization}/apis"))
+            .map_err(|_| GatewayError::InvalidResponse)?;
+        url.query_pairs_mut()
+            .append_pair("action", "import")
+            .append_pair("name", proxy_name);
+        let response: ProxyMapping = self.request_multipart(url, bundle).await?;
+        response
+            .try_into_domain()?
+            .revisions
+            .into_iter()
+            .max_by_key(|revision| revision.number)
+            .ok_or(GatewayError::InvalidResponse)
+    }
+}
+
+#[async_trait]
+impl ApigeeDeploymentGateway for ReqwestApigeeGateway {
+    async fn deploy(
+        &self,
+        organization: &str,
+        environment: &str,
+        proxy_name: &str,
+        revision: u32,
+        override_existing: bool,
+    ) -> Result<crate::domain::Deployment, GatewayError> {
+        validate_segment(organization)?;
+        validate_segment(environment)?;
+        validate_proxy_name(proxy_name)?;
+        if revision == 0 {
+            return Err(GatewayError::InvalidResponse);
+        }
+        let path = format!(
+            "organizations/{organization}/environments/{environment}/apis/{proxy_name}/revisions/{revision}/deployments?override={override_existing}"
+        );
+        let response: DeploymentMapping = self
+            .request_json_at(&self.base_url, Method::POST, &path, Option::<&()>::None)
+            .await?;
+        response.into_domain(organization, environment, proxy_name, revision)
+    }
+
+    async fn get_deployment_status(
+        &self,
+        organization: &str,
+        environment: &str,
+        proxy_name: &str,
+        revision: u32,
+    ) -> Result<crate::domain::Deployment, GatewayError> {
+        validate_segment(organization)?;
+        validate_segment(environment)?;
+        validate_proxy_name(proxy_name)?;
+        if revision == 0 {
+            return Err(GatewayError::InvalidResponse);
+        }
+        let path = format!(
+            "organizations/{organization}/environments/{environment}/apis/{proxy_name}/revisions/{revision}/deployments"
+        );
+        let response: DeploymentMapping = self
+            .request_json_at(&self.base_url, Method::GET, &path, Option::<&()>::None)
+            .await?;
+        response.into_domain(organization, environment, proxy_name, revision)
+    }
+}
+
+fn validate_segment(value: &str) -> Result<(), GatewayError> {
+    if value.is_empty()
+        || value.chars().any(|character| {
+            character.is_control() || character.is_whitespace() || "/\\?&#".contains(character)
+        })
+    {
+        Err(GatewayError::InvalidResponse)
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_proxy_name(value: &str) -> Result<(), GatewayError> {
+    if value.is_empty()
+        || !value
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || ".-_".contains(character))
+    {
+        Err(GatewayError::InvalidResponse)
+    } else {
+        Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct DeploymentMapping {
+    #[serde(default)]
+    environment: String,
+    #[serde(rename = "apiProxy", default)]
+    api_proxy: String,
+    #[serde(default)]
+    revision: String,
+    #[serde(default)]
+    state: Option<String>,
+}
+
+impl DeploymentMapping {
+    fn into_domain(
+        self,
+        organization: &str,
+        environment: &str,
+        proxy_name: &str,
+        revision: u32,
+    ) -> Result<crate::domain::Deployment, GatewayError> {
+        let actual_environment = if self.environment.is_empty() {
+            environment.to_owned()
+        } else {
+            self.environment
+        };
+        let actual_proxy = if self.api_proxy.is_empty() {
+            proxy_name.to_owned()
+        } else {
+            self.api_proxy
+        };
+        let actual_revision = if self.revision.is_empty() {
+            revision
+        } else {
+            self.revision
+                .parse::<u32>()
+                .map_err(|_| GatewayError::InvalidResponse)?
+        };
+        let status = match self.state.as_deref() {
+            Some("ACTIVE") => crate::domain::DeploymentStatus::Succeeded,
+            Some("PROGRESSING") => crate::domain::DeploymentStatus::InProgress,
+            Some("ERROR") => crate::domain::DeploymentStatus::Failed,
+            Some("INACTIVE") => crate::domain::DeploymentStatus::Pending,
+            Some(_) => return Err(GatewayError::InvalidResponse),
+            None => crate::domain::DeploymentStatus::Pending,
+        };
+        Ok(crate::domain::Deployment {
+            id: format!(
+                "organizations/{organization}/environments/{actual_environment}/apis/{actual_proxy}/revisions/{actual_revision}/deployments"
+            ),
+            proxy_name: actual_proxy,
+            environment: actual_environment,
+            revision: actual_revision,
+            status,
+        })
     }
 }
 
@@ -346,7 +575,7 @@ mod tests {
     use reqwest::Url;
     use serde_json::{json, Value};
     use wiremock::{
-        matchers::{header, method, path},
+        matchers::{header, method, path, query_param},
         Mock, MockServer, ResponseTemplate,
     };
 
@@ -687,6 +916,77 @@ mod tests {
 
         assert_eq!(error.as_deref(), Some("Server"));
         assert_eq!(requests.len(), 3);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn imports_deploys_and_reads_deployment_status() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v1/organizations/org-one/apis"))
+            .and(query_param("action", "import"))
+            .and(query_param("name", "orders"))
+            .and(header("authorization", "Bearer test-token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "name": "orders",
+                "revision": ["4"]
+            })))
+            .mount(&server)
+            .await;
+        Mock::given(method("POST"))
+            .and(path(
+                "/v1/organizations/org-one/environments/prod/apis/orders/revisions/4/deployments",
+            ))
+            .and(query_param("override", "false"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "environment": "prod",
+                "apiProxy": "orders",
+                "revision": "4",
+                "state": "ACTIVE"
+            })))
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path(
+                "/v1/organizations/org-one/environments/prod/apis/orders/revisions/4/deployments",
+            ))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "environment": "prod",
+                "apiProxy": "orders",
+                "revision": "4",
+                "state": "PROGRESSING"
+            })))
+            .mount(&server)
+            .await;
+
+        let gateway = gateway(&server, None, "/v1/").await?;
+        let imported = crate::ports::ApigeeProxyBundleGateway::import_bundle(
+            &gateway,
+            "org-one",
+            "orders",
+            vec![1, 2, 3],
+        )
+        .await?;
+        let deployed = crate::ports::ApigeeDeploymentGateway::deploy(
+            &gateway,
+            "org-one",
+            "prod",
+            "orders",
+            imported.number,
+            false,
+        )
+        .await?;
+        let status = crate::ports::ApigeeDeploymentGateway::get_deployment_status(
+            &gateway,
+            "org-one",
+            "prod",
+            "orders",
+            imported.number,
+        )
+        .await?;
+        assert_eq!(imported.number, 4);
+        assert_eq!(deployed.status, crate::domain::DeploymentStatus::Succeeded);
+        assert_eq!(status.status, crate::domain::DeploymentStatus::InProgress);
         Ok(())
     }
 
