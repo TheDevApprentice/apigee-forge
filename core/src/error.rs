@@ -104,7 +104,9 @@ pub enum BundleError {
     FileTooLarge,
     #[error("bundle must contain at least one file")]
     EmptyBundle,
-    #[error("the apiproxy output directory already exists")]
+    #[error("bundle is missing a required endpoint")]
+    IncompleteBundle,
+    #[error("the bundle output already exists")]
     OutputAlreadyExists,
     #[error("bundle I/O failed")]
     Io,

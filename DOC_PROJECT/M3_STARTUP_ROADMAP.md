@@ -216,14 +216,14 @@ feat(core): write validated proxy bundle directory
 
 ### M3-07 — Packaging ZIP
 
-- [ ] Implémenter `ZipWriter` derrière `BundleArchiver`.
-- [ ] Garantir que le premier niveau de l’archive est `apiproxy/`.
-- [ ] Écrire les fichiers avec des chemins relatifs normalisés.
-- [ ] Ne jamais inclure un chemin absolu ou `..` dans l’archive.
-- [ ] Utiliser une compression déterministe et compatible avec Apigee.
-- [ ] Éviter de construire inutilement une archive complète en mémoire ; écrire vers un `File` ou writer.
-- [ ] Tester la liste exacte des entrées ZIP et extraire les fichiers de contrôle.
-- [ ] Tester archive vide/incomplète et erreur de finalisation.
+- [x] Implémenter `ZipWriter` derrière `BundleArchiver`.
+- [x] Garantir que le premier niveau de l’archive est `apiproxy/`.
+- [x] Écrire les fichiers avec des chemins relatifs normalisés.
+- [x] Ne jamais inclure un chemin absolu ou `..` dans l’archive.
+- [x] Utiliser une compression déterministe et compatible avec Apigee.
+- [x] Éviter de construire inutilement une archive complète en mémoire ; écrire vers un `File` ou writer.
+- [x] Tester la liste exacte des entrées ZIP et extraire les fichiers de contrôle.
+- [x] Tester archive vide/incomplète et erreur de finalisation.
 
 Commit prévu :
 
