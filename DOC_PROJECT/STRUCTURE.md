@@ -52,6 +52,7 @@ core/
     │   ├── mod.rs
     │   ├── apigee_gateway.rs       # trait ApigeeGateway
     │   ├── bundle_renderer.rs      # port de rendu M3
+    │   ├── bundle_writer.rs        # port d’écriture contrôlée du bundle M3
     │   ├── bundle_archiver.rs      # port de packaging M3
     │   ├── template_repository.rs  # trait TemplateRepository
     │   ├── auth_provider.rs        # trait AuthProvider
@@ -63,6 +64,7 @@ core/
     │   ├── oauth_desktop_auth_provider.rs
     │   ├── reqwest_apigee_gateway.rs       # transport HTTP partagé Apigee
     │   ├── in_memory_apigee_gateway.rs     # fake, niveau 1 de la stratégie de test
+    │   ├── filesystem_bundle_writer.rs     # écriture transactionnelle du bundle M3
     │   ├── filesystem_template_repository.rs
     │   ├── tera_bundle_renderer.rs       # moteur Tera/XML M3
     │   ├── zip_bundle_archiver.rs        # packaging ZIP M3

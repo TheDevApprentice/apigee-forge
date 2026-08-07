@@ -98,6 +98,14 @@ pub enum RenderError {
 pub enum BundleError {
     #[error("bundle output path is invalid")]
     InvalidOutputPath,
+    #[error("bundle contains an invalid file path")]
+    InvalidFilePath,
+    #[error("bundle file exceeds the maximum allowed size")]
+    FileTooLarge,
+    #[error("bundle must contain at least one file")]
+    EmptyBundle,
+    #[error("the apiproxy output directory already exists")]
+    OutputAlreadyExists,
     #[error("bundle I/O failed")]
     Io,
     #[error("ZIP archive creation failed")]

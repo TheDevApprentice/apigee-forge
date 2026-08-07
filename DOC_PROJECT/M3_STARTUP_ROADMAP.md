@@ -201,12 +201,12 @@ feat(core): render MVP transformation policies
 
 ### M3-06 — Écriture du bundle sur disque
 
-- [ ] Implémenter un writer contrôlé du répertoire `apiproxy/`.
-- [ ] Créer uniquement les chemins autorisés : `proxies/`, `targets/`, `policies/`, `resources/` si nécessaire.
-- [ ] Refuser toute traversée de chemin.
-- [ ] Écrire via des fichiers temporaires ou une stratégie évitant un bundle partiellement valide.
-- [ ] Borner la taille des fichiers générés.
-- [ ] Tester un nom de proxy malveillant, un nom de policy invalide et une erreur d’écriture.
+- [x] Implémenter un writer contrôlé du répertoire `apiproxy/`.
+- [x] Créer uniquement les chemins autorisés : `proxies/`, `targets/`, `policies/`, `resources/` si nécessaire.
+- [x] Refuser toute traversée de chemin.
+- [x] Écrire via des fichiers temporaires ou une stratégie évitant un bundle partiellement valide.
+- [x] Borner la taille des fichiers générés.
+- [x] Tester un nom de proxy malveillant, un nom de policy invalide et une erreur d’écriture.
 
 Commit prévu :
 
