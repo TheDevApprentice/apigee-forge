@@ -71,3 +71,11 @@ pub enum LocalStateError {
     #[error("local state storage operation failed")]
     StorageFailed,
 }
+
+#[derive(Debug, Error)]
+pub enum RenderInputError {
+    #[error("proxy name is not a safe Apigee identifier")]
+    InvalidProxyName,
+    #[error("target URL must be an HTTP(S) URL without whitespace")]
+    InvalidTargetUrl,
+}

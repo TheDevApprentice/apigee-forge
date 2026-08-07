@@ -1,9 +1,13 @@
 use openapiv3::{OpenAPI, ReferenceOr, SecurityScheme};
 use serde::Serialize;
 use thiserror::Error;
+use url::Url;
+
+const MAX_OPENAPI_SOURCE_BYTES: usize = 5 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ParsedOpenApi {
+    pub servers: Vec<String>,
     pub routes: Vec<ApiRoute>,
     pub security_schemes: Vec<SecuritySchemeDefinition>,
 }
@@ -58,10 +62,44 @@ pub enum OpenApiError {
     UnsupportedHttpMethod { method: String },
     #[error("security requirement references an unknown scheme: {name}")]
     UnknownSecurityScheme { name: String },
+    #[error("OpenAPI document does not define an HTTP(S) server")]
+    MissingServer,
+    #[error("OpenAPI server URL is invalid")]
+    InvalidServerUrl,
+    #[error("OpenAPI source exceeds the maximum allowed size")]
+    SourceTooLarge,
+}
+
+impl ParsedOpenApi {
+    pub fn primary_server(&self) -> Result<&str, OpenApiError> {
+        self.servers
+            .first()
+            .map(String::as_str)
+            .ok_or(OpenApiError::MissingServer)
+    }
 }
 
 pub fn parse_openapi(source: &str) -> Result<ParsedOpenApi, OpenApiError> {
+    if source.len() > MAX_OPENAPI_SOURCE_BYTES {
+        return Err(OpenApiError::SourceTooLarge);
+    }
+
     let document: OpenAPI = serde_yaml::from_str(source)?;
+    let servers = document
+        .servers
+        .iter()
+        .map(|server| server.url.clone())
+        .collect::<Vec<_>>();
+    if servers.is_empty() {
+        return Err(OpenApiError::MissingServer);
+    }
+    if servers.iter().any(|server| {
+        Url::parse(server)
+            .map(|url| !matches!(url.scheme(), "http" | "https"))
+            .unwrap_or(true)
+    }) {
+        return Err(OpenApiError::InvalidServerUrl);
+    }
     let security_schemes = extract_security_schemes(&document)?;
     let declared_scheme_names = security_schemes
         .iter()
@@ -99,6 +137,7 @@ pub fn parse_openapi(source: &str) -> Result<ParsedOpenApi, OpenApiError> {
         .collect::<Result<Vec<_>, OpenApiError>>()?;
 
     Ok(ParsedOpenApi {
+        servers,
         routes,
         security_schemes,
     })
@@ -225,6 +264,8 @@ mod tests {
         eprintln!("test report: {}", report_path.display());
 
         let parsed = parsed?;
+        assert_eq!(parsed.servers, ["https://api.example.com/v1"]);
+        assert_eq!(parsed.primary_server()?, "https://api.example.com/v1");
         assert_eq!(parsed.routes.len(), 2);
         assert_eq!(parsed.routes[0].path, "/users");
         assert_eq!(parsed.routes[0].method, HttpMethod::Get);
@@ -240,6 +281,44 @@ mod tests {
             }
         );
 
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_source_above_size_limit() -> Result<(), Box<dyn Error>> {
+        let source = "x".repeat(super::MAX_OPENAPI_SOURCE_BYTES + 1);
+        let parsed = parse_openapi(&source);
+        let report = json!({
+            "test": "rejects_source_above_size_limit",
+            "expected_error": "SourceTooLarge",
+            "actual_error": parsed.as_ref().err().map(|error| format!("{error:?}"))
+        });
+        let report_path = write_test_report("openapi_source_too_large", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert!(matches!(parsed, Err(OpenApiError::SourceTooLarge)));
+        Ok(())
+    }
+
+    #[test]
+    fn rejects_spec_without_server() -> Result<(), Box<dyn Error>> {
+        let source = r#"
+openapi: 3.0.3
+info:
+  title: Missing server
+  version: 1.0.0
+paths: {}
+"#;
+        let parsed = parse_openapi(source);
+        let report = json!({
+            "test": "rejects_spec_without_server",
+            "expected_error": "MissingServer",
+            "actual_error": parsed.as_ref().err().map(|error| format!("{error:?}"))
+        });
+        let report_path = write_test_report("openapi_missing_server", &report)?;
+        eprintln!("test report: {}", report_path.display());
+
+        assert!(matches!(parsed, Err(OpenApiError::MissingServer)));
         Ok(())
     }
 }
