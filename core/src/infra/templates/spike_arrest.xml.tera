@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<SpikeArrest name="{{ policy.name | escape }}">
+  <DisplayName>{{ policy.name | escape }}</DisplayName>
+  <Rate>{{ policy.rate }}{{ policy.rate_unit }}</Rate>
+  <UseEffectiveCount>true</UseEffectiveCount>
+</SpikeArrest>

@@ -90,6 +90,8 @@ pub enum RenderError {
     Template,
     #[error("rendered XML is invalid")]
     InvalidXml,
+    #[error("policy parameters are invalid")]
+    InvalidPolicy,
 }
 
 #[derive(Debug, Error)]

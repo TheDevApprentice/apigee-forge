@@ -3,23 +3,31 @@
   <Description>{{ proxy_name | escape }}</Description>
   <PreFlow name="PreFlow">
     <Request>
-{% for policy in pre_flow_request %}      <Step><Name>{{ policy }}</Name></Step>
+{% for policy in pre_flow.request %}      <Step><Name>{{ policy }}</Name></Step>
 {% endfor %}    </Request>
-    <Response />
+    <Response>
+{% for policy in pre_flow.response %}      <Step><Name>{{ policy }}</Name></Step>
+{% endfor %}    </Response>
   </PreFlow>
-{% for flow in conditional_flows %}  <Flows>
-    <Flow name="{{ flow.name }}">
+{% if conditional_flows %}  <Flows>
+{% for flow in conditional_flows %}    <Flow name="{{ flow.name }}">
       <Description>{{ flow.condition | escape }}</Description>
       <Condition>{{ flow.condition | escape }}</Condition>
       <Request>
 {% for policy in flow.request %}        <Step><Name>{{ policy }}</Name></Step>
 {% endfor %}      </Request>
-      <Response />
+      <Response>
+{% for policy in flow.response %}        <Step><Name>{{ policy }}</Name></Step>
+{% endfor %}      </Response>
     </Flow>
-  </Flows>
-{% endfor %}  <PostFlow name="PostFlow">
-    <Request />
-    <Response />
+{% endfor %}  </Flows>
+{% endif %}  <PostFlow name="PostFlow">
+    <Request>
+{% for policy in post_flow.request %}      <Step><Name>{{ policy }}</Name></Step>
+{% endfor %}    </Request>
+    <Response>
+{% for policy in post_flow.response %}      <Step><Name>{{ policy }}</Name></Step>
+{% endfor %}    </Response>
   </PostFlow>
   <HTTPProxyConnection>
     <BasePath>/{{ proxy_name | escape }}</BasePath>

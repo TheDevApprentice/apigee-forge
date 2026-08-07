@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<VerifyJWT name="{{ policy.name | escape }}">
+  <DisplayName>{{ policy.name | escape }}</DisplayName>
+  <Algorithm>{{ policy.algorithm | escape }}</Algorithm>
+  <Source>request.header.authorization</Source>
+  <Issuer>{{ policy.issuer | escape }}</Issuer>
+  <Audience>{{ policy.audience | escape }}</Audience>
+{% if policy.jwks_url %}  <PublicKey>
+    <JWKS uri="{{ policy.jwks_url | escape }}"/>
+  </PublicKey>
+{% else %}  <PublicKey>
+    <Value ref="private.jwt.public_key"/>
+  </PublicKey>
+{% endif %}</VerifyJWT>

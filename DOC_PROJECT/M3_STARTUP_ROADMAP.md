@@ -180,16 +180,16 @@ feat(core): render proxy and target endpoints
 
 ### M3-05 — Rendu des policies MVP
 
-- [ ] Implémenter le rendu API Key.
-- [ ] Implémenter le rendu OAuth2.
-- [ ] Implémenter le rendu JWT.
-- [ ] Implémenter le rendu Quota.
-- [ ] Implémenter le rendu Spike Arrest.
-- [ ] Implémenter le rendu CORS.
-- [ ] Implémenter le rendu XML↔JSON basique.
-- [ ] Utiliser une stratégie additive par policy, sans modifier le cœur du moteur pour chaque nouvelle variante.
-- [ ] Vérifier les paramètres requis et les valeurs interdites avant génération.
-- [ ] Tester chaque policy avec un fixture XML attendu.
+- [x] Implémenter le rendu API Key.
+- [x] Implémenter le rendu OAuth2.
+- [x] Implémenter le rendu JWT.
+- [x] Implémenter le rendu Quota.
+- [x] Implémenter le rendu Spike Arrest.
+- [x] Implémenter le rendu CORS.
+- [x] Implémenter le rendu XML↔JSON basique.
+- [x] Utiliser une stratégie additive par policy, sans modifier le cœur du moteur pour chaque nouvelle variante.
+- [x] Vérifier les paramètres requis et les valeurs interdites avant génération.
+- [x] Tester chaque policy avec un fixture XML attendu.
 
 Commit possible par groupe cohérent de policies si le changement devient trop large :
 

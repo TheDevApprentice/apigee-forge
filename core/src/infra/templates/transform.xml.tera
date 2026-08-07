@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<{{ policy.element }} name="{{ policy.name | escape }}">
+  <DisplayName>{{ policy.name | escape }}</DisplayName>
+  <Options>
+    <OutputVariable>{{ policy.output_variable }}</OutputVariable>
+    <Source>{{ policy.source }}</Source>
+  </Options>
+</{{ policy.element }}>
