@@ -100,12 +100,12 @@ Les versions doivent être verrouillées dans `Cargo.lock` et auditées par la C
 
 ### M3-00 — Baseline Git et documentation
 
-- [ ] Vérifier que la branche `feature/m3-rendering-engine` est issue de `dev` après le merge M2.
-- [ ] Vérifier `cargo test --workspace --locked` et Clippy avant tout code.
-- [ ] Créer ce document.
-- [ ] Mettre à jour `STRUCTURE.md` avec les nouveaux emplacements M3.
-- [ ] Référencer ce document dans `PROMPT.md`.
-- [ ] Committer uniquement la documentation.
+- [x] Vérifier que la branche `feature/m3-rendering-engine` est issue de `dev` après le merge M2.
+- [x] Vérifier `cargo test --workspace --locked` et Clippy avant tout code.
+- [x] Créer ce document.
+- [x] Mettre à jour `STRUCTURE.md` avec les nouveaux emplacements M3.
+- [x] Référencer ce document dans `PROMPT.md`.
+- [x] Committer uniquement la documentation.
 
 Commit prévu :
 
@@ -115,13 +115,13 @@ docs(m3): add detailed rendering roadmap
 
 ### M3-01 — Contrat des entrées de rendu
 
-- [ ] Examiner le parseur OpenAPI existant : il expose actuellement routes et sécurités, mais pas nécessairement tous les champs requis par le rendu.
-- [ ] Définir les types internes de rendu : proxy name, target URL, routes, méthodes, conditions et contexte de sécurité.
-- [ ] Ne pas utiliser directement `openapiv3::OpenAPI` dans les use cases de rendu.
-- [ ] Définir explicitement les règles de sélection du serveur OpenAPI.
-- [ ] Refuser une spec sans serveur/target exploitable selon la règle retenue.
-- [ ] Borner la taille des specs et templates chargés.
-- [ ] Ajouter tests de cas nominal, absence de serveur, route invalide et sécurité inconnue.
+- [x] Examiner le parseur OpenAPI existant : il expose actuellement routes et sécurités, mais pas nécessairement tous les champs requis par le rendu.
+- [x] Définir les types internes de rendu : proxy name, target URL, routes, méthodes, conditions et contexte de sécurité.
+- [x] Ne pas utiliser directement `openapiv3::OpenAPI` dans les use cases de rendu.
+- [x] Définir explicitement les règles de sélection du serveur OpenAPI.
+- [x] Refuser une spec sans serveur/target exploitable selon la règle retenue.
+- [x] Borner la taille des specs et templates chargés.
+- [x] Ajouter tests de cas nominal, absence de serveur, taille excessive et identifiants/URLs invalides.
 
 Commit prévu :
 
