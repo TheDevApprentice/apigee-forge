@@ -8,7 +8,7 @@ Séquence recommandée : chaque jalon doit être fonctionnel et testable avant d
 
 - [x] **M1 — Fondations `core`** : setup du workspace Cargo, parsing OpenAPI, définition du schéma de template (JSON Schema dans `schemas/`). Pas encore d'appel réseau réel.
 - [x] **M2 — Client Apigee** : authentification (OAuth2 desktop + service account/WIF via `gcp_auth`), appels API de base (liste orgs, environnements, proxies, lecture du rôle IAM).
-- [ ] **M3 — Moteur de rendu** : spec OpenAPI + template → bundle proxy (fichiers XML + packaging zip), testé uniquement via tests unitaires/CLI minimal, sans déploiement réel.
+- [x] **M3 — Moteur de rendu** : spec OpenAPI + template → bundle proxy (fichiers XML + packaging zip), testé uniquement via tests unitaires/CLI minimal, sans déploiement réel.
 - [ ] **M4 — CLI complet** : toutes les commandes (`login`, `template`, `generate`, `deploy`, `status`, `list-proxies`), mode non-interactif complet, sortie `--json`. À ce stade, l'outil doit être 100% utilisable en ligne de commande, sans GUI.
 - [ ] **M5 — Intégration CI/CD de référence** : exemple de pipeline (GitHub Actions et/ou Azure Pipelines) utilisant le CLI en mode non-interactif, pour valider le cas d'usage self-service en pipeline.
 - [ ] **M6 — Squelette GUI Tauri** : écran de connexion OAuth, vue liste orgs/environnements/proxies (lecture seule pour commencer).

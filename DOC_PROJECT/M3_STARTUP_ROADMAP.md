@@ -89,7 +89,7 @@ Versions à vérifier avec Cargo et le toolchain Rust avant ajout :
 
 - `tera = { version = "=1.20.1", default-features = false }` pour le rendu ;
 - `zip = { version = "=7.2.0", default-features = false, features = ["deflate"] }` avec uniquement les features nécessaires, afin de rester compatible avec Rust 1.85.1 ;
-- `quick-xml = "=0.40.1"` pour parser/valider la structure XML dans les tests ;
+- `quick-xml = "=0.41.0"` pour parser/valider la structure XML dans les tests ;
 - aucune dépendance réseau ou Apigee supplémentaire dans M3.
 
 Les versions doivent être verrouillées dans `Cargo.lock` et auditées par la CI.
@@ -149,8 +149,8 @@ feat(core): define bundle rendering contracts
 
 - [x] Ajouter Tera, `zip` et `quick-xml` avec versions compatibles et lockfile mis à jour.
 - [x] Créer les templates XML internes versionnés sous `core/src/infra/templates/`.
-- [ ] Activer un mode de rendu strict et éviter les insertions qui paniquent sur une erreur de sérialisation.
-  - Note : cette décision reste volontairement ouverte et devra être tranchée avant la clôture M3, lors du renderer concret et de la validation des templates utilisateur.
+- [x] Activer un rendu strict vis-à-vis des erreurs et éviter les insertions qui paniquent sur une erreur de sérialisation.
+  - Décision M3 : Tera v1 signale les variables absentes, `Context::try_insert` propage les erreurs, l’auto-échappement implicite `.xml` est désactivé et `escape_xml` est appliqué explicitement aux valeurs dynamiques.
 - [x] Utiliser `Context::try_insert` ou `Context::from_serialize` avec propagation d’erreur.
 - [x] Ne pas permettre l’exécution de fonctions arbitraires dans les templates utilisateurs.
 - [x] Définir les échappements XML attendus pour les noms, URLs, conditions et valeurs de policy.
@@ -265,14 +265,15 @@ test(core): validate generated Apigee bundle fixtures
 
 ### M3-10 — CLI minimal de génération et point de contrôle M3
 
-- [ ] Décider si le CLI minimal de génération est nécessaire avant M4 ou si le use case suffit pour M3.
-- [ ] Si nécessaire, ajouter uniquement une commande thin adapter sans logique métier.
-- [ ] Ne pas implémenter les commandes CLI complètes de M4.
-- [ ] Exécuter `cargo test --workspace --locked`.
-- [ ] Exécuter Clippy avec `-D warnings`.
-- [ ] Exécuter `cargo audit`.
-- [ ] Vérifier l’absence de secrets et chemins dangereux dans les fixtures/rapports.
-- [ ] Marquer M3 terminé dans `ROADMAP.md` et ce document seulement quand le bundle ZIP de référence est validé.
+- [x] Décider si le CLI minimal de génération est nécessaire avant M4 ou si le use case suffit pour M3.
+  - Décision : le use case est couvert par les tests, mais une commande `generate` thin est conservée pour le smoke test de bout en bout.
+- [x] Si nécessaire, ajouter uniquement une commande thin adapter sans logique métier.
+- [x] Ne pas implémenter les commandes CLI complètes de M4.
+- [x] Exécuter `cargo test --workspace --locked`.
+- [x] Exécuter Clippy avec `-D warnings`.
+- [x] Exécuter `cargo audit`.
+- [x] Vérifier l’absence de secrets et chemins dangereux dans les fixtures/rapports.
+- [x] Marquer M3 terminé dans `ROADMAP.md` et ce document seulement quand le bundle ZIP de référence est validé.
 
 Commit prévu :
 
