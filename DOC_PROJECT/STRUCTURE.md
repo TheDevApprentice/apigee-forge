@@ -164,6 +164,7 @@ DOC_PROJECT/
 ├── M3_STARTUP_ROADMAP.md
 ├── M4_STARTUP_ROADMAP.md
 ├── M4-04_checkpoint.md
+├── CI_CLI_EXAMPLE.md
 ├── SECURITY.md
 ├── STRUCTURE.md                 # ce document
 ├── PACKAGING.md

@@ -273,7 +273,7 @@ feat(cli): add deploy and status commands
 - [x] Supporter template inline validé ou template référencé par le repository local.
 - [x] Préserver l'écriture atomique du bundle et le packaging ZIP M3.
 - [x] Produire un résultat humain/JSON stable.
-- [ ] Tester les entrées invalides, template absent, spec invalide, sortie existante et succès complet — couverture subprocess prévue en M4-08.
+- [x] Tester les entrées invalides, template absent, spec invalide, sortie existante et succès complet — couverture subprocess ajoutée en M4-08.
 
 Commit prévu :
 
@@ -283,11 +283,11 @@ feat(cli): complete generate command
 
 ### M4-08 — Non-interactif et sorties scriptables
 
-- [ ] Vérifier que chaque commande fonctionne avec flags et variables d'environnement sans prompt.
-- [ ] Définir explicitement les valeurs interdites en pipeline : credential en argument, sélection implicite, confirmation interactive.
-- [ ] Ajouter tests de subprocess CLI pour succès, erreur et JSON.
-- [ ] Vérifier stdout/stderr, codes de sortie et stabilité des clés JSON.
-- [ ] Documenter un exemple CI sans secret dans le repository.
+- [x] Vérifier que chaque commande fonctionne avec flags et variables d'environnement sans prompt.
+- [x] Définir explicitement les valeurs interdites en pipeline : credential en argument, sélection implicite, confirmation interactive.
+- [x] Ajouter tests de subprocess CLI pour succès, erreur et JSON.
+- [x] Vérifier stdout/stderr, codes de sortie et stabilité des clés JSON.
+- [x] Documenter un exemple CI sans secret dans le repository.
 
 Commit prévu :
 
