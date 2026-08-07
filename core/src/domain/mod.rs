@@ -10,6 +10,8 @@ pub use auth::{AuthContext, AuthMode, GoogleIdentity, OrganizationId, ProjectId}
 pub use deployment::{Deployment, DeploymentStatus};
 pub use organization::{Environment, Organization};
 pub use proxy::{Proxy, ProxyRevision};
-pub use render::{ProxyName, RenderInput, RenderMethod, RenderRoute, TargetUrl};
+pub use render::{
+    ProxyName, RenderInput, RenderMethod, RenderRoute, RenderedBundle, RenderedFile, TargetUrl,
+};
 pub use role::ApigeeRole;
 pub use template::{PolicyType, Template};

@@ -150,6 +150,7 @@ feat(core): define bundle rendering contracts
 - [x] Ajouter Tera, `zip` et `quick-xml` avec versions compatibles et lockfile mis à jour.
 - [x] Créer les templates XML internes versionnés sous `core/src/infra/templates/`.
 - [ ] Activer un mode de rendu strict et éviter les insertions qui paniquent sur une erreur de sérialisation.
+  - Note : cette décision reste volontairement ouverte et devra être tranchée avant la clôture M3, lors du renderer concret et de la validation des templates utilisateur.
 - [x] Utiliser `Context::try_insert` ou `Context::from_serialize` avec propagation d’erreur.
 - [x] Ne pas permettre l’exécution de fonctions arbitraires dans les templates utilisateurs.
 - [x] Définir les échappements XML attendus pour les noms, URLs, conditions et valeurs de policy.
@@ -163,13 +164,13 @@ chore(core): add rendering dependencies and XML templates
 
 ### M3-04 — Rendu ProxyEndpoint et TargetEndpoint
 
-- [ ] Générer `apiproxy/proxies/default.xml`.
-- [ ] Générer `apiproxy/targets/default.xml`.
-- [ ] Définir la cible backend à partir du modèle OpenAPI validé.
-- [ ] Générer PreFlow, flows conditionnels et PostFlow selon le modèle de template.
-- [ ] Produire les conditions de chemin/verbe avec échappement XML.
-- [ ] Refuser un nom de proxy ou de fichier dangereux.
-- [ ] Tester le rendu golden sur une spec + template de référence.
+- [x] Générer `apiproxy/proxies/default.xml`.
+- [x] Générer `apiproxy/targets/default.xml`.
+- [x] Définir la cible backend à partir du modèle OpenAPI validé.
+- [x] Générer PreFlow, flows conditionnels et PostFlow selon le modèle de template.
+- [x] Produire les conditions de chemin/verbe avec échappement XML.
+- [x] Refuser un nom de proxy ou de fichier dangereux.
+- [x] Tester le rendu XML sur une spec + template de référence.
 
 Commit prévu :
 
