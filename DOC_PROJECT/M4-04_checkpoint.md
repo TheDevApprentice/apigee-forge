@@ -93,11 +93,131 @@ Ce parcours devient le checkpoint de preuve avant le premier usage réel, mais n
 - Les fakes restent confinés aux tests ; le binaire réel compose toujours les providers et gateways réels.
 - Documenter uniquement le résultat du test réel, sans credential, token ou détail sensible.
 
+## M4-04 terminé côté code
+
+### Sélection explicite du mode d’authentification
+
+Le CLI exige maintenant un mode explicite pour `login` :
+
+```text
+login --headless
+login --interactive --org <organization>
+```
+
+Cas refusés :
+
+```text
+login
+login --headless --interactive
+```
+
+Le mode headless utilise uniquement :
+
+```text
+GOOGLE_APPLICATION_CREDENTIALS
+```
+
+Le mode OAuth desktop utilise :
+
+```text
+APIGEE_FORGE_OAUTH_CLIENT_ID
+APIGEE_FORGE_OAUTH_USERNAME
+```
+
+Aucun credential ou token n’est accepté en argument CLI.
+
+### Composition root
+
+La composition auth est isolée dans :
+
+```text
+cli/src/auth.rs
+```
+
+Le CLI branche uniquement les providers réels :
+
+- `ServiceAccountAuthProvider` pour headless ;
+- `OAuthDesktopAuthProvider` pour OAuth desktop.
+
+Les doubles restent confinés aux tests.
+
+### Résolution de l’organisation
+
+Les règles implémentées sont :
+
+- en headless, l’organisation est déduite du project ID ;
+- une organisation passée explicitement doit correspondre au project ID ;
+- en desktop, `--org` est obligatoire tant qu’aucune organisation n’est sélectionnée ;
+- toute ambiguïté est refusée ;
+- les identifiants d’organisation dangereux sont rejetés.
+
+### Résultat `login`
+
+Le résultat ne contient aucune donnée sensible :
+
+```json
+{
+  "ok": true,
+  "command": "login",
+  "data": {
+    "mode": "headless",
+    "identity": null,
+    "project_id": "project-id",
+    "selected_organization": "project-id"
+  },
+  "error": null
+}
+```
+
+Un appel sans mode explicite produit une erreur JSON sûre :
+
+```json
+{
+  "ok": false,
+  "command": "login",
+  "data": null,
+  "error": {
+    "code": "INVALID_AUTH_MODE",
+    "message": "select exactly one explicit authentication mode"
+  }
+}
+```
+
+### Tests M4-04
+
+Les tests couvrent :
+
+- un double `AuthProvider` ;
+- la résolution headless ;
+- la détection des conflits d’organisation ;
+- le refus d’une organisation desktop absente ;
+- les modes d’authentification explicites ;
+- le résumé non sensible.
+
+Les doubles `BrowserLauncher` et `RefreshTokenStore` existants de M2 couvrent déjà le provider OAuth desktop.
+
+### Validation automatisée
+
+```text
+cargo test --workspace --locked
+55 tests core
+1 test golden
+11 tests CLI
+0 échec
+
+cargo clippy --workspace --all-targets --locked -- -D warnings
+OK
+
+cargo audit
+OK
+```
+
 ## État au checkpoint M4-04
 
 - Composition auth CLI : implémentée.
 - Mode headless explicite : implémenté.
 - Mode OAuth desktop explicite : implémenté.
 - Résolution d’organisation : implémentée et testée avec doubles.
+- Résultat `login` humain/JSON non sensible : implémenté.
 - Test réel Apigee : volontairement différé.
 - Provisionnement GCP/Apigee : à effectuer avant la validation M4-11 et avant tout premier déploiement réel.
