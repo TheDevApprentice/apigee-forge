@@ -34,6 +34,7 @@ core/
     ├── lib.rs
     ├── domain/
     │   ├── mod.rs
+    │   ├── auth.rs            # AuthContext, AuthMode, GoogleIdentity, ProjectId, OrganizationId
     │   ├── proxy.rs           # struct Proxy, struct ProxyRevision
     │   ├── template.rs        # struct Template, enum PolicyType (conforme à schemas/template.schema.json)
     │   ├── deployment.rs      # struct Deployment, enum DeploymentStatus
@@ -53,7 +54,11 @@ core/
     │   └── local_state_store.rs    # trait LocalStateStore
     ├── infra/
     │   ├── mod.rs
-    │   ├── reqwest_apigee_gateway.rs
+    │   ├── headless_auth_config.rs
+    │   ├── service_account_auth_provider.rs
+    │   ├── oauth_desktop_auth_provider.rs
+    │   ├── reqwest_apigee_gateway.rs       # transport HTTP partagé Apigee
+
     │   ├── in_memory_apigee_gateway.rs      # fake, niveau 1 de la stratégie de test
     │   ├── filesystem_template_repository.rs
     │   ├── oauth_desktop_auth_provider.rs
@@ -145,6 +150,7 @@ DOC_PROJECT/
 ├── DESIGN.md
 ├── ROADMAP.md
 ├── STARTUP_ROADMAP.md
+├── M2_STARTUP_ROADMAP.md
 ├── SECURITY.md
 ├── STRUCTURE.md                 # ce document
 ├── PACKAGING.md

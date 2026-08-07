@@ -12,9 +12,10 @@ Avant d'écrire une seule ligne de code, lis l'intégralité des documents suiva
 6. **`SECURITY.md`** — guidelines de cybersécurité, obligatoires au même titre qu'ARCHITECTURE.md
 7. **`ROADMAP.md`** — jalons M1 à M10, et idées volontairement repoussées post-MVP
 8. **`STARTUP_ROADMAP.md`** — étapes atomiques détaillées pour démarrer (jalon M1), et méthode à réappliquer pour découper chaque jalon suivant
-9. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
-10. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
-11. **`schemas/template.schema.json`** et **`schemas/template.example.json`** — format de données central du projet
+9. **`M2_STARTUP_ROADMAP.md`** — étapes atomiques détaillées du jalon M2, à suivre après la fusion de M1 dans `dev`
+10. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
+11. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
+12. **`schemas/template.schema.json`** et **`schemas/template.example.json`** — format de données central du projet
 
 Une fois ces documents lus, **résume-moi en quelques phrases** ce que tu as compris du projet, de son périmètre MVP, et de la méthode de travail attendue — avant de proposer quoi que ce soit. Je veux confirmer que le contexte est bien assimilé avant qu'on commence.
 

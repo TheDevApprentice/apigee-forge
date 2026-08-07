@@ -6,6 +6,22 @@ pub enum GatewayError {
     RequestFailed,
     #[error("gateway response was invalid")]
     InvalidResponse,
+    #[error("gateway request was unauthorized")]
+    Unauthorized,
+    #[error("gateway request was forbidden")]
+    Forbidden,
+    #[error("gateway resource was not found")]
+    NotFound,
+    #[error("gateway request timed out")]
+    Timeout,
+    #[error("gateway request was rate limited")]
+    RateLimited,
+    #[error("gateway server failed")]
+    Server,
+    #[error("authenticated identity is unavailable")]
+    IdentityUnavailable,
+    #[error("an Apigee role is unknown")]
+    UnknownRole,
 }
 
 #[derive(Debug, Error)]
@@ -28,6 +44,26 @@ pub enum AuthError {
     AuthenticationFailed,
     #[error("access token is unavailable")]
     TokenUnavailable,
+    #[error("OAuth configuration is invalid")]
+    OAuthConfiguration,
+    #[error("the system browser could not be opened")]
+    BrowserLaunch,
+    #[error("the OAuth callback is invalid or timed out")]
+    Callback,
+    #[error("the OS credential store operation failed")]
+    CredentialStore,
+    #[error("the OAuth token exchange failed")]
+    TokenExchange,
+    #[error("the Google identity could not be resolved")]
+    IdentityLookup,
+}
+
+#[derive(Debug, Error)]
+pub enum HeadlessAuthConfigError {
+    #[error("GOOGLE_APPLICATION_CREDENTIALS is not set")]
+    MissingCredentialsPath,
+    #[error("GOOGLE_APPLICATION_CREDENTIALS does not point to a regular file")]
+    CredentialsPathNotFile,
 }
 
 #[derive(Debug, Error)]
