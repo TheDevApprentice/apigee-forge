@@ -1414,8 +1414,13 @@ dependencies = [
 name = "gui"
 version = "0.1.0"
 dependencies = [
+ "apigee-forge-core",
+ "async-trait",
+ "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
+ "url",
 ]
 
 [[package]]

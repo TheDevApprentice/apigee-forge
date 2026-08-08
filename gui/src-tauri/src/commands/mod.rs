@@ -1,0 +1,231 @@
+use std::sync::MutexGuard;
+
+use apigee_forge_core::{
+    domain::{AuthContext, AuthMode, Environment, Organization, Proxy},
+    error::{AuthError, GatewayError},
+    ports::ApigeeGateway,
+};
+use tauri::State;
+
+use crate::{GuiError, GuiState};
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct AuthDto {
+    pub authenticated: bool,
+    pub mode: Option<String>,
+    pub identity: Option<String>,
+    pub project_id: Option<String>,
+    pub selected_organization: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct OrganizationDto {
+    pub id: String,
+    pub project_id: String,
+    pub location: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct EnvironmentDto {
+    pub name: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ProxyDto {
+    pub name: String,
+    pub revisions: Vec<ProxyRevisionDto>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ProxyRevisionDto {
+    pub number: u32,
+    pub deployed: bool,
+}
+
+fn auth_error(error: AuthError) -> GuiError {
+    let code = match error {
+        AuthError::CredentialStore => "AUTH_STORAGE_ERROR",
+        AuthError::OAuthConfiguration => "AUTH_CONFIGURATION",
+        _ => "AUTH_FAILED",
+    };
+    GuiError {
+        code,
+        message: "authentication failed",
+    }
+}
+
+fn gateway_error(_error: GatewayError) -> GuiError {
+    GuiError {
+        code: "GATEWAY_ERROR",
+        message: "Apigee data could not be loaded",
+    }
+}
+
+fn context_lock(state: &GuiState) -> Result<MutexGuard<'_, Option<AuthContext>>, GuiError> {
+    state.auth_context.lock().map_err(|_| GuiError {
+        code: "STATE_ERROR",
+        message: "application state is unavailable",
+    })
+}
+
+fn auth_dto(context: Option<&AuthContext>) -> AuthDto {
+    let Some(context) = context else {
+        return AuthDto {
+            authenticated: false,
+            mode: None,
+            identity: None,
+            project_id: None,
+            selected_organization: None,
+        };
+    };
+    AuthDto {
+        authenticated: true,
+        mode: Some(match context.mode {
+            AuthMode::Desktop => "desktop".to_owned(),
+            AuthMode::Headless => "headless".to_owned(),
+        }),
+        identity: context
+            .identity
+            .as_ref()
+            .map(|value| value.email().to_owned()),
+        project_id: context
+            .project_id
+            .as_ref()
+            .map(|value| value.as_str().to_owned()),
+        selected_organization: context
+            .selected_organization
+            .as_ref()
+            .map(|value| value.as_str().to_owned()),
+    }
+}
+
+#[tauri::command]
+pub fn auth_status(state: State<'_, GuiState>) -> Result<AuthDto, GuiError> {
+    Ok(auth_dto(context_lock(&state)?.as_ref()))
+}
+
+#[tauri::command]
+pub async fn auth_login(state: State<'_, GuiState>) -> Result<AuthDto, GuiError> {
+    let provider = state.auth_provider.clone().ok_or(GuiError {
+        code: "AUTH_CONFIGURATION",
+        message: "OAuth desktop configuration is unavailable",
+    })?;
+    let context = provider.authenticate().await.map_err(auth_error)?;
+    let dto = auth_dto(Some(&context));
+    *context_lock(&state)? = Some(context);
+    Ok(dto)
+}
+
+#[tauri::command]
+pub fn auth_logout(state: State<'_, GuiState>) -> Result<(), GuiError> {
+    if let Some(provider) = &state.auth_provider {
+        provider.logout().map_err(auth_error)?;
+    }
+    *context_lock(&state)? = None;
+    Ok(())
+}
+
+fn gateway(state: &GuiState) -> Result<&std::sync::Arc<dyn ApigeeGateway>, GuiError> {
+    state.gateway.as_ref().ok_or(GuiError {
+        code: "GATEWAY_CONFIGURATION",
+        message: "Apigee gateway configuration is unavailable",
+    })
+}
+
+#[tauri::command]
+pub async fn list_organizations(
+    state: State<'_, GuiState>,
+) -> Result<Vec<OrganizationDto>, GuiError> {
+    let values = gateway(&state)?
+        .list_organizations()
+        .await
+        .map_err(gateway_error)?;
+    Ok(values.into_iter().map(organization_dto).collect())
+}
+
+#[tauri::command]
+pub async fn list_environments(
+    state: State<'_, GuiState>,
+    organization: String,
+) -> Result<Vec<EnvironmentDto>, GuiError> {
+    let values = gateway(&state)?
+        .list_environments(&organization)
+        .await
+        .map_err(gateway_error)?;
+    Ok(values.into_iter().map(environment_dto).collect())
+}
+
+#[tauri::command]
+pub async fn list_proxies(
+    state: State<'_, GuiState>,
+    organization: String,
+) -> Result<Vec<ProxyDto>, GuiError> {
+    let values = gateway(&state)?
+        .list_proxies(&organization)
+        .await
+        .map_err(gateway_error)?;
+    Ok(values.into_iter().map(proxy_dto).collect())
+}
+
+fn organization_dto(value: Organization) -> OrganizationDto {
+    OrganizationDto {
+        id: value.id.as_str().to_owned(),
+        project_id: value.project_id.as_str().to_owned(),
+        location: value.location,
+    }
+}
+
+fn environment_dto(value: Environment) -> EnvironmentDto {
+    EnvironmentDto { name: value.name }
+}
+
+fn proxy_dto(value: Proxy) -> ProxyDto {
+    ProxyDto {
+        name: value.name,
+        revisions: value
+            .revisions
+            .into_iter()
+            .map(|revision| ProxyRevisionDto {
+                number: revision.number,
+                deployed: revision.deployed,
+            })
+            .collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AuthDto, EnvironmentDto, OrganizationDto, ProxyDto, ProxyRevisionDto};
+
+    #[test]
+    fn serializes_bridge_dtos_without_sensitive_fields() -> Result<(), Box<dyn std::error::Error>> {
+        let auth = serde_json::to_value(AuthDto {
+            authenticated: true,
+            mode: Some("desktop".to_owned()),
+            identity: Some("user@example.com".to_owned()),
+            project_id: None,
+            selected_organization: Some("org-one".to_owned()),
+        })?;
+        let organization = serde_json::to_value(OrganizationDto {
+            id: "org-one".to_owned(),
+            project_id: "project-one".to_owned(),
+            location: None,
+        })?;
+        let environment = serde_json::to_value(EnvironmentDto {
+            name: "prod".to_owned(),
+        })?;
+        let proxy = serde_json::to_value(ProxyDto {
+            name: "orders".to_owned(),
+            revisions: vec![ProxyRevisionDto {
+                number: 1,
+                deployed: false,
+            }],
+        })?;
+        assert_eq!(auth["mode"], "desktop");
+        assert_eq!(organization["id"], "org-one");
+        assert_eq!(environment["name"], "prod");
+        assert_eq!(proxy["revisions"][0]["number"], 1);
+        assert!(auth.get("access_token").is_none());
+        Ok(())
+    }
+}

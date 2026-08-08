@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
+import { useAuth } from './composables/useAuth'
 import BaseButton from './components/base/BaseButton.vue'
 import BaseCard from './components/base/BaseCard.vue'
 import BaseChip from './components/base/BaseChip.vue'
@@ -19,6 +20,11 @@ const navigation: NavigationItem[] = [
 ]
 
 const activeView = ref('Dashboard')
+const auth = useAuth()
+
+onMounted(() => {
+  void auth.refresh()
+})
 </script>
 
 <template>

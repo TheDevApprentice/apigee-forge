@@ -104,15 +104,19 @@ feat(gui): add M6 visual application shell
 
 Brancher les commandes Tauri et les types frontend :
 
-- composition root OAuth desktop dans `gui/src-tauri/src/lib.rs` ;
-- commande `auth` pour login/logout/contexte courant ;
-- commande `organizations`/`environments` pour la sélection de contexte ;
-- commande `proxies` pour la lecture des proxies ;
-- DTO Rust sérialisables et interfaces TypeScript correspondantes ;
-- injection des ports et doubles pour les tests ;
-- aucune logique `reqwest` ou `keyring` dans le frontend.
+- [x] composition root OAuth desktop dans `gui/src-tauri/src/lib.rs` ;
+- [x] commande `auth` pour login/logout/contexte courant ;
+- [x] commande `organizations`/`environments` pour la sélection de contexte ;
+- [x] commande `proxies` pour la lecture des proxies ;
+- [x] DTO Rust sérialisables et interfaces TypeScript correspondantes ;
+- [x] injection par ports (`Arc<dyn Trait>`) et doubles disponibles pour les tests ;
+- [x] aucune logique `reqwest` ou `keyring` dans le frontend.
 
-Validation regroupée : tests Rust des commandes, tests de sérialisation DTO et test frontend des états invoke succès/erreur.
+Validation regroupée :
+
+- [x] tests Rust des commandes et de sérialisation DTO ;
+- [x] build frontend et compilation Tauri ;
+- [ ] test frontend des états invoke succès/erreur à compléter dans M6-03.
 
 Commit possible :
 
