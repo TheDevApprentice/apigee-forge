@@ -79,14 +79,20 @@ docs(m6): define Tauri Vue GUI roadmap
 
 Créer le squelette frontend et la structure Tauri minimale :
 
-- layout principal avec sidebar 56px et topbar ;
-- navigation visuelle vers Login, Dashboard, Templates, Proxies et Deployments ;
-- tokens `DESIGN.md` centralisés en CSS ;
-- composants base : bouton, carte, badge/chip, état vide, état erreur, spinner ;
-- responsive desktop minimal et focus clavier visible ;
-- aucun appel métier directement depuis les composants.
+- [x] layout principal avec sidebar 56px et topbar ;
+- [x] navigation visuelle vers Login, Dashboard, Templates, Proxies et Deployments ;
+- [x] tokens `DESIGN.md` centralisés en CSS ;
+- [x] composants base : bouton, carte, badge/chip, état vide, état erreur, spinner ;
+- [x] responsive desktop minimal et focus clavier visible ;
+- [x] aucun appel métier directement depuis les composants.
 
-Validation regroupée : build frontend, inspection visuelle, vérification des contrastes et navigation clavier.
+Validation regroupée :
+
+- [x] build frontend ;
+- [x] compilation et démarrage Tauri vérifiés ;
+- [x] inspection visuelle du shell ;
+- [x] contrastes et navigation clavier traités dans les styles ;
+- [ ] validation interactive complète à reprendre lors de M6-04.
 
 Commit possible :
 

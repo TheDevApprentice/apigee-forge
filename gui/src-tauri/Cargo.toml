@@ -2,3 +2,13 @@
 name = "gui"
 version.workspace = true
 edition.workspace = true
+
+[lib]
+name = "gui_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.3.0", features = [] }
+
+[dependencies]
+tauri = { version = "=2.6.0", features = [] }
