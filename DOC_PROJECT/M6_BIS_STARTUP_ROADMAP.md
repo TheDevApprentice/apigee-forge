@@ -168,10 +168,10 @@ Ce report ne bloque pas les contrats Demo/Live ni la suite M6-Bis ; il déplace 
 
 #### M6-Bis-09 — Écran Live Login réel
 
-- [x] En mode Live, n’afficher que l’écran de connexion tant que la session n’est pas authentifiée.
+- [ ] En mode Live, n’afficher que l’écran de connexion tant que la session n’est pas authentifiée ; le shell/navigation actuels doivent encore être masqués.
 - [x] Afficher la configuration manquante sans exposer de secret.
 - [x] Lancer le flux Google OAuth desktop via la commande Tauri.
-- [x] Afficher loading, succès et erreur contrôlée sans données sensibles.
+- [ ] Afficher un vrai écran d’accueil, les spinners de restauration/OAuth et les erreurs dédiées.
 - [x] Après connexion, afficher l’écran de sélection d’organisation avant les environnements/proxies.
 - [x] Tester le parcours avec un provider OAuth fake ; le test réel Google reste manuel.
 
