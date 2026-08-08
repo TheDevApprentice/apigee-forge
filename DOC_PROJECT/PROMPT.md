@@ -17,9 +17,10 @@ Avant d'écrire une seule ligne de code, lis l'intégralité des documents suiva
 11. **`M4_STARTUP_ROADMAP.md`** — étapes atomiques détaillées du CLI complet, de l’authentification et des sorties scriptables
 12. **`M4-04_checkpoint.md`** — décision de différer le test réel Apigee et méthode de validation ultérieure
 13. **`M5_CI_REFERENCE.md`** — pipeline GitHub Actions de validation non-interactive du CLI
-14. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
-13. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
-14. **`schemas/template.schema.json`** et **`schemas/template.example.json`** — format de données central du projet
+14. **`M6_STARTUP_ROADMAP.md`** — étapes regroupées du squelette GUI Tauri/Vue
+15. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
+16. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
+17. **`schemas/template.schema.json`** et **`schemas/template.example.json`** — format de données central du projet
 
 Une fois ces documents lus, **résume-moi en quelques phrases** ce que tu as compris du projet, de son périmètre MVP, et de la méthode de travail attendue — avant de proposer quoi que ce soit. Je veux confirmer que le contexte est bien assimilé avant qu'on commence.
 
