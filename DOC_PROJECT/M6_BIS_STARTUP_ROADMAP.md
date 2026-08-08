@@ -97,21 +97,21 @@ docs(m6-bis): define Demo and Cloud GUI roadmap
 
 #### M6-Bis-02 — Persistance du mode
 
-- [ ] Définir les clés persistées du mode, de l’organisation et de l’environnement.
-- [ ] Restaurer le dernier mode sans restaurer une sélection Cloud invalide.
-- [ ] Prévoir un changement explicite de mode avec nettoyage de l’état de session non applicable.
-- [ ] Ajouter tests de persistance avec un store fake.
+- [x] Définir les clés persistées du mode, de l’organisation et de l’environnement.
+- [x] Restaurer le dernier mode sans restaurer une sélection Cloud invalide.
+- [x] Prévoir un changement explicite de mode avec nettoyage de l’état de session non applicable.
+- [x] Ajouter tests de persistance avec un store fake.
 
 ### Catégorie B — Stockage local Demo
 
 #### M6-Bis-03 — Implémentation SQLCipher du LocalStateStore
 
-- [ ] Vérifier la disponibilité et la compatibilité Rust de `rusqlite` avec `bundled-sqlcipher` et le toolchain du projet.
-- [ ] Implémenter `SqlCipherLocalStore` dans `core/infra` derrière le port `LocalStateStore`.
-- [ ] Placer le fichier dans le répertoire de données applicatif Tauri, jamais dans le repository.
-- [ ] Générer ou récupérer la clé SQLCipher via le trousseau OS.
-- [ ] Refuser proprement le démarrage Demo si le store ne peut pas être ouvert ou déchiffré.
-- [ ] Tester création, lecture, écriture, suppression, migration minimale et erreur de clé.
+- [x] Vérifier la disponibilité et la compatibilité Rust de `rusqlite` avec `bundled-sqlcipher` et Rust 1.85.1. Sous Windows, le build utilise OpenSSL installé avec `OPENSSL_DIR` et `OPENSSL_NO_VENDOR=1`.
+- [x] Implémenter `SqlCipherLocalStore` dans `core/infra` derrière le port `LocalStateStore`.
+- [x] Placer le fichier dans le répertoire de données applicatif Tauri, jamais dans le repository.
+- [x] Générer ou récupérer la clé SQLCipher via le trousseau OS.
+- [x] Refuser proprement le démarrage Demo si le store ne peut pas être ouvert ou déchiffré.
+- [x] Tester création, lecture, écriture, suppression, migration minimale et erreur de clé.
 
 #### M6-Bis-04 — Dataset Demo seedé
 

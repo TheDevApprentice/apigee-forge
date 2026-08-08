@@ -9,8 +9,10 @@ path = "src/lib.rs"
 
 [dependencies]
 async-trait = "0.1.89"
+getrandom = "=0.3.4"
 gcp_auth = "0.12.7"
 keyring = "=3.6.3"
+rusqlite = { version = "=0.40.2", default-features = false, features = ["bundled-sqlcipher"] }
 oauth2 = "=5.0.0"
 openapiv3 = "2.2.0"
 reqwest = { version = "=0.12.24", default-features = false, features = ["json", "multipart", "rustls-tls"] }

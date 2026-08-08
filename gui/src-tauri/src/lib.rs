@@ -8,12 +8,16 @@ use std::{
 use apigee_forge_core::{
     domain::{AuthContext, SessionState},
     error::AuthError,
-    infra::oauth_desktop_auth_provider::{OAuthDesktopAuthProvider, OAuthDesktopConfig},
-    infra::ReqwestApigeeGateway,
-    ports::{ApigeeGateway, AuthProvider},
+    infra::{
+        oauth_desktop_auth_provider::{OAuthDesktopAuthProvider, OAuthDesktopConfig},
+        KeyringLocalKeyStore, ReqwestApigeeGateway, SqlCipherLocalStateStore,
+    },
+    ports::{ApigeeGateway, AuthProvider, LocalStateStore},
+    use_cases::SessionStatePersistence,
 };
 use async_trait::async_trait;
 use serde::Serialize;
+use tauri::Manager;
 use url::Url;
 
 const OAUTH_CLIENT_ID: &str = "APIGEE_FORGE_OAUTH_CLIENT_ID";
@@ -45,6 +49,7 @@ pub struct GuiState {
     pub gateway: Option<Arc<dyn ApigeeGateway>>,
     pub auth_context: Mutex<Option<AuthContext>>,
     pub session: Mutex<SessionState>,
+    pub local_store: Mutex<Option<Arc<dyn LocalStateStore>>>,
 }
 
 impl Default for GuiState {
@@ -54,6 +59,7 @@ impl Default for GuiState {
             gateway: None,
             auth_context: Mutex::new(None),
             session: Mutex::new(SessionState::cloud()),
+            local_store: Mutex::new(None),
         }
     }
 }
@@ -89,6 +95,7 @@ pub fn build_state() -> GuiState {
         gateway: Some(Arc::new(gateway)),
         auth_context: Mutex::new(None),
         session: Mutex::new(SessionState::cloud()),
+        local_store: Mutex::new(None),
     }
 }
 
@@ -96,6 +103,32 @@ pub fn build_state() -> GuiState {
 pub fn run() -> Result<(), tauri::Error> {
     tauri::Builder::default()
         .manage(build_state())
+        .setup(|app| {
+            let path = app
+                .path()
+                .app_data_dir()
+                .map_err(|_| "application data directory is unavailable")?
+                .join("state.sqlcipher");
+            let key_store = KeyringLocalKeyStore::new("apigee-forge", "demo-local-state-key");
+            let store = Arc::new(
+                SqlCipherLocalStateStore::open(path, &key_store)
+                    .map_err(|_| "local encrypted state store is unavailable")?,
+            );
+            let session = SessionStatePersistence::new(store.clone())
+                .load()
+                .map_err(|_| "persisted application state is invalid")?;
+            let state = app.state::<GuiState>();
+            *state
+                .session
+                .lock()
+                .map_err(|_| "application state is unavailable")? = session;
+            state
+                .local_store
+                .lock()
+                .map_err(|_| "application state is unavailable")?
+                .replace(store);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::session_status,
             commands::auth_status,
