@@ -23,6 +23,19 @@ export function useAuth(invoke: Invoke = defaultInvoke) {
     }
   }
 
+  async function restore() {
+    loading.value = true
+    error.value = null
+    try {
+      const restored = await invoke<AuthDto>('auth_restore')
+      context.value = restored.authenticated ? restored : null
+    } catch {
+      error.value = 'Saved Google session could not be restored.'
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function login() {
     loading.value = true
     error.value = null
@@ -48,5 +61,5 @@ export function useAuth(invoke: Invoke = defaultInvoke) {
     }
   }
 
-  return { context, loading, error, refresh, login, logout }
+  return { context, loading, error, refresh, restore, login, logout }
 }

@@ -378,20 +378,28 @@ fn parse_callback_target(target: &str) -> Result<(String, String), AuthError> {
     Ok((code, state))
 }
 
+impl OAuthDesktopAuthProvider {
+    pub async fn restore_session(&self) -> Result<Option<AuthContext>, AuthError> {
+        let Some(refresh_token) = self.refresh_tokens.load()? else {
+            return Ok(None);
+        };
+        let (access_token, replacement) = self.refresh_access_token(refresh_token).await?;
+        if let Some(replacement) = replacement {
+            self.refresh_tokens.save(&replacement)?;
+        }
+        let identity = self.lookup_identity(&access_token).await?;
+        self.store_access_token(&access_token)?;
+        Ok(Some(AuthContext::desktop_authenticated(identity)))
+    }
+}
+
 #[async_trait]
 impl AuthProvider for OAuthDesktopAuthProvider {
     async fn authenticate(&self) -> Result<AuthContext, AuthError> {
-        let (access_token, identity) = match self.refresh_tokens.load()? {
-            Some(refresh_token) => {
-                let (access_token, replacement) = self.refresh_access_token(refresh_token).await?;
-                if let Some(replacement) = replacement {
-                    self.refresh_tokens.save(&replacement)?;
-                }
-                let identity = self.lookup_identity(&access_token).await?;
-                (access_token, identity)
-            }
-            None => self.authorize_interactively().await?,
-        };
+        if let Some(context) = self.restore_session().await? {
+            return Ok(context);
+        }
+        let (access_token, identity) = self.authorize_interactively().await?;
         self.store_access_token(&access_token)?;
         Ok(AuthContext::desktop_authenticated(identity))
     }

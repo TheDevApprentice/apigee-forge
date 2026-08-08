@@ -162,6 +162,21 @@ pub fn get_app_mode(state: State<'_, GuiState>) -> Result<AppMode, GuiError> {
 
 #[tauri::command]
 pub fn set_app_mode(state: State<'_, GuiState>, mode: AppMode) -> Result<SessionDto, GuiError> {
+    if mode == AppMode::Demo
+        && state
+            .local_store
+            .lock()
+            .map_err(|_| GuiError {
+                code: "STATE_ERROR",
+                message: "application state is unavailable",
+            })?
+            .is_none()
+    {
+        return Err(GuiError {
+            code: "DEMO_STORE_UNAVAILABLE",
+            message: "Demo local storage is unavailable",
+        });
+    }
     let next = match mode {
         AppMode::Demo => SessionState::demo(),
         AppMode::Cloud => SessionState::cloud(),
@@ -221,6 +236,45 @@ pub fn set_app_mode(state: State<'_, GuiState>, mode: AppMode) -> Result<Session
         message: "application state is unavailable",
     })? = Some(gateway);
     Ok(session_dto(&next))
+}
+
+#[tauri::command]
+pub async fn auth_restore(state: State<'_, GuiState>) -> Result<AuthDto, GuiError> {
+    if session_lock(&state)?.mode == AppMode::Demo {
+        return Ok(AuthDto {
+            authenticated: false,
+            mode: None,
+            identity: None,
+            project_id: None,
+            selected_organization: None,
+        });
+    }
+    let Some(provider) = state.auth_provider.clone() else {
+        return Ok(AuthDto {
+            authenticated: false,
+            mode: None,
+            identity: None,
+            project_id: None,
+            selected_organization: None,
+        });
+    };
+    let Some(context) = provider.restore_session().await.map_err(auth_error)? else {
+        return Ok(AuthDto {
+            authenticated: false,
+            mode: None,
+            identity: None,
+            project_id: None,
+            selected_organization: None,
+        });
+    };
+    let dto = auth_dto(Some(&context));
+    let identity = context.identity.clone().ok_or(GuiError {
+        code: "AUTH_FAILED",
+        message: "Google identity is unavailable",
+    })?;
+    *context_lock(&state)? = Some(context);
+    *session_lock(&state)? = SessionState::cloud_authenticated(identity);
+    Ok(dto)
 }
 
 #[tauri::command]

@@ -26,6 +26,7 @@ const OAUTH_USERNAME: &str = "APIGEE_FORGE_OAUTH_USERNAME";
 
 #[async_trait]
 pub trait GuiAuthProvider: Send + Sync {
+    async fn restore_session(&self) -> Result<Option<AuthContext>, AuthError>;
     async fn authenticate(&self) -> Result<AuthContext, AuthError>;
     fn logout(&self) -> Result<(), AuthError>;
 }
@@ -36,6 +37,10 @@ struct DesktopGuiAuthProvider {
 
 #[async_trait]
 impl GuiAuthProvider for DesktopGuiAuthProvider {
+    async fn restore_session(&self) -> Result<Option<AuthContext>, AuthError> {
+        self.provider.restore_session().await
+    }
+
     async fn authenticate(&self) -> Result<AuthContext, AuthError> {
         self.provider.authenticate().await
     }
@@ -116,29 +121,28 @@ pub fn run() -> Result<(), tauri::Error> {
                 .map_err(|_| "application data directory is unavailable")?
                 .join("state.sqlcipher");
             let key_store = KeyringLocalKeyStore::new("apigee-forge", "demo-local-state-key");
-            let store = Arc::new(
-                SqlCipherLocalStateStore::open(path, &key_store)
-                    .map_err(|_| "local encrypted state store is unavailable")?,
-            );
-            let session = SessionStatePersistence::new(store.clone())
-                .load()
-                .map_err(|_| "persisted application state is invalid")?;
             let state = app.state::<GuiState>();
-            *state
-                .session
-                .lock()
-                .map_err(|_| "application state is unavailable")? = session;
-            state
-                .local_store
-                .lock()
-                .map_err(|_| "application state is unavailable")?
-                .replace(store);
+            if let Ok(store) = SqlCipherLocalStateStore::open(path, &key_store) {
+                let store = Arc::new(store);
+                if let Ok(session) = SessionStatePersistence::new(store.clone()).load() {
+                    *state
+                        .session
+                        .lock()
+                        .map_err(|_| "application state is unavailable")? = session;
+                    state
+                        .local_store
+                        .lock()
+                        .map_err(|_| "application state is unavailable")?
+                        .replace(store);
+                }
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_app_mode,
             commands::set_app_mode,
             commands::session_status,
+            commands::auth_restore,
             commands::auth_status,
             commands::auth_login,
             commands::auth_logout,

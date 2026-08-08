@@ -58,7 +58,7 @@ onMounted(async () => {
     appSession.selectedMode.value = 'cloud'
   }
   if (!isDemo.value) {
-    void auth.refresh()
+    void auth.restore()
   }
 })
 
