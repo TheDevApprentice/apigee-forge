@@ -6,7 +6,7 @@ use std::{
 };
 
 use apigee_forge_core::{
-    domain::AuthContext,
+    domain::{AuthContext, SessionState},
     error::AuthError,
     infra::oauth_desktop_auth_provider::{OAuthDesktopAuthProvider, OAuthDesktopConfig},
     infra::ReqwestApigeeGateway,
@@ -44,6 +44,7 @@ pub struct GuiState {
     pub auth_provider: Option<Arc<dyn GuiAuthProvider>>,
     pub gateway: Option<Arc<dyn ApigeeGateway>>,
     pub auth_context: Mutex<Option<AuthContext>>,
+    pub session: Mutex<SessionState>,
 }
 
 impl Default for GuiState {
@@ -52,6 +53,7 @@ impl Default for GuiState {
             auth_provider: None,
             gateway: None,
             auth_context: Mutex::new(None),
+            session: Mutex::new(SessionState::cloud()),
         }
     }
 }
@@ -86,6 +88,7 @@ pub fn build_state() -> GuiState {
         auth_provider: Some(Arc::new(DesktopGuiAuthProvider { provider })),
         gateway: Some(Arc::new(gateway)),
         auth_context: Mutex::new(None),
+        session: Mutex::new(SessionState::cloud()),
     }
 }
 
@@ -94,6 +97,7 @@ pub fn run() -> Result<(), tauri::Error> {
     tauri::Builder::default()
         .manage(build_state())
         .invoke_handler(tauri::generate_handler![
+            commands::session_status,
             commands::auth_status,
             commands::auth_login,
             commands::auth_logout,

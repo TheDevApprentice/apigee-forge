@@ -73,12 +73,11 @@ Le nom retenu est **Demo** / **Cloud** : `Offline` décrivait le transport mais 
 
 **Architecture et documentation**
 
-- [ ] Confirmer la fusion de M6 et de la validation Apigee réelle dans `dev`.
-- [ ] Créer la branche `feature/m6-bis-gui` depuis `dev`.
-- [ ] Ajouter cette roadmap dans `STRUCTURE.md` et `PROMPT.md`.
-- [ ] Figer les noms utilisateur `Demo` et `Cloud`.
-- [ ] Documenter ce qui reste hors M6-Bis : éditeur M7, déploiement GUI M8, polish M9.
-- [ ] Vérifier la baseline `cargo test`, `cargo clippy`, `npm test` et `npm run build`.
+- [x] Confirmer la fusion de M6 et de la validation Apigee réelle dans `dev`.
+- [x] Créer la branche `feature/m6-bis-gui` depuis `dev`.
+- [x] Ajouter cette roadmap dans `STRUCTURE.md` et `PROMPT.md`.
+- [x] Figer les noms utilisateur `Demo` et `Cloud`.
+
 
 Commit prévu :
 
@@ -90,11 +89,11 @@ docs(m6-bis): define Demo and Cloud GUI roadmap
 
 #### M6-Bis-01 — Modèle de domaine Demo/Cloud
 
-- [ ] Ajouter un type de mode partagé et sérialisable : `Demo` ou `Cloud`.
-- [ ] Définir les états de session : mode sélectionné, authentification, organisation, environnement et erreur.
-- [ ] Interdire une session Cloud authentifiée sans organisation explicitement sélectionnée.
-- [ ] Ajouter le mode aux DTO Tauri et aux états Vue.
-- [ ] Tester les transitions valides et les transitions interdites.
+- [x] Ajouter un type de mode partagé et sérialisable : `Demo` ou `Cloud`.
+- [x] Définir les états de session : mode sélectionné, authentification, organisation, environnement et erreur.
+- [x] Interdire l’accès au contexte Dashboard Cloud sans organisation explicitement sélectionnée.
+- [x] Ajouter le mode aux DTO Tauri et aux états Vue.
+- [x] Tester les transitions valides et les transitions interdites.
 
 #### M6-Bis-02 — Persistance du mode
 

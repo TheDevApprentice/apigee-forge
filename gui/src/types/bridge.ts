@@ -1,3 +1,16 @@
+export type AppMode = 'demo' | 'cloud'
+
+export type SessionStatus = 'authentication_required' | 'organization_required' | 'ready' | 'error'
+
+export type SessionDto = {
+  mode: AppMode
+  status: SessionStatus
+  identity: string | null
+  organization: string | null
+  environment: string | null
+  error: string | null
+}
+
 export type AuthDto = {
   authenticated: boolean
   mode: 'desktop' | 'headless' | null

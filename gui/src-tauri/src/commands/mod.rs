@@ -1,7 +1,10 @@
 use std::sync::MutexGuard;
 
 use apigee_forge_core::{
-    domain::{AuthContext, AuthMode, Environment, Organization, Proxy},
+    domain::{
+        AppMode, AuthContext, AuthMode, Environment, Organization, Proxy, SessionState,
+        SessionStatus,
+    },
     error::{AuthError, GatewayError},
     ports::ApigeeGateway,
 };
@@ -16,6 +19,33 @@ pub struct AuthDto {
     pub identity: Option<String>,
     pub project_id: Option<String>,
     pub selected_organization: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SessionDto {
+    pub mode: AppMode,
+    pub status: SessionStatus,
+    pub identity: Option<String>,
+    pub organization: Option<String>,
+    pub environment: Option<String>,
+    pub error: Option<String>,
+}
+
+pub fn session_dto(session: &SessionState) -> SessionDto {
+    SessionDto {
+        mode: session.mode,
+        status: session.status,
+        identity: session
+            .identity
+            .as_ref()
+            .map(|value| value.email().to_owned()),
+        organization: session
+            .organization
+            .as_ref()
+            .map(|value| value.as_str().to_owned()),
+        environment: session.environment.clone(),
+        error: session.error.clone(),
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -68,6 +98,13 @@ fn context_lock(state: &GuiState) -> Result<MutexGuard<'_, Option<AuthContext>>,
     })
 }
 
+fn session_lock(state: &GuiState) -> Result<MutexGuard<'_, SessionState>, GuiError> {
+    state.session.lock().map_err(|_| GuiError {
+        code: "STATE_ERROR",
+        message: "application state is unavailable",
+    })
+}
+
 fn auth_dto(context: Option<&AuthContext>) -> AuthDto {
     let Some(context) = context else {
         return AuthDto {
@@ -97,6 +134,11 @@ fn auth_dto(context: Option<&AuthContext>) -> AuthDto {
             .as_ref()
             .map(|value| value.as_str().to_owned()),
     }
+}
+
+#[tauri::command]
+pub fn session_status(state: State<'_, GuiState>) -> Result<SessionDto, GuiError> {
+    Ok(session_dto(&*session_lock(&state)?))
 }
 
 #[tauri::command]
@@ -195,7 +237,10 @@ fn proxy_dto(value: Proxy) -> ProxyDto {
 
 #[cfg(test)]
 mod tests {
-    use super::{AuthDto, EnvironmentDto, OrganizationDto, ProxyDto, ProxyRevisionDto};
+    use super::{
+        session_dto, AuthDto, EnvironmentDto, OrganizationDto, ProxyDto, ProxyRevisionDto,
+    };
+    use apigee_forge_core::domain::{AppMode, GoogleIdentity, SessionState};
 
     #[test]
     fn serializes_bridge_dtos_without_sensitive_fields() -> Result<(), Box<dyn std::error::Error>> {
@@ -226,6 +271,13 @@ mod tests {
         assert_eq!(environment["name"], "prod");
         assert_eq!(proxy["revisions"][0]["number"], 1);
         assert_eq!(auth.as_object().map(|value| value.len()), Some(5));
+        let session = serde_json::to_value(session_dto(&SessionState::cloud_authenticated(
+            GoogleIdentity::new("user@example.com"),
+        )))?;
+        assert_eq!(session["mode"], "cloud");
+        assert_eq!(session["status"], "organization_required");
+        assert_eq!(session["organization"], serde_json::Value::Null);
+        assert_eq!(AppMode::Cloud, SessionState::cloud().mode);
         Ok(())
     }
 }
