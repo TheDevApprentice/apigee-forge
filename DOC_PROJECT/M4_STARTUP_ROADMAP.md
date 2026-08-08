@@ -223,7 +223,7 @@ feat(cli): add template management commands
 - [x] Résoudre l'organisation depuis le project ID headless ou une sélection/option explicite en desktop.
 - [x] Refuser toute ambiguïté d'organisation au lieu de deviner.
 - [x] Tester avec un double de `AuthProvider` ; les doubles `BrowserLauncher` et `RefreshTokenStore` existants de M2 couvrent le provider OAuth.
-- [ ] **Checkpoint de provisionnement différé** : suivre `M4-04_checkpoint.md` et `GCP_SETUP.md` lorsque l'environnement réel sera nécessaire. Ce checkpoint ne bloque pas l'implémentation automatisée de M4 ; il est requis avant la première validation réelle et tout déploiement réel.
+- [x] **Checkpoint de provisionnement** : le projet Google Cloud et l'organisation Apigee d'évaluation ont été provisionnés ; les tests de connectivité restent à exécuter sur la branche dédiée. Ce checkpoint ne bloque pas l'implémentation automatisée de M4, mais précède la validation réelle.
 
 Commit prévu :
 
@@ -328,7 +328,7 @@ docs(m4): record automated CLI validation
 
 *Checkpoint réel différé, distinct de M4-10 : cette étape est manuelle et ne bloque ni la CI ni la poursuite de l'implémentation automatisée de M4. Elle constitue la preuve concrète avant le premier usage réel, pas un prérequis pour coder les contrats et use cases.*
 
-- [ ] Confirmer que le projet GCP et l'organisation d'évaluation sont bien provisionnés (M4-04) et toujours dans leur fenêtre de 60 jours.
+- [x] Confirmer que le projet GCP et l'organisation d'évaluation sont bien provisionnés (M4-04) et toujours dans leur fenêtre de 60 jours.
 - [ ] Créer une spec OpenAPI minimale Helloworld (une seule route `GET /hello`) sous `examples/helloworld/openapi.yaml`.
 - [ ] Créer un template minimal correspondant sous `examples/helloworld/template.json`, conforme à `schemas/template.schema.json` (sécurité API Key suffit pour ce premier test — pas besoin de couvrir toutes les policies MVP ici).
 - [ ] Exécuter dans l'ordre, avec le CLI réel (pas de double) : `login`, `generate`, `deploy`, `status`, `list-proxies`.

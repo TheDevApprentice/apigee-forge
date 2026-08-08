@@ -16,6 +16,10 @@ Le bundle doit respecter la structure Apigee officielle avec `apiproxy/` comme r
 
 M3 reste local et sans déploiement réel. Le déploiement et les appels Apigee déjà préparés en M2 ne sont pas utilisés pour produire le bundle.
 
+### Revalidation après provisionnement Apigee
+
+Le provisionnement réel ne nécessite pas de refaire M3 : le moteur de rendu et le packaging restent des opérations locales déjà validées. Le bundle `examples/helloworld/` est réutilisé comme entrée de M4-11 ; seule l’intégration CLI → API Apigee est revalidée dans la branche dédiée de test réel.
+
 ---
 
 ## 2. Périmètre
