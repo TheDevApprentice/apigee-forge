@@ -52,14 +52,15 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Generate Hello World bundle
-        run: >-
-          cargo run --locked -p cli -- --json generate
-          --spec examples/helloworld/openapi.yaml
-          --template examples/helloworld/template.json
-          --proxy-name helloworld
-          --output target/helloworld-output
-          --archive target/helloworld.zip
-          > target/helloworld-result.json
+        run: |
+          mkdir -p target
+          cargo run --locked -p cli -- --json generate \
+            --spec examples/helloworld/openapi.yaml \
+            --template examples/helloworld/template.json \
+            --proxy-name helloworld \
+            --output target/helloworld-output \
+            --archive target/helloworld.zip \
+            > target/helloworld-result.json
 
       - name: Verify CLI result and ZIP contents
         shell: python
