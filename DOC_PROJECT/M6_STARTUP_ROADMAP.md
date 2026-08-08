@@ -128,16 +128,20 @@ feat(gui): add typed Tauri core bridge
 
 Implémenter le parcours visible :
 
-- écran Login avec action OAuth explicite ;
-- affichage du contexte organisation/environnement ;
-- sélection d’organisation sans sélection implicite ;
-- dashboard avec cartes de contexte et rôle ;
-- liste de proxies avec états loading, empty, error et success ;
-- composables `useAuth`, `useProxies` et `useTemplateEditor` initialisé pour M7 ;
-- affichage d’erreurs sûres et récupération/retry contrôlée ;
-- aucun appel Apigee réel requis.
+- [x] écran Login avec action OAuth explicite ;
+- [x] affichage du contexte organisation/environnement ;
+- [x] sélection d’organisation sans sélection implicite ;
+- [x] dashboard avec cartes de contexte et rôle ;
+- [x] liste de proxies avec états loading, empty, error et success ;
+- [x] composables `useAuth`, `useProxies` et `useTemplateEditor` initialisé pour M7 ;
+- [x] affichage d’erreurs sûres et récupération/retry contrôlée ;
+- [x] aucun appel Apigee réel requis.
 
-Validation regroupée : tests de composants/composables, parcours UI avec doubles Tauri et contrôle accessibilité.
+Validation regroupée :
+
+- [x] tests de composants/composables avec Vitest ;
+- [x] parcours UI avec doubles Tauri ;
+- [x] contrôle accessibilité de base : labels, rôles, focus visible et navigation explicite.
 
 Commit possible :
 

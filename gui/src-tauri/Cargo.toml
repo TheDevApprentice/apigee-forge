@@ -8,7 +8,7 @@ name = "gui_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]
-tauri-build = "=2.3.0"
+tauri-build = { version = "=2.3.0", features = [] }
 
 [dependencies]
 async-trait = "=0.1.91"

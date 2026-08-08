@@ -1,8 +1,12 @@
-import { invoke } from '@tauri-apps/api/core'
+import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 import { ref } from 'vue'
 import type { AuthDto } from '../types/bridge'
 
-export function useAuth() {
+export type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>
+
+const defaultInvoke: Invoke = (command, args) => tauriInvoke(command, args)
+
+export function useAuth(invoke: Invoke = defaultInvoke) {
   const context = ref<AuthDto | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)

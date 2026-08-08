@@ -1,8 +1,11 @@
-import { invoke } from '@tauri-apps/api/core'
+import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 import { ref } from 'vue'
 import type { EnvironmentDto, OrganizationDto } from '../types/bridge'
+import type { Invoke } from './useAuth'
 
-export function useOrganizations() {
+const defaultInvoke: Invoke = (command, args) => tauriInvoke(command, args)
+
+export function useOrganizations(invoke: Invoke = defaultInvoke) {
   const organizations = ref<OrganizationDto[]>([])
   const environments = ref<EnvironmentDto[]>([])
   const loading = ref(false)

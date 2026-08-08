@@ -1,8 +1,11 @@
-import { invoke } from '@tauri-apps/api/core'
+import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 import { ref } from 'vue'
 import type { ProxyDto } from '../types/bridge'
+import type { Invoke } from './useAuth'
 
-export function useProxies() {
+const defaultInvoke: Invoke = (command, args) => tauriInvoke(command, args)
+
+export function useProxies(invoke: Invoke = defaultInvoke) {
   const proxies = ref<ProxyDto[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
