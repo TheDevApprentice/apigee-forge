@@ -33,10 +33,10 @@ Pour le premier test, vérifier dans IAM que le principal utilisé possède bien
 ## Préparation PowerShell locale
 
 ```powershell
-$env:GOOGLE_APPLICATION_CREDENTIALS = 'C:\chemin\local\service-account.json'
-$env:GCP_PROJECT_ID = 'project-id-reel'
-$env:APIGEE_ORG = 'project-id-reel'
-$env:APIGEE_ENVIRONMENT = 'test'
+$env:GOOGLE_APPLICATION_CREDENTIALS = 'c:\Users\Utilisateur\Documents\apigee-forge\apigee-forge-b1c0171ad15f.json'
+$env:GCP_PROJECT_ID = 'apigee-forge'
+$env:APIGEE_ORG = 'apigee-forge'
+$env:APIGEE_ENVIRONMENT = 'eval'
 $env:APIGEE_PROXY_NAME = 'forge-helloworld-unique'
 ```
 

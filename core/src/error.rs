@@ -4,6 +4,8 @@ use thiserror::Error;
 pub enum GatewayError {
     #[error("gateway request failed")]
     RequestFailed,
+    #[error("gateway request was invalid")]
+    BadRequest,
     #[error("gateway response was invalid")]
     InvalidResponse,
     #[error("gateway request was unauthorized")]

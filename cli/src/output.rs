@@ -189,6 +189,16 @@ fn classify_auth_error(error: &AuthError) -> SafeFailure {
 
 fn classify_gateway_error(error: &GatewayError) -> SafeFailure {
     match error {
+        GatewayError::BadRequest => SafeFailure {
+            code: "INVALID_REMOTE_REQUEST",
+            exit_code: ExitCode::Gateway,
+            message: "Apigee rejected the request parameters or bundle",
+        },
+        GatewayError::InvalidResponse => SafeFailure {
+            code: "INVALID_GATEWAY_RESPONSE",
+            exit_code: ExitCode::Gateway,
+            message: "Apigee returned an unexpected response",
+        },
         GatewayError::Unauthorized | GatewayError::IdentityUnavailable => SafeFailure {
             code: "AUTH_REQUIRED",
             exit_code: ExitCode::Configuration,

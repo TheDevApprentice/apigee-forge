@@ -240,7 +240,7 @@ feat(cli): add secure authentication composition
 - [x] Conserver `InMemoryApigeeGateway` comme double et compléter ses données de test si nécessaire.
 - [x] Ajouter tests de use cases avec fake gateway et tests HTTP WireMock déjà alignés sur les endpoints officiels.
 - [x] Brancher `list-proxies` avec org explicite ou résolue par auth.
-- [ ] **Checkpoint de connectivité réelle (première validation manuelle contre Apigee)** : une fois l'implémentation testée par doubles/WireMock, exécuter manuellement `login` puis `list-proxies` contre l'organisation d'évaluation réelle provisionnée en M4-04. Objectif : confirmer que l'authentification et la lecture fonctionnent réellement avant de construire l'écriture (M4-06) par-dessus une fondation non vérifiée. Ne pas automatiser ce test en CI — c'est une vérification manuelle, ponctuelle, documentée dans le commit ou une note (sans credential ni détail sensible).
+- [x] **Checkpoint de connectivité réelle (première validation manuelle contre Apigee)** : `login --headless` et `list-proxies --headless` ont réussi contre l'organisation `apigee-forge`. Résultat documenté dans `REAL_APIGEE_HELLOWORLD_REPORT.md` sans credential ni détail sensible.
 
 Commit possible :
 
@@ -258,7 +258,7 @@ feat(cli): add list proxies command
 - [ ] Compléter `InMemoryApigeeGateway` pour les scénarios pending/in-progress/succeeded/failed — correction ciblée reportée, le fichier est actuellement modifié localement par l'utilisateur.
 - [x] Tester erreurs d'authentification, permission, ressource absente, timeout, rate limit et serveur.
 - [x] Ajouter `deploy` et `status` sans afficher de credential ni de corps HTTP.
-- [ ] **Checkpoint de connectivité réelle (écriture)** : une fois testé par doubles/WireMock, exécuter manuellement un déploiement contre l'org réelle avec un bundle trivial (pas nécessairement Helloworld à ce stade — un bundle minimal suffit pour confirmer que l'import et le déploiement fonctionnent réellement). Le test Helloworld complet est fait en M4-11, une fois `generate` migré en M4-07.
+- [x] **Checkpoint de connectivité réelle (écriture)** : l'import et le déploiement réels ont réussi avec le bundle Hello World sur `apigee-forge/eval`, puis le statut est passé à `Succeeded`. Résultat documenté dans `REAL_APIGEE_HELLOWORLD_REPORT.md`.
 
 Commit possible :
 
@@ -331,10 +331,10 @@ docs(m4): record automated CLI validation
 - [x] Confirmer que le projet GCP et l'organisation d'évaluation sont bien provisionnés (M4-04) et toujours dans leur fenêtre de 60 jours.
 - [ ] Créer une spec OpenAPI minimale Helloworld (une seule route `GET /hello`) sous `examples/helloworld/openapi.yaml`.
 - [ ] Créer un template minimal correspondant sous `examples/helloworld/template.json`, conforme à `schemas/template.schema.json` (sécurité API Key suffit pour ce premier test — pas besoin de couvrir toutes les policies MVP ici).
-- [ ] Exécuter dans l'ordre, avec le CLI réel (pas de double) : `login`, `generate`, `deploy`, `status`, `list-proxies`.
-- [ ] Confirmer que le proxy apparaît bien dans la console Apigee (ou via `list-proxies`) avec le statut déployé attendu.
-- [ ] Documenter le résultat dans un court rapport (succès/échec, sans aucun credential ni détail sensible) — sert de preuve de validation MVP, pas seulement de checklist cochée.
-- [ ] Si un écart apparaît entre le comportement réel et ce que WireMock simulait, corriger le mapping dans `APIGEE_API_MAP.md` et le code correspondant avant de considérer M4 terminé.
+- [x] Exécuter dans l'ordre, avec le CLI réel : `login`, `generate`, `deploy`, `status`, `list-proxies`.
+- [x] Confirmer que le proxy apparaît bien via `list-proxies` et que `status` retourne `Succeeded` pour la révision 8.
+- [x] Documenter le résultat dans `REAL_APIGEE_HELLOWORLD_REPORT.md`, sans credential ni détail sensible.
+- [x] Corriger les écarts réels détectés dans le mapping et le code : réponse d'import scalaire, état `READY` et `Content-Length: 0` sur le POST de déploiement.
 
 Commit prévu :
 
