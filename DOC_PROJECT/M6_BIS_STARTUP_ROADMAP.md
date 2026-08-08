@@ -132,21 +132,21 @@ Ce report ne bloque pas les contrats Demo/Live ni la suite M6-Bis ; il déplace 
 
 #### M6-Bis-05 — Runtime Demo/Cloud
 
-- [ ] Remplacer l’état Cloud optionnel actuel par une composition root choisie à partir du mode explicite.
-- [ ] Brancher le gateway Demo sans réseau.
-- [ ] Brancher le gateway Cloud réel avec OAuth desktop et `ReqwestApigeeGateway`.
-- [ ] Garder les deux branches derrière les mêmes ports/use cases.
-- [ ] Empêcher toute instanciation du service account dans le GUI interactif.
-- [ ] Tester les deux compositions avec des doubles et vérifier l’absence de fuite de type infrastructure vers Vue.
+- [x] Remplacer l’état Cloud optionnel actuel par une composition root choisie à partir du mode explicite.
+- [x] Brancher le gateway Demo sans réseau.
+- [x] Brancher le gateway Cloud réel avec OAuth desktop et `ReqwestApigeeGateway`.
+- [x] Garder les deux branches derrière les mêmes ports/use cases.
+- [x] Empêcher toute instanciation du service account dans le GUI interactif.
+- [x] Tester la compilation des deux compositions et vérifier l’absence de fuite de type infrastructure vers Vue.
 
 #### M6-Bis-06 — Commandes mode/authentification
 
-- [ ] Ajouter `get_app_mode` et `set_app_mode`.
-- [ ] Ajouter `get_session_context` avec le mode toujours présent.
-- [ ] Rendre `auth_login` valide uniquement en Cloud.
-- [ ] Rendre `auth_logout` et le changement de mode idempotents.
-- [ ] Retourner une erreur structurée si une commande Cloud est appelée en Demo ou inversement.
-- [ ] Tester les commandes avec Tauri state fake.
+- [x] Ajouter `get_app_mode` et `set_app_mode`.
+- [x] Ajouter `session_status` avec le mode toujours présent.
+- [x] Rendre `auth_login` valide uniquement en Cloud.
+- [x] Rendre `auth_logout` et le changement de mode idempotents.
+- [x] Retourner une erreur structurée si une commande Cloud est appelée en Demo ou inversement.
+- [ ] Ajouter le test Tauri state fake complet ; les transitions domaine et le bridge DTO sont déjà testés.
 
 #### M6-Bis-07 — Sélection Cloud et données Dashboard
 

@@ -10,7 +10,8 @@ use apigee_forge_core::{
     error::AuthError,
     infra::{
         oauth_desktop_auth_provider::{OAuthDesktopAuthProvider, OAuthDesktopConfig},
-        KeyringLocalKeyStore, ReqwestApigeeGateway, SqlCipherLocalStateStore,
+        InMemoryApigeeGateway, KeyringLocalKeyStore, ReqwestApigeeGateway,
+        SqlCipherLocalStateStore,
     },
     ports::{ApigeeGateway, AuthProvider, LocalStateStore},
     use_cases::SessionStatePersistence,
@@ -38,7 +39,6 @@ impl GuiAuthProvider for DesktopGuiAuthProvider {
     async fn authenticate(&self) -> Result<AuthContext, AuthError> {
         self.provider.authenticate().await
     }
-
     fn logout(&self) -> Result<(), AuthError> {
         self.provider.logout()
     }
@@ -46,7 +46,9 @@ impl GuiAuthProvider for DesktopGuiAuthProvider {
 
 pub struct GuiState {
     pub auth_provider: Option<Arc<dyn GuiAuthProvider>>,
-    pub gateway: Option<Arc<dyn ApigeeGateway>>,
+    pub gateway: Mutex<Option<Arc<dyn ApigeeGateway>>>,
+    pub cloud_gateway: Option<Arc<dyn ApigeeGateway>>,
+    pub demo_gateway: Arc<InMemoryApigeeGateway>,
     pub auth_context: Mutex<Option<AuthContext>>,
     pub session: Mutex<SessionState>,
     pub local_store: Mutex<Option<Arc<dyn LocalStateStore>>>,
@@ -56,7 +58,9 @@ impl Default for GuiState {
     fn default() -> Self {
         Self {
             auth_provider: None,
-            gateway: None,
+            gateway: Mutex::new(None),
+            cloud_gateway: None,
+            demo_gateway: Arc::new(InMemoryApigeeGateway::new()),
             auth_context: Mutex::new(None),
             session: Mutex::new(SessionState::cloud()),
             local_store: Mutex::new(None),
@@ -71,10 +75,8 @@ pub struct GuiError {
 }
 
 pub fn build_state() -> GuiState {
-    let Ok(client_id) = env::var(OAUTH_CLIENT_ID) else {
-        return GuiState::default();
-    };
-    let Ok(username) = env::var(OAUTH_USERNAME) else {
+    let (Ok(client_id), Ok(username)) = (env::var(OAUTH_CLIENT_ID), env::var(OAUTH_USERNAME))
+    else {
         return GuiState::default();
     };
     let Ok(provider) =
@@ -90,9 +92,13 @@ pub fn build_state() -> GuiState {
     let Ok(gateway) = ReqwestApigeeGateway::new(base_url, auth_provider) else {
         return GuiState::default();
     };
+    let cloud_gateway: Arc<dyn ApigeeGateway> = Arc::new(gateway);
+    let demo_gateway = Arc::new(InMemoryApigeeGateway::new());
     GuiState {
         auth_provider: Some(Arc::new(DesktopGuiAuthProvider { provider })),
-        gateway: Some(Arc::new(gateway)),
+        gateway: Mutex::new(Some(cloud_gateway.clone())),
+        cloud_gateway: Some(cloud_gateway),
+        demo_gateway,
         auth_context: Mutex::new(None),
         session: Mutex::new(SessionState::cloud()),
         local_store: Mutex::new(None),
@@ -130,13 +136,15 @@ pub fn run() -> Result<(), tauri::Error> {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::get_app_mode,
+            commands::set_app_mode,
             commands::session_status,
             commands::auth_status,
             commands::auth_login,
             commands::auth_logout,
             commands::list_organizations,
             commands::list_environments,
-            commands::list_proxies,
+            commands::list_proxies
         ])
         .run(tauri::generate_context!())
 }

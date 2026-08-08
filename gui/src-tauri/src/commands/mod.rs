@@ -1,5 +1,6 @@
-use std::sync::MutexGuard;
+use std::sync::{Arc, MutexGuard};
 
+use apigee_forge_core::use_cases::{APP_MODE_KEY, SESSION_STATE_KEY};
 use apigee_forge_core::{
     domain::{
         AppMode, AuthContext, AuthMode, Environment, Organization, Proxy, SessionState,
@@ -142,19 +143,98 @@ pub fn session_status(state: State<'_, GuiState>) -> Result<SessionDto, GuiError
 }
 
 #[tauri::command]
+pub fn get_app_mode(state: State<'_, GuiState>) -> Result<AppMode, GuiError> {
+    Ok(session_lock(&state)?.mode)
+}
+
+#[tauri::command]
+pub fn set_app_mode(state: State<'_, GuiState>, mode: AppMode) -> Result<SessionDto, GuiError> {
+    let next = match mode {
+        AppMode::Demo => SessionState::demo(),
+        AppMode::Cloud => SessionState::cloud(),
+    };
+    if let Some(store) = state
+        .local_store
+        .lock()
+        .map_err(|_| GuiError {
+            code: "STATE_ERROR",
+            message: "application state is unavailable",
+        })?
+        .as_ref()
+    {
+        store
+            .set(
+                APP_MODE_KEY,
+                serde_json::to_vec(&mode).map_err(|_| GuiError {
+                    code: "STATE_ERROR",
+                    message: "application state is unavailable",
+                })?,
+            )
+            .map_err(|_| GuiError {
+                code: "STATE_ERROR",
+                message: "local state could not be saved",
+            })?;
+        if mode == AppMode::Demo {
+            store
+                .set(
+                    SESSION_STATE_KEY,
+                    serde_json::to_vec(&next).map_err(|_| GuiError {
+                        code: "STATE_ERROR",
+                        message: "application state is unavailable",
+                    })?,
+                )
+                .map_err(|_| GuiError {
+                    code: "STATE_ERROR",
+                    message: "local state could not be saved",
+                })?;
+        } else {
+            store.delete(SESSION_STATE_KEY).map_err(|_| GuiError {
+                code: "STATE_ERROR",
+                message: "local state could not be cleared",
+            })?;
+        }
+    }
+    *session_lock(&state)? = next.clone();
+    *context_lock(&state)? = None;
+    let gateway = match mode {
+        AppMode::Demo => state.demo_gateway.clone() as Arc<dyn ApigeeGateway>,
+        AppMode::Cloud => state.cloud_gateway.clone().ok_or(GuiError {
+            code: "MODE_UNAVAILABLE",
+            message: "Live mode is unavailable",
+        })?,
+    };
+    *state.gateway.lock().map_err(|_| GuiError {
+        code: "STATE_ERROR",
+        message: "application state is unavailable",
+    })? = Some(gateway);
+    Ok(session_dto(&next))
+}
+
+#[tauri::command]
 pub fn auth_status(state: State<'_, GuiState>) -> Result<AuthDto, GuiError> {
     Ok(auth_dto(context_lock(&state)?.as_ref()))
 }
 
 #[tauri::command]
 pub async fn auth_login(state: State<'_, GuiState>) -> Result<AuthDto, GuiError> {
+    if session_lock(&state)?.mode == AppMode::Demo {
+        return Err(GuiError {
+            code: "MODE_REQUIRES_CLOUD",
+            message: "Google sign-in is only available in Live mode",
+        });
+    }
     let provider = state.auth_provider.clone().ok_or(GuiError {
         code: "AUTH_CONFIGURATION",
         message: "OAuth desktop configuration is unavailable",
     })?;
     let context = provider.authenticate().await.map_err(auth_error)?;
     let dto = auth_dto(Some(&context));
+    let identity = context.identity.clone().ok_or(GuiError {
+        code: "AUTH_FAILED",
+        message: "Google identity is unavailable",
+    })?;
     *context_lock(&state)? = Some(context);
+    *session_lock(&state)? = SessionState::cloud_authenticated(identity);
     Ok(dto)
 }
 
@@ -164,14 +244,23 @@ pub fn auth_logout(state: State<'_, GuiState>) -> Result<(), GuiError> {
         provider.logout().map_err(auth_error)?;
     }
     *context_lock(&state)? = None;
+    *session_lock(&state)? = SessionState::cloud();
     Ok(())
 }
 
-fn gateway(state: &GuiState) -> Result<&std::sync::Arc<dyn ApigeeGateway>, GuiError> {
-    state.gateway.as_ref().ok_or(GuiError {
-        code: "GATEWAY_CONFIGURATION",
-        message: "Apigee gateway configuration is unavailable",
-    })
+fn gateway(state: &GuiState) -> Result<Arc<dyn ApigeeGateway>, GuiError> {
+    state
+        .gateway
+        .lock()
+        .map_err(|_| GuiError {
+            code: "STATE_ERROR",
+            message: "application state is unavailable",
+        })?
+        .clone()
+        .ok_or(GuiError {
+            code: "GATEWAY_CONFIGURATION",
+            message: "Apigee gateway configuration is unavailable",
+        })
 }
 
 #[tauri::command]
