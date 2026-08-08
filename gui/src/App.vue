@@ -142,8 +142,8 @@ void templateEditor
                 <h2 id="login-title">Connect your Apigee workspace.</h2>
                 <p>Use the desktop OAuth flow to load organizations, environments and proxies. No credentials are required for this local preview.</p>
               </div>
-              <button class="primary-action" type="button" :disabled="authLoading && isAuthenticated" @click="auth.login">
-                {{ authLoading && isAuthenticated ? 'Opening sign-in…' : 'Sign in with Google' }}
+              <button class="primary-action" type="button" :disabled="authLoading" @click="auth.login">
+                {{ authLoading ? 'Opening sign-in…' : 'Sign in with Google' }}
               </button>
             </section>
           </BaseCard>

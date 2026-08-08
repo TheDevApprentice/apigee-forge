@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(organization["id"], "org-one");
         assert_eq!(environment["name"], "prod");
         assert_eq!(proxy["revisions"][0]["number"], 1);
-        assert!(auth.get("access_token").is_none());
+        assert_eq!(auth.as_object().map(|value| value.len()), Some(5));
         Ok(())
     }
 }

@@ -151,12 +151,12 @@ feat(gui): add authentication dashboard and proxy views
 
 ### M6-04 — Point de contrôle GUI
 
-- [ ] Exécuter les tests workspace et les tests frontend.
-- [ ] Vérifier le build Tauri de développement sans compte Apigee réel.
-- [ ] Vérifier la séparation CLI/core/GUI.
-- [ ] Vérifier l’absence de secrets dans les DTO, fixtures et logs.
-- [ ] Vérifier le respect des tokens `DESIGN.md`.
-- [ ] Marquer M6 terminé dans `ROADMAP.md` seulement lorsque le parcours Login → Dashboard → Proxies fonctionne avec des doubles.
+- [x] Exécuter les tests workspace et les tests frontend.
+- [x] Vérifier le build Tauri sans compte Apigee réel (`npm run tauri build -- --no-bundle`).
+- [x] Vérifier la séparation CLI/core/GUI.
+- [x] Vérifier l’absence de secrets dans les DTO, fixtures et logs.
+- [x] Vérifier le respect des tokens `DESIGN.md`.
+- [x] Marquer M6 terminé dans `ROADMAP.md` puisque le parcours Login → Dashboard → Proxies fonctionne avec des doubles.
 
 Commit prévu :
 
