@@ -143,6 +143,7 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::auth_login,
             commands::auth_logout,
             commands::list_organizations,
+            commands::get_roles,
             commands::list_environments,
             commands::list_proxies
         ])

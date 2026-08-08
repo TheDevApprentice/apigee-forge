@@ -150,11 +150,11 @@ Ce report ne bloque pas les contrats Demo/Live ni la suite M6-Bis ; il déplace 
 
 #### M6-Bis-07 — Sélection Cloud et données Dashboard
 
-- [ ] Exposer organisations et environnements via les use cases `core` existants.
-- [ ] Charger les proxies uniquement après sélection explicite organisation + environnement.
-- [ ] Conserver un contrat identique Demo/Cloud pour le frontend.
-- [ ] Exposer le rôle et la source de données sans afficher de credential.
-- [ ] Tester succès, vide, permission refusée, expiration de session et erreur réseau.
+- [x] Exposer organisations et environnements via les use cases `core` existants.
+- [x] Charger les proxies uniquement après sélection explicite organisation + environnement.
+- [x] Conserver un contrat identique Demo/Cloud pour le frontend.
+- [x] Exposer le rôle et la source de données sans afficher de credential.
+- [ ] Compléter les tests succès, vide, permission refusée, expiration de session et erreur réseau.
 
 ### Catégorie D — Parcours UI stable
 

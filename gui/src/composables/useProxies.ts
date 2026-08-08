@@ -10,11 +10,11 @@ export function useProxies(invoke: Invoke = defaultInvoke) {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function load(organization: string) {
+  async function load(organization: string, environment: string) {
     loading.value = true
     error.value = null
     try {
-      proxies.value = await invoke<ProxyDto[]>('list_proxies', { organization })
+      proxies.value = await invoke<ProxyDto[]>('list_proxies', { organization, environment })
     } catch {
       error.value = 'Proxies could not be loaded.'
     } finally {

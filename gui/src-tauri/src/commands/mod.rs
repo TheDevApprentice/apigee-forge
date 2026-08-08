@@ -8,6 +8,10 @@ use apigee_forge_core::{
     },
     error::{AuthError, GatewayError},
     ports::ApigeeGateway,
+    use_cases::{
+        GetApigeeRolesUseCase, ListEnvironmentsUseCase, ListOrganizationsUseCase,
+        ListProxiesUseCase,
+    },
 };
 use tauri::State;
 
@@ -32,6 +36,12 @@ pub struct SessionDto {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct RoleDto {
+    pub name: String,
+    pub source: AppMode,
+}
+
 pub fn session_dto(session: &SessionState) -> SessionDto {
     SessionDto {
         mode: session.mode,
@@ -51,6 +61,7 @@ pub fn session_dto(session: &SessionState) -> SessionDto {
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct OrganizationDto {
+    pub source: AppMode,
     pub id: String,
     pub project_id: String,
     pub location: Option<String>,
@@ -58,11 +69,13 @@ pub struct OrganizationDto {
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct EnvironmentDto {
+    pub source: AppMode,
     pub name: String,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct ProxyDto {
+    pub source: AppMode,
     pub name: String,
     pub revisions: Vec<ProxyRevisionDto>,
 }
@@ -267,11 +280,40 @@ fn gateway(state: &GuiState) -> Result<Arc<dyn ApigeeGateway>, GuiError> {
 pub async fn list_organizations(
     state: State<'_, GuiState>,
 ) -> Result<Vec<OrganizationDto>, GuiError> {
-    let values = gateway(&state)?
-        .list_organizations()
+    let values = ListOrganizationsUseCase::new(gateway(&state)?)
+        .execute()
         .await
         .map_err(gateway_error)?;
-    Ok(values.into_iter().map(organization_dto).collect())
+    let source = session_lock(&state)?.mode;
+    Ok(values
+        .into_iter()
+        .map(|value| organization_dto(value, source))
+        .collect())
+}
+
+#[tauri::command]
+pub async fn get_roles(
+    state: State<'_, GuiState>,
+    organization: String,
+) -> Result<Vec<RoleDto>, GuiError> {
+    if organization.is_empty() {
+        return Err(GuiError {
+            code: "CONTEXT_REQUIRED",
+            message: "organization is required",
+        });
+    }
+    let source = session_lock(&state)?.mode;
+    let roles = GetApigeeRolesUseCase::new(gateway(&state)?)
+        .execute(&organization)
+        .await
+        .map_err(gateway_error)?;
+    Ok(roles
+        .into_iter()
+        .map(|role| RoleDto {
+            name: format!("{role:?}"),
+            source,
+        })
+        .collect())
 }
 
 #[tauri::command]
@@ -279,39 +321,59 @@ pub async fn list_environments(
     state: State<'_, GuiState>,
     organization: String,
 ) -> Result<Vec<EnvironmentDto>, GuiError> {
-    let values = gateway(&state)?
-        .list_environments(&organization)
+    let values = ListEnvironmentsUseCase::new(gateway(&state)?)
+        .execute(&organization)
         .await
         .map_err(gateway_error)?;
-    Ok(values.into_iter().map(environment_dto).collect())
+    let source = session_lock(&state)?.mode;
+    Ok(values
+        .into_iter()
+        .map(|value| environment_dto(value, source))
+        .collect())
 }
 
 #[tauri::command]
 pub async fn list_proxies(
     state: State<'_, GuiState>,
     organization: String,
+    environment: String,
 ) -> Result<Vec<ProxyDto>, GuiError> {
-    let values = gateway(&state)?
-        .list_proxies(&organization)
+    if organization.is_empty() || environment.is_empty() {
+        return Err(GuiError {
+            code: "CONTEXT_REQUIRED",
+            message: "organization and environment are required",
+        });
+    }
+    let values = ListProxiesUseCase::new(gateway(&state)?)
+        .execute(&organization)
         .await
         .map_err(gateway_error)?;
-    Ok(values.into_iter().map(proxy_dto).collect())
+    let source = session_lock(&state)?.mode;
+    Ok(values
+        .into_iter()
+        .map(|value| proxy_dto(value, source))
+        .collect())
 }
 
-fn organization_dto(value: Organization) -> OrganizationDto {
+fn organization_dto(value: Organization, source: AppMode) -> OrganizationDto {
     OrganizationDto {
+        source,
         id: value.id.as_str().to_owned(),
         project_id: value.project_id.as_str().to_owned(),
         location: value.location,
     }
 }
 
-fn environment_dto(value: Environment) -> EnvironmentDto {
-    EnvironmentDto { name: value.name }
+fn environment_dto(value: Environment, source: AppMode) -> EnvironmentDto {
+    EnvironmentDto {
+        source,
+        name: value.name,
+    }
 }
 
-fn proxy_dto(value: Proxy) -> ProxyDto {
+fn proxy_dto(value: Proxy, source: AppMode) -> ProxyDto {
     ProxyDto {
+        source,
         name: value.name,
         revisions: value
             .revisions
@@ -341,14 +403,17 @@ mod tests {
             selected_organization: Some("org-one".to_owned()),
         })?;
         let organization = serde_json::to_value(OrganizationDto {
+            source: AppMode::Cloud,
             id: "org-one".to_owned(),
             project_id: "project-one".to_owned(),
             location: None,
         })?;
         let environment = serde_json::to_value(EnvironmentDto {
+            source: AppMode::Cloud,
             name: "prod".to_owned(),
         })?;
         let proxy = serde_json::to_value(ProxyDto {
+            source: AppMode::Cloud,
             name: "orders".to_owned(),
             revisions: vec![ProxyRevisionDto {
                 number: 1,

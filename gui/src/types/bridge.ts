@@ -20,12 +20,14 @@ export type AuthDto = {
 }
 
 export type OrganizationDto = {
+  source: AppMode
   id: string
   project_id: string
   location: string | null
 }
 
 export type EnvironmentDto = {
+  source: AppMode
   name: string
 }
 
@@ -35,8 +37,14 @@ export type ProxyRevisionDto = {
 }
 
 export type ProxyDto = {
+  source: AppMode
   name: string
   revisions: ProxyRevisionDto[]
+}
+
+export type RoleDto = {
+  name: string
+  source: AppMode
 }
 
 export type GuiCommandError = {

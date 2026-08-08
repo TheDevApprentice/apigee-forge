@@ -64,7 +64,7 @@ watch(selectedOrganization, (organization) => {
 
 watch(selectedEnvironment, (environment) => {
   if (selectedOrganization.value && environment) {
-    void proxies.load(selectedOrganization.value)
+    void proxies.load(selectedOrganization.value, selectedEnvironment.value)
   }
 })
 
@@ -78,7 +78,7 @@ function retryContext() {
 
 function retryProxies() {
   if (selectedOrganization.value && selectedEnvironment.value) {
-    void proxies.load(selectedOrganization.value)
+    void proxies.load(selectedOrganization.value, selectedEnvironment.value)
   }
 }
 

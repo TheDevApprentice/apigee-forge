@@ -65,6 +65,6 @@ describe('App M6-03 flow', () => {
     await selects[1].setValue('test')
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('hello-world'))
-    expect(invokeMock).toHaveBeenCalledWith('list_proxies', { organization: 'org-one' })
+    expect(invokeMock).toHaveBeenCalledWith('list_proxies', { organization: 'org-one', environment: 'test' })
   })
 })
