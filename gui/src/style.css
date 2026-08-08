@@ -160,6 +160,29 @@ button:focus-visible {
   color: var(--connector);
 }
 
+.mode-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.mode-switcher select {
+  padding: 6px 9px;
+  color: var(--accent-text);
+  background: var(--accent-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 20px;
+  font-size: 11px;
+}
+
+.mode-switcher select:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: 2px;
+}
+
 .base-chip {
   display: inline-flex;
   align-items: center;

@@ -56,8 +56,8 @@ describe('App M6-03 flow', () => {
     await flushPromises()
     await flushPromises()
 
-    await vi.waitFor(() => expect(wrapper.findAll('select')).toHaveLength(2))
-    const selects = wrapper.findAll('select')
+    await vi.waitFor(() => expect(wrapper.findAll('.context-grid select')).toHaveLength(2))
+    const selects = wrapper.findAll('.context-grid select')
     expect(invokeMock).not.toHaveBeenCalledWith('list_proxies', expect.anything())
 
     await selects[0].setValue('org-one')

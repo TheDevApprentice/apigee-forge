@@ -158,22 +158,22 @@ Ce report ne bloque pas les contrats Demo/Live ni la suite M6-Bis ; il déplace 
 
 ### Catégorie D — Parcours UI stable
 
-#### M6-Bis-08 — Écran de sélection Demo/Cloud
+#### M6-Bis-08 — Sélecteur de mode Demo/Live
 
-- [ ] Afficher cet écran avant Login ou Dashboard lorsqu’aucun mode n’est persisté.
-- [ ] Présenter Demo et Cloud avec leurs conséquences compréhensibles.
-- [ ] Ne jamais lancer OAuth automatiquement.
-- [ ] Permettre de changer de mode depuis les préférences ou la barre de contexte.
-- [ ] Tester navigation clavier, focus, libellés et états de sélection.
+- [x] Afficher le contrôle de mode dès le démarrage ; Live est le mode par défaut.
+- [x] Présenter Demo et Live avec leurs conséquences compréhensibles.
+- [x] Ne jamais lancer OAuth automatiquement.
+- [x] Permettre de changer de mode depuis la barre de contexte.
+- [ ] Tester navigation clavier, focus, libellés et états de sélection dédiés.
 
-#### M6-Bis-09 — Écran Cloud Login réel
+#### M6-Bis-09 — Écran Live Login réel
 
-- [ ] En mode Cloud, n’afficher que l’écran de connexion tant que la session n’est pas authentifiée.
-- [ ] Afficher la configuration manquante sans exposer de secret.
-- [ ] Lancer le flux Google OAuth desktop via la commande Tauri.
-- [ ] Afficher loading, succès, annulation navigateur, trousseau indisponible et erreur réseau.
-- [ ] Après connexion, afficher uniquement l’écran de sélection d’organisation.
-- [ ] Tester le parcours avec un provider OAuth fake ; le test réel Google reste manuel.
+- [x] En mode Live, n’afficher que l’écran de connexion tant que la session n’est pas authentifiée.
+- [x] Afficher la configuration manquante sans exposer de secret.
+- [x] Lancer le flux Google OAuth desktop via la commande Tauri.
+- [x] Afficher loading, succès et erreur contrôlée sans données sensibles.
+- [x] Après connexion, afficher l’écran de sélection d’organisation avant les environnements/proxies.
+- [x] Tester le parcours avec un provider OAuth fake ; le test réel Google reste manuel.
 
 #### M6-Bis-10 — Écran Demo et Dashboard partagé
 

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
 import { useAuth } from './composables/useAuth'
+import { useSession } from './composables/useSession'
+import type { AppMode, SessionDto } from './types/bridge'
 import { useOrganizations } from './composables/useOrganizations'
 import { useProxies } from './composables/useProxies'
 import { useTemplateEditor } from './composables/useTemplateEditor'
@@ -28,6 +31,8 @@ const activeView = ref('Dashboard')
 const selectedOrganization = ref('')
 const selectedEnvironment = ref('')
 const auth = useAuth()
+const appSession = useSession()
+const selectedMode = appSession.selectedMode
 const organizations = useOrganizations()
 const proxies = useProxies()
 const templateEditor = useTemplateEditor()
@@ -41,11 +46,27 @@ const organizationsError = organizations.error
 const proxyList = proxies.proxies
 const proxiesLoading = proxies.loading
 const proxiesError = proxies.error
-const isAuthenticated = computed(() => auth.context.value?.authenticated === true)
+const isDemo = computed(() => appSession.session.value?.mode === 'demo')
+const isAuthenticated = computed(() => isDemo.value || auth.context.value?.authenticated === true)
 
-onMounted(() => {
-  void auth.refresh()
+onMounted(async () => {
+  try {
+    appSession.apply(await invoke<SessionDto>('session_status'))
+  } catch {
+    appSession.selectedMode.value = 'cloud'
+  }
+  if (!isDemo.value) {
+    void auth.refresh()
+  }
 })
+
+async function changeMode(mode: AppMode) {
+  if (mode === 'demo' && auth.context.value?.authenticated) {
+    await auth.logout()
+  }
+  appSession.apply(await invoke<SessionDto>('set_app_mode', { mode }))
+  auth.context.value = null
+}
 
 watch(isAuthenticated, (authenticated) => {
   if (authenticated) {
@@ -117,7 +138,13 @@ void templateEditor
             {{ selectedEnvironment || 'No environment selected' }}
           </p>
         </div>
-        <BaseChip :label="isAuthenticated ? 'Connected' : 'Offline preview'" />
+        <label class="mode-switcher">
+          <span>Mode</span>
+          <select v-model="selectedMode" @change="changeMode(selectedMode as AppMode)">
+            <option value="cloud">Live</option>
+            <option value="demo">Demo</option>
+          </select>
+        </label>
       </header>
 
       <main class="main-content">
