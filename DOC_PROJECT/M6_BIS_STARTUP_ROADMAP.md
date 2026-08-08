@@ -9,23 +9,23 @@
 Le GUI doit proposer deux parcours clairement séparés dès le démarrage :
 
 ```text
-Mode Demo  → données locales seedées → dashboard local
-Mode Cloud → configuration OAuth → Sign in with Google → organisation → dashboard Apigee
+Mode Demo → données locales → dashboard local
+Mode Live → configuration OAuth → Sign in with Google → organisation → dashboard Apigee
 ```
 
-Le mode courant ne doit jamais être deviné depuis une erreur réseau ou l’absence de credentials.
+Le mode par défaut est **Live**. Le mode Demo doit toujours être sélectionné explicitement ; il ne doit jamais être activé automatiquement à cause d’une erreur réseau ou de credentials absents.
 
 ### Mode Demo
 
 - utilisable sans compte Google ni organisation Apigee ;
-- données locales réalistes mais explicitement fictives ;
-- proxies, organisations, environnements et états de déploiement fournis par un scénario local ;
+- branché sur le gateway Demo et les mêmes contrats/use cases que Live ;
 - données persistées dans un fichier SQLite chiffré SQLCipher ;
 - aucune requête réseau ;
 - badge et libellé `Demo` visibles partout où une confusion avec Apigee réel serait possible ;
+- dataset réaliste et tutoriel complet reportés à la fin du MVP, après stabilisation de l’UX ;
 - bouton permettant de revenir au sélecteur de mode.
 
-### Mode Cloud
+### Mode Live
 
 - parcours initial bloquant sur une connexion Google explicite ;
 - OAuth desktop réel via `OAuthDesktopAuthProvider` du `core` ;
@@ -35,13 +35,14 @@ Le mode courant ne doit jamais être deviné depuis une erreur réseau ou l’ab
 - aucune organisation ou donnée Demo injectée silencieusement en cas d’erreur ;
 - dashboard réel en lecture seule dans M6-Bis ; le déploiement GUI reste M8.
 
-Le nom retenu est **Demo** / **Cloud** : `Offline` décrivait le transport mais pas l’intention utilisateur, tandis que `Cloud` distingue clairement le compte Apigee réel du scénario local.
+**Décision de nommage** : `Live` est le libellé utilisateur retenu pour le mode réel, y compris avec l’organisation Apigee d’évaluation. Le type Rust `AppMode::Cloud` peut rester temporairement le nom technique interne afin d’éviter une migration de contrat inutile ; l’UI et la documentation utilisent `Live`. `Offline` décrivait le transport, pas l’intention utilisateur.
 
 ---
 
 ## 2. Décisions d’architecture
 
-- Le mode sélectionné est un état applicatif explicite (`Demo` ou `Cloud`), pas un détail d’authentification.
+- Le mode sélectionné est un état applicatif explicite (`Demo` ou `Live` côté UX, `Demo` ou `Cloud` dans le contrat technique temporaire), pas un détail d’authentification.
+- Le mode par défaut est Live/Cloud ; Demo n’est jamais un fallback implicite.
 - Le mode est persisté via un `LocalStateStore` ; il est restauré au démarrage mais l’utilisateur peut le changer explicitement.
 - Le frontend ne choisit jamais directement une implémentation de gateway ou de stockage.
 - Le composition root Tauri choisit les implémentations :
@@ -76,7 +77,7 @@ Le nom retenu est **Demo** / **Cloud** : `Offline` décrivait le transport mais 
 - [x] Confirmer la fusion de M6 et de la validation Apigee réelle dans `dev`.
 - [x] Créer la branche `feature/m6-bis-gui` depuis `dev`.
 - [x] Ajouter cette roadmap dans `STRUCTURE.md` et `PROMPT.md`.
-- [x] Figer les noms utilisateur `Demo` et `Cloud`.
+- [x] Figer les noms utilisateur `Demo` et `Live` (`Cloud` reste le nom technique interne temporaire).
 
 
 Commit prévu :
@@ -113,13 +114,19 @@ docs(m6-bis): define Demo and Cloud GUI roadmap
 - [x] Refuser proprement le démarrage Demo si le store ne peut pas être ouvert ou déchiffré.
 - [x] Tester création, lecture, écriture, suppression, migration minimale et erreur de clé.
 
-#### M6-Bis-04 — Dataset Demo seedé
+#### M6-Bis-04 — Dataset Demo seedé — reporté post-MVP
 
-- [ ] Définir un dataset local versionné et explicitement fictif.
-- [ ] Inclure au minimum une organisation Demo, deux environnements, deux proxies et un historique de statuts.
-- [ ] Seed uniquement à la première initialisation, sans écraser les modifications locales.
-- [ ] Ajouter un reset Demo explicite et confirmé par l’utilisateur.
-- [ ] Vérifier qu’aucun nom, token ou identifiant du compte Apigee réel ne figure dans le dataset.
+**Décision de cadrage** : le seeding complet n’est pas un prérequis pour stabiliser le MVP. Le code du gateway Demo, du store SQLCipher et des contrats communs est préparé, mais le dataset réaliste et le tutoriel ne seront pas construits maintenant.
+
+Le seeding sera réalisé après les fonctionnalités principales, lorsque l’UX sera maîtrisée. Il pourra alors fournir une démonstration cohérente et presque identique au comportement réel, sans gaspiller du temps sur des fixtures qui risqueraient de suivre une UI encore instable.
+
+- [ ] Définir un dataset local versionné et explicitement fictif — reporté.
+- [ ] Inclure une organisation Demo, deux environnements, deux proxies et un historique de statuts — reporté.
+- [ ] Seed uniquement à la première initialisation — reporté.
+- [ ] Ajouter un reset Demo explicite et confirmé par l’utilisateur — reporté.
+- [ ] Vérifier qu’aucun nom, token ou identifiant du compte Apigee réel ne figure dans le dataset — à appliquer lors du seeding.
+
+Ce report ne bloque pas les contrats Demo/Live ni la suite M6-Bis ; il déplace uniquement le contenu de démonstration à la fin du MVP.
 
 ### Catégorie C — Composition root et commandes Tauri
 
@@ -192,9 +199,10 @@ docs(m6-bis): define Demo and Cloud GUI roadmap
 #### M6-Bis-12 — Checkpoint de stabilité GUI
 
 - [ ] Exécuter tests workspace, Clippy, tests frontend et build Tauri.
-- [ ] Vérifier manuellement Demo : lancement, seed, navigation, reset et retour au sélecteur.
-- [ ] Vérifier manuellement Cloud sans réseau réel : écran Login et erreurs contrôlées.
-- [ ] Vérifier manuellement Cloud avec le compte Apigee déjà provisionné : login Google, sélection org/env, dashboard et proxies.
+- [ ] Vérifier manuellement le runtime Demo sans dataset final : lancement, store local et retour au sélecteur.
+- [ ] Vérifier manuellement Live sans réseau réel : écran Login et erreurs contrôlées.
+- [ ] Vérifier manuellement Live avec le compte Apigee déjà provisionné : login Google, sélection org/env, dashboard et proxies.
+- [ ] Reporter le tutoriel Demo et le seeding complet au checkpoint post-MVP dédié.
 - [ ] Vérifier qu’aucun changement ne nécessite de refaire M3 ou la validation CLI M4.
 - [ ] Marquer M6-Bis terminé dans `ROADMAP.md`.
 
@@ -210,9 +218,9 @@ docs(m6-bis): record Demo Cloud GUI stability checkpoint
 
 M6-Bis est terminé lorsque :
 
-1. le premier écran permet de choisir explicitement Demo ou Cloud ;
-2. Demo démarre sans compte, sans réseau et avec des données locales persistées ;
-3. Cloud ne montre pas le dashboard avant une authentification Google réussie ;
+1. le premier écran permet de choisir explicitement Demo ou Live ;
+2. Demo démarre sans compte, sans réseau et avec un store local prêt ; le dataset complet est post-MVP ;
+3. Live ne montre pas le dashboard avant une authentification Google réussie ;
 4. la configuration OAuth et les erreurs sont compréhensibles sans exposer de secret ;
 5. les deux modes utilisent les mêmes ports/use cases côté `core` ;
 6. l’organisation et l’environnement Cloud sont toujours sélectionnés explicitement ;
