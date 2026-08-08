@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "name": "template-helloworld",
+    "description": "Minimal template for the deferred Apigee Hello World checkpoint.",
+    "owner": "apigee-forge",
+    "target_environment": "test",
+    "naming_convention": {
+      "prefix": "hello-",
+      "case": "kebab-case"
+    }
+  },
+  "flow": {
+    "pre_flow": {},
+    "conditional_flows": [],
+    "post_flow": {}
+  }
+}

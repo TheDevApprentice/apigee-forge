@@ -10,7 +10,7 @@ Séquence recommandée : chaque jalon doit être fonctionnel et testable avant d
 - [x] **M2 — Client Apigee** : authentification (OAuth2 desktop + service account/WIF via `gcp_auth`), appels API de base (liste orgs, environnements, proxies, lecture du rôle IAM).
 - [x] **M3 — Moteur de rendu** : spec OpenAPI + template → bundle proxy (fichiers XML + packaging zip), testé uniquement via tests unitaires/CLI minimal, sans déploiement réel.
 - [ ] **M4 — CLI complet** : toutes les commandes (`login`, `template`, `generate`, `deploy`, `status`, `list-proxies`), mode non-interactif complet, sortie `--json`. À ce stade, l'outil doit être 100% utilisable en ligne de commande, sans GUI.
-- [ ] **M5 — Intégration CI/CD de référence** : exemple de pipeline (GitHub Actions et/ou Azure Pipelines) utilisant le CLI en mode non-interactif, pour valider le cas d'usage self-service en pipeline.
+- [x] **M5 — Intégration CI/CD de référence** : exemple de pipeline GitHub Actions utilisant le CLI en mode non-interactif, pour valider le cas d'usage self-service en pipeline. La validation Apigee réelle reste différée au checkpoint M4-11.
 - [ ] **M6 — Squelette GUI Tauri** : écran de connexion OAuth, vue liste orgs/environnements/proxies (lecture seule pour commencer).
 - [ ] **M7 — Éditeur visuel de template** : formulaires guidés pour les policies MVP, représentation visuelle du flux PreFlow/Flow/PostFlow, sauvegarde compatible avec le format lu par le CLI.
 - [ ] **M8 — Déploiement et suivi depuis le GUI** : génération + déploiement + suivi de statut en temps réel.

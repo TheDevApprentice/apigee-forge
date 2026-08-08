@@ -146,6 +146,11 @@ gui/
 schemas/
 ├── template.schema.json        # déjà créé
 └── template.example.json       # déjà créé
+
+examples/
+└── helloworld/
+    ├── openapi.yaml             # fixture CI/CD Hello World
+    └── template.json            # template minimal du fixture
 ```
 
 ---
@@ -165,6 +170,7 @@ DOC_PROJECT/
 ├── M4_STARTUP_ROADMAP.md
 ├── M4-04_checkpoint.md
 ├── CI_CLI_EXAMPLE.md
+├── M5_CI_REFERENCE.md
 ├── SECURITY.md
 ├── STRUCTURE.md                 # ce document
 ├── PACKAGING.md

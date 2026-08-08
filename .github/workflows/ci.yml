@@ -35,3 +35,58 @@ jobs:
 
       - name: Audit dependencies
         run: cargo audit
+
+  cli-smoke:
+    name: Validate non-interactive CLI bundle generation
+    runs-on: ubuntu-latest
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Generate Hello World bundle
+        run: >-
+          cargo run --locked -p cli -- --json generate
+          --spec examples/helloworld/openapi.yaml
+          --template examples/helloworld/template.json
+          --proxy-name helloworld
+          --output target/helloworld-output
+          --archive target/helloworld.zip
+          > target/helloworld-result.json
+
+      - name: Verify CLI result and ZIP contents
+        shell: python
+        run: |
+          import json
+          import zipfile
+          from pathlib import Path
+
+          result = json.loads(Path("target/helloworld-result.json").read_text())
+          assert result["ok"] is True, result
+          assert result["command"] == "generate", result
+          assert result["data"]["proxy_name"] == "helloworld", result
+          assert result["data"]["rendered_file_count"] == 2, result
+
+          with zipfile.ZipFile("target/helloworld.zip") as archive:
+              names = sorted(archive.namelist())
+              assert names == [
+                  "apiproxy/proxies/default.xml",
+                  "apiproxy/targets/default.xml",
+              ], names
+              assert all(name.startswith("apiproxy/") for name in names)
+
+      - name: Upload generated bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helloworld-cli-bundle
+          path: |
+            target/helloworld.zip
+            target/helloworld-result.json
+          if-no-files-found: error
