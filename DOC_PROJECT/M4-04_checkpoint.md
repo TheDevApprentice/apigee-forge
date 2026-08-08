@@ -15,6 +15,10 @@ La CLI peut être construite et vérifiée sans environnement réel grâce à :
 
 Le test réel est requis plus tard pour obtenir une preuve d’intégration, pas pour écrire les use cases et l’adaptateur CLI.
 
+## Statut actualisé — 2026-08-08
+
+Le projet Google Cloud et l’organisation Apigee d’évaluation ont été provisionnés par l’utilisateur. Le provisionnement est donc validé ; les vérifications de connectivité, de lecture et d’écriture restent à exécuter sur `feature/real-apigee-validation`.
+
 ## Ce qui peut être terminé sans environnement réel
 
 Les points suivants peuvent être implémentés et testés localement :

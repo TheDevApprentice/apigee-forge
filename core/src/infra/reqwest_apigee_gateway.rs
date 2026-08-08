@@ -6,7 +6,7 @@ use reqwest::{
     Client, Method, StatusCode, Url,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use tokio::time::sleep;
 
 use crate::{
@@ -217,6 +217,8 @@ impl ReqwestApigeeGateway {
                 .bearer_auth(token.as_str());
             if let Some(body) = body {
                 request = request.json(body);
+            } else if method == Method::POST {
+                request = request.header("content-length", "0").body(Vec::new());
             }
 
             match request.send().await {
@@ -402,7 +404,7 @@ impl DeploymentMapping {
                 .map_err(|_| GatewayError::InvalidResponse)?
         };
         let status = match self.state.as_deref() {
-            Some("ACTIVE") => crate::domain::DeploymentStatus::Succeeded,
+            Some("ACTIVE") | Some("READY") => crate::domain::DeploymentStatus::Succeeded,
             Some("PROGRESSING") => crate::domain::DeploymentStatus::InProgress,
             Some("ERROR") => crate::domain::DeploymentStatus::Failed,
             Some("INACTIVE") => crate::domain::DeploymentStatus::Pending,
@@ -436,6 +438,7 @@ where
     T: DeserializeOwned,
 {
     match response.status() {
+        StatusCode::BAD_REQUEST => Err(GatewayError::BadRequest),
         StatusCode::UNAUTHORIZED => Err(GatewayError::Unauthorized),
         StatusCode::FORBIDDEN => Err(GatewayError::Forbidden),
         StatusCode::NOT_FOUND => Err(GatewayError::NotFound),
@@ -518,7 +521,7 @@ struct ProxiesResponse {
 struct ProxyMapping {
     name: String,
     #[serde(default)]
-    revision: Vec<String>,
+    revision: Value,
 }
 
 impl ProxyMapping {
@@ -527,19 +530,32 @@ impl ProxyMapping {
             return Err(GatewayError::InvalidResponse);
         }
 
-        let revisions = self
-            .revision
+        let revision_values = match self.revision {
+            Value::Array(values) => values,
+            Value::String(value) => vec![Value::String(value)],
+            Value::Number(value) => vec![Value::Number(value)],
+            Value::Null => Vec::new(),
+            _ => return Err(GatewayError::InvalidResponse),
+        };
+        let revisions = revision_values
             .into_iter()
-            .map(|number| {
-                number
-                    .parse::<u32>()
-                    .map(|number| ProxyRevision {
-                        number,
-                        deployed: false,
-                    })
-                    .map_err(|_| GatewayError::InvalidResponse)
+            .map(|value| {
+                let number = match value {
+                    Value::String(value) => value
+                        .parse::<u32>()
+                        .map_err(|_| GatewayError::InvalidResponse)?,
+                    Value::Number(value) => value
+                        .as_u64()
+                        .and_then(|number| u32::try_from(number).ok())
+                        .ok_or(GatewayError::InvalidResponse)?,
+                    _ => return Err(GatewayError::InvalidResponse),
+                };
+                Ok(ProxyRevision {
+                    number,
+                    deployed: false,
+                })
             })
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<_>, GatewayError>>()?;
 
         Ok(Proxy {
             name: self.name,
@@ -929,7 +945,7 @@ mod tests {
             .and(header("authorization", "Bearer test-token"))
             .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "name": "orders",
-                "revision": ["4"]
+                "revision": "4"
             })))
             .mount(&server)
             .await;
@@ -942,7 +958,7 @@ mod tests {
                 "environment": "prod",
                 "apiProxy": "orders",
                 "revision": "4",
-                "state": "ACTIVE"
+                "state": "READY"
             })))
             .mount(&server)
             .await;

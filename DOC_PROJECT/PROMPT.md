@@ -18,9 +18,11 @@ Avant d'écrire une seule ligne de code, lis l'intégralité des documents suiva
 12. **`M4-04_checkpoint.md`** — décision de différer le test réel Apigee et méthode de validation ultérieure
 13. **`M5_CI_REFERENCE.md`** — pipeline GitHub Actions de validation non-interactive du CLI
 14. **`M6_STARTUP_ROADMAP.md`** — étapes regroupées du squelette GUI Tauri/Vue
-15. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
-16. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
-17. **`schemas/template.schema.json`** et **`schemas/template.example.json`** — format de données central du projet
+15. **`REAL_APIGEE_VALIDATION.md`** — procédure de validation réelle Hello World sans exposer de credential
+16. **`REAL_APIGEE_HELLOWORLD_REPORT.md`** — rapport de la première validation réelle et des corrections de mapping
+17. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
+18. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
+19. **`schemas/template.schema.json` et **`schemas/template.example.json` — format de données central du projet
 
 Une fois ces documents lus, **résume-moi en quelques phrases** ce que tu as compris du projet, de son périmètre MVP, et de la méthode de travail attendue — avant de proposer quoi que ce soit. Je veux confirmer que le contexte est bien assimilé avant qu'on commence.
 
