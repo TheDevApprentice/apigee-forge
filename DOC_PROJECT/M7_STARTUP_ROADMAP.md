@@ -118,14 +118,14 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-04 — Formulaire Metadata
 
-- [ ] Éditer `metadata.name`.
-- [ ] Éditer `metadata.description`.
-- [ ] Éditer `metadata.owner`.
-- [ ] Éditer `metadata.target_environment`.
-- [ ] Éditer `metadata.naming_convention.prefix`.
-- [ ] Éditer `metadata.naming_convention.case`.
-- [ ] Afficher les erreurs de validation au niveau du champ.
-- [ ] Empêcher une sauvegarde si les champs obligatoires sont invalides.
+- [x] Éditer `metadata.name`.
+- [x] Éditer `metadata.description`.
+- [x] Éditer `metadata.owner`.
+- [x] Éditer `metadata.target_environment`.
+- [x] Éditer `metadata.naming_convention.prefix`.
+- [x] Éditer `metadata.naming_convention.case`.
+- [x] Afficher les erreurs de validation au niveau du champ.
+- [x] Empêcher une sauvegarde si les champs obligatoires sont invalides.
 
 ### M7-05 — Canevas visuel du flux
 

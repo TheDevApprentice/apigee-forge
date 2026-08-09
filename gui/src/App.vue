@@ -144,6 +144,67 @@ const visibleTemplates = computed(() => {
   return query ? templateList.value.filter((template) => template.name.toLowerCase().includes(query)) : templateList.value
 })
 
+type TemplateMetadataDraft = {
+  name: string
+  description?: string
+  owner: string
+  target_environment?: string
+  naming_convention: { prefix: string; case: string }
+}
+
+const metadataDraft = computed(() => {
+  const metadata = templateEditor.current.value?.data.metadata as Partial<TemplateMetadataDraft> | undefined
+  return {
+    name: metadata?.name || '',
+    description: metadata?.description || '',
+    owner: metadata?.owner || '',
+    target_environment: metadata?.target_environment || '',
+    naming_convention: {
+      prefix: metadata?.naming_convention?.prefix || '',
+      case: metadata?.naming_convention?.case || 'kebab-case',
+    },
+  }
+})
+
+const metadataErrors = computed(() => ({
+  name: metadataDraft.value.name.trim() ? '' : 'Name is required.',
+  owner: metadataDraft.value.owner.trim() ? '' : 'Owner is required.',
+  prefix: metadataDraft.value.naming_convention.prefix.trim() ? '' : 'Prefix is required.',
+}))
+
+const metadataValid = computed(() => Object.values(metadataErrors.value).every((message) => !message))
+
+function updateMetadata(field: 'name' | 'description' | 'owner' | 'target_environment', value: string) {
+  const current = templateEditor.current.value
+  if (!current) return
+  const metadata = { ...metadataDraft.value, [field]: value }
+  templateEditor.updateDraft({ ...current, data: { ...current.data, metadata } })
+}
+
+function updatePrefix(value: string) {
+  const current = templateEditor.current.value
+  if (!current) return
+  templateEditor.updateDraft({
+    ...current,
+    data: { ...current.data, metadata: { ...metadataDraft.value, naming_convention: { ...metadataDraft.value.naming_convention, prefix: value } } },
+  })
+}
+
+function updateNamingCase(value: string) {
+  const current = templateEditor.current.value
+  if (!current) return
+  templateEditor.updateDraft({
+    ...current,
+    data: { ...current.data, metadata: { ...metadataDraft.value, naming_convention: { ...metadataDraft.value.naming_convention, case: value } } },
+  })
+}
+
+async function saveTemplate() {
+  if (!metadataValid.value) return
+  await templateEditor.save()
+  if (templateEditor.current.value?.name) void loadTemplates()
+}
+
 async function selectTemplate(name: string) {
   await templateEditor.load(name)
 }
@@ -525,6 +586,16 @@ void templateEditor
               </li>
             </ul>
           </BaseCard>
+          <BaseCard v-if="templateEditor.current" eyebrow="Template metadata">
+            <div class="metadata-form">
+              <label><span>Name</span><input :value="metadataDraft.name" @input="updateMetadata('name', ($event.target as HTMLInputElement).value)" /><small v-if="metadataErrors.name">{{ metadataErrors.name }}</small></label>
+              <label><span>Description</span><textarea :value="metadataDraft.description" rows="2" @input="updateMetadata('description', ($event.target as HTMLTextAreaElement).value)" /></label>
+              <label><span>Owner</span><input :value="metadataDraft.owner" @input="updateMetadata('owner', ($event.target as HTMLInputElement).value)" /><small v-if="metadataErrors.owner">{{ metadataErrors.owner }}</small></label>
+              <label><span>Target environment</span><select :value="metadataDraft.target_environment" @change="updateMetadata('target_environment', ($event.target as HTMLSelectElement).value)"><option value="">None</option><option value="dev">dev</option><option value="test">test</option><option value="prod">prod</option></select></label>
+              <label><span>Name prefix</span><input :value="metadataDraft.naming_convention.prefix" @input="updatePrefix(($event.target as HTMLInputElement).value)" /><small v-if="metadataErrors.prefix">{{ metadataErrors.prefix }}</small></label>
+              <label><span>Name case</span><select :value="metadataDraft.naming_convention.case" @change="updateNamingCase(($event.target as HTMLSelectElement).value)"><option value="kebab-case">kebab-case</option><option value="snake_case">snake_case</option><option value="camelCase">camelCase</option></select></label>
+            </div>
+          </BaseCard>
           <BaseCard v-if="templateEditor.current" eyebrow="Template editor">
             <div class="template-editor-summary">
               <div>
@@ -535,7 +606,7 @@ void templateEditor
             </div>
             <div class="template-editor-actions">
               <button type="button" :disabled="!templateEditor.dirty" @click="templateEditor.reset">Reset</button>
-              <button type="button" class="primary-action" :disabled="!templateEditor.dirty || templateEditor.status === 'saving'" @click="templateEditor.save">Save</button>
+              <button type="button" class="primary-action" :disabled="!templateEditor.dirty || templateEditor.status === 'saving'" @click="saveTemplate">Save</button>
             </div>
           </BaseCard>
         </template>

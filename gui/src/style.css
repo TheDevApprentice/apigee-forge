@@ -744,6 +744,45 @@ button:focus-visible {
   font-size: 13px;
 }
 
+.metadata-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.metadata-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.metadata-form input,
+.metadata-form textarea,
+.metadata-form select {
+  width: 100%;
+  padding: 9px 10px;
+  color: var(--text-main);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.metadata-form input:focus-visible,
+.metadata-form textarea:focus-visible,
+.metadata-form select:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: 2px;
+}
+
+.metadata-form small {
+  color: #b65b5b;
+  font-size: 11px;
+}
+
 .template-toolbar {
   display: flex;
   align-items: center;
