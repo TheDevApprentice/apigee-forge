@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 import packageJson from '../package.json'
 import { useAuth } from './composables/useAuth'
 import { useSession } from './composables/useSession'
-import type { AppMode, ProxyDto, RevisionDetailDto, SessionDto } from './types/bridge'
+import type { AppMode, ProxyDto, RevisionDetailDto, SessionDto, TemplateDto } from './types/bridge'
 import { useOrganizations } from './composables/useOrganizations'
 import { useProxies } from './composables/useProxies'
 import { useTemplateEditor } from './composables/useTemplateEditor'
@@ -43,6 +43,11 @@ const selectedMode = appSession.selectedMode
 const organizations = useOrganizations()
 const proxies = useProxies()
 const templateEditor = useTemplateEditor()
+const templateList = ref<TemplateDto[]>([])
+const templateSearch = ref('')
+const templatesLoading = ref(false)
+const templatesError = ref<string | null>(null)
+const templateDeletePending = ref<string | null>(null)
 const authContext = auth.context
 const authLoading = auth.loading
 const authError = auth.error
@@ -78,7 +83,12 @@ async function changeMode(mode: AppMode) {
 watch(isAuthenticated, (authenticated) => {
   if (authenticated) {
     void organizations.loadOrganizations()
+    void loadTemplates()
   }
+})
+
+watch(activeView, (view) => {
+  if (view === 'Templates' && isAuthenticated.value) void loadTemplates()
 })
 
 watch(organizationList, (list) => {
@@ -114,6 +124,46 @@ function retryContext() {
     void organizations.loadEnvironments(selectedOrganization.value)
   } else {
     void organizations.loadOrganizations()
+  }
+}
+
+async function loadTemplates() {
+  templatesLoading.value = true
+  templatesError.value = null
+  try {
+    templateList.value = await invoke<TemplateDto[]>('list_templates')
+  } catch {
+    templatesError.value = 'Templates could not be loaded.'
+  } finally {
+    templatesLoading.value = false
+  }
+}
+
+const visibleTemplates = computed(() => {
+  const query = templateSearch.value.trim().toLowerCase()
+  return query ? templateList.value.filter((template) => template.name.toLowerCase().includes(query)) : templateList.value
+})
+
+async function selectTemplate(name: string) {
+  await templateEditor.load(name)
+}
+
+function newTemplate() {
+  if (templateEditor.dirty.value && !window.confirm('Discard the current template changes?')) return
+  templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: {}, post_flow: {} } })
+}
+
+async function deleteTemplate(name: string) {
+  if (!window.confirm(`Delete template "${name}"?`)) return
+  templateDeletePending.value = name
+  try {
+    await invoke('delete_template', { name })
+    templateList.value = templateList.value.filter((template) => template.name !== name)
+    if (templateEditor.current.value?.name === name) templateEditor.discardChanges()
+  } catch {
+    templatesError.value = 'Template could not be deleted.'
+  } finally {
+    templateDeletePending.value = null
   }
 }
 
@@ -448,10 +498,45 @@ void templateEditor
         </template>
         <template v-else-if="activeView === 'Templates'">
           <BaseCard eyebrow="Templates">
-            <BaseEmptyState>
+            <div class="template-toolbar">
+              <input v-model="templateSearch" type="search" placeholder="Search templates" aria-label="Search templates" />
+              <button type="button" class="primary-action" @click="newTemplate">New template</button>
+            </div>
+            <div v-if="templatesLoading" class="loading-state"><BaseSpinner /> <span>Loading templates…</span></div>
+            <BaseErrorState v-else-if="templatesError">
+              <template #title>Templates unavailable</template>
+              <template #hint>{{ templatesError }}</template>
+            </BaseErrorState>
+            <BaseEmptyState v-else-if="!templateList.length">
               <template #title>No templates loaded</template>
-              <template #hint>Template files and the editor will be connected in the next M7 step.</template>
+              <template #hint>Create your first local template to start the M7 editor.</template>
             </BaseEmptyState>
+            <BaseEmptyState v-else-if="!visibleTemplates.length">
+              <template #title>No templates match</template>
+              <template #hint>Try another search term.</template>
+            </BaseEmptyState>
+            <ul v-else class="template-list">
+              <li v-for="template in visibleTemplates" :key="template.name" :class="{ 'template-list__item--selected': templateEditor.current?.name === template.name }">
+                <button type="button" class="template-list__select" @click="selectTemplate(template.name)">
+                  <strong>{{ template.name || 'Untitled template' }}</strong>
+                  <span>{{ String(template.data.metadata?.owner || 'No owner') }}</span>
+                </button>
+                <button type="button" class="template-list__delete" :disabled="templateDeletePending === template.name" @click="deleteTemplate(template.name)">Delete</button>
+              </li>
+            </ul>
+          </BaseCard>
+          <BaseCard v-if="templateEditor.current" eyebrow="Template editor">
+            <div class="template-editor-summary">
+              <div>
+                <h2>{{ templateEditor.current.name || 'New template' }}</h2>
+                <p>{{ templateEditor.dirty ? 'Unsaved changes' : 'Saved template' }}</p>
+              </div>
+              <BaseChip :label="templateEditor.status" />
+            </div>
+            <div class="template-editor-actions">
+              <button type="button" :disabled="!templateEditor.dirty" @click="templateEditor.reset">Reset</button>
+              <button type="button" class="primary-action" :disabled="!templateEditor.dirty || templateEditor.status === 'saving'" @click="templateEditor.save">Save</button>
+            </div>
           </BaseCard>
         </template>
         <template v-else-if="activeView === 'Deployments'">

@@ -744,6 +744,116 @@ button:focus-visible {
   font-size: 13px;
 }
 
+.template-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.template-toolbar input {
+  width: min(100%, 320px);
+  padding: 9px 11px;
+  color: var(--text-main);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.template-toolbar input:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: 2px;
+}
+
+.template-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.template-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+}
+
+.template-list__item--selected {
+  background: var(--accent-bg);
+}
+
+.template-list__select {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  padding: 6px;
+  color: var(--text-main);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.template-list__select span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.template-list__delete,
+.template-editor-actions button {
+  padding: 7px 10px;
+  color: var(--text-secondary);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.template-list__delete:hover,
+.template-editor-actions button:hover {
+  color: var(--accent-active);
+  border-color: var(--accent-active);
+}
+
+.template-list__delete:disabled,
+.template-editor-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.template-editor-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.template-editor-summary h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.template-editor-summary p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.template-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
 .settings-profile {
   position: relative;
   display: flex;

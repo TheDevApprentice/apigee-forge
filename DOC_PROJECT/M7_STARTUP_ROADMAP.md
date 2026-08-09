@@ -108,13 +108,13 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-03 — Liste et sélection des templates
 
-- [ ] Remplacer l’état vide de l’écran Templates par une liste de templates locaux.
-- [ ] Afficher nom, owner, description, environnement cible et dernière action connue.
-- [ ] Ajouter recherche ou filtrage local par nom.
-- [ ] Ajouter sélection d’un template et ouverture de son éditeur.
-- [ ] Ajouter bouton `New template`.
-- [ ] Ajouter bouton de suppression avec confirmation.
-- [ ] Ajouter état vide, erreur, chargement et liste vide filtrée.
+- [x] Remplacer l’état vide de l’écran Templates par une liste de templates locaux.
+- [x] Afficher nom et owner ; description, environnement cible et dernière action seront enrichis dans M7-04.
+- [x] Ajouter recherche ou filtrage local par nom.
+- [x] Ajouter sélection d’un template et ouverture de son éditeur.
+- [x] Ajouter bouton `New template`.
+- [x] Ajouter bouton de suppression avec confirmation.
+- [x] Ajouter état vide, erreur, chargement et liste vide filtrée.
 
 ### M7-04 — Formulaire Metadata
 
