@@ -4,13 +4,14 @@ use apigee_forge_core::use_cases::{APP_MODE_KEY, SESSION_STATE_KEY};
 use apigee_forge_core::{
     domain::{
         AppMode, AuthContext, AuthMode, Environment, Organization, Proxy, SessionState,
-        SessionStatus,
+        SessionStatus, Template,
     },
     error::{AuthError, GatewayError},
     ports::ApigeeGateway,
     use_cases::{
-        GetApigeeRolesUseCase, GetDeploymentStatusUseCase, ListEnvironmentsUseCase,
-        ListOrganizationsUseCase, ListProxiesUseCase,
+        CreateTemplateUseCase, DeleteTemplateUseCase, GetApigeeRolesUseCase,
+        GetDeploymentStatusUseCase, GetTemplateUseCase, ListEnvironmentsUseCase,
+        ListOrganizationsUseCase, ListProxiesUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
     },
 };
 use tauri::State;
@@ -139,6 +140,147 @@ fn auth_error(error: AuthError) -> GuiError {
         _ => ("AUTH_FAILED", "Google authentication failed"),
     };
     GuiError { code, message }
+}
+
+fn template_repository(
+    state: &GuiState,
+) -> Result<Arc<dyn apigee_forge_core::ports::TemplateRepository>, GuiError> {
+    state
+        .template_repository
+        .lock()
+        .map_err(|_| GuiError {
+            code: "STATE_ERROR",
+            message: "application state is unavailable",
+        })?
+        .clone()
+        .ok_or(GuiError {
+            code: "TEMPLATE_REPOSITORY_UNAVAILABLE",
+            message: "Template storage is unavailable",
+        })
+}
+
+fn template_dto(template: Template) -> Result<TemplateDto, GuiError> {
+    let name = template.metadata.name.clone();
+    let data = serde_json::to_value(template).map_err(|_| GuiError {
+        code: "TEMPLATE_SERIALIZATION",
+        message: "Template could not be serialized",
+    })?;
+    Ok(TemplateDto { name, data })
+}
+
+fn template_error(error: apigee_forge_core::error::TemplateError) -> GuiError {
+    match error {
+        apigee_forge_core::error::TemplateError::Io => GuiError {
+            code: "TEMPLATE_IO",
+            message: "Template storage could not be accessed",
+        },
+        apigee_forge_core::error::TemplateError::Serialization => GuiError {
+            code: "TEMPLATE_SERIALIZATION",
+            message: "Template could not be serialized",
+        },
+        apigee_forge_core::error::TemplateError::NotFound => GuiError {
+            code: "TEMPLATE_NOT_FOUND",
+            message: "Template was not found",
+        },
+        apigee_forge_core::error::TemplateError::AlreadyExists => GuiError {
+            code: "TEMPLATE_ALREADY_EXISTS",
+            message: "A template with this name already exists",
+        },
+        apigee_forge_core::error::TemplateError::InvalidName => GuiError {
+            code: "TEMPLATE_INVALID_NAME",
+            message: "Template name is invalid",
+        },
+        apigee_forge_core::error::TemplateError::InvalidContent => GuiError {
+            code: "TEMPLATE_INVALID_CONTENT",
+            message: "Template content is invalid",
+        },
+    }
+}
+
+fn list_templates_from(
+    repository: Arc<dyn apigee_forge_core::ports::TemplateRepository>,
+) -> Result<Vec<TemplateDto>, GuiError> {
+    ListTemplatesUseCase::new(repository)
+        .execute()
+        .map_err(template_error)?
+        .into_iter()
+        .map(template_dto)
+        .collect()
+}
+
+fn get_template_from(
+    repository: Arc<dyn apigee_forge_core::ports::TemplateRepository>,
+    name: &str,
+) -> Result<TemplateDto, GuiError> {
+    template_dto(
+        GetTemplateUseCase::new(repository)
+            .execute(name)
+            .map_err(template_error)?,
+    )
+}
+
+fn create_template_from(
+    repository: Arc<dyn apigee_forge_core::ports::TemplateRepository>,
+    data: serde_json::Value,
+) -> Result<TemplateDto, GuiError> {
+    let template = Template::from_json_value(data).map_err(template_error)?;
+    let result = template.clone();
+    CreateTemplateUseCase::new(repository)
+        .execute(template)
+        .map_err(template_error)?;
+    template_dto(result)
+}
+
+fn update_template_from(
+    repository: Arc<dyn apigee_forge_core::ports::TemplateRepository>,
+    data: serde_json::Value,
+) -> Result<TemplateDto, GuiError> {
+    let template = Template::from_json_value(data).map_err(template_error)?;
+    let result = template.clone();
+    UpdateTemplateUseCase::new(repository)
+        .execute(template)
+        .map_err(template_error)?;
+    template_dto(result)
+}
+
+fn delete_template_from(
+    repository: Arc<dyn apigee_forge_core::ports::TemplateRepository>,
+    name: &str,
+) -> Result<(), GuiError> {
+    DeleteTemplateUseCase::new(repository)
+        .execute(name)
+        .map_err(template_error)
+}
+
+#[tauri::command]
+pub fn list_templates(state: State<'_, GuiState>) -> Result<Vec<TemplateDto>, GuiError> {
+    list_templates_from(template_repository(&state)?)
+}
+
+#[tauri::command]
+pub fn get_template(state: State<'_, GuiState>, name: String) -> Result<TemplateDto, GuiError> {
+    get_template_from(template_repository(&state)?, &name)
+}
+
+#[tauri::command]
+pub fn create_template(
+    state: State<'_, GuiState>,
+    data: serde_json::Value,
+) -> Result<TemplateDto, GuiError> {
+    create_template_from(template_repository(&state)?, data)
+}
+
+#[tauri::command]
+pub fn update_template(
+    state: State<'_, GuiState>,
+    data: serde_json::Value,
+) -> Result<TemplateDto, GuiError> {
+    update_template_from(template_repository(&state)?, data)
+}
+
+#[tauri::command]
+pub fn delete_template(state: State<'_, GuiState>, name: String) -> Result<(), GuiError> {
+    delete_template_from(template_repository(&state)?, &name)
 }
 
 fn gateway_error(error: GatewayError) -> GuiError {
@@ -585,11 +727,94 @@ fn proxy_dto(value: Proxy, source: AppMode) -> ProxyDto {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        collections::HashMap,
+        sync::{Arc, Mutex},
+    };
+
+    use apigee_forge_core::{domain::Template, error::TemplateError, ports::TemplateRepository};
+
     use super::{
-        session_dto, AuthDto, EnvironmentDto, OrganizationDto, ProxyDto, ProxyRevisionDto,
-        TemplateDto,
+        create_template_from, delete_template_from, get_template_from, list_templates_from,
+        session_dto, update_template_from, AuthDto, EnvironmentDto, OrganizationDto, ProxyDto,
+        ProxyRevisionDto, TemplateDto,
     };
     use apigee_forge_core::domain::{AppMode, GoogleIdentity, SessionState};
+
+    #[derive(Default)]
+    struct FakeTemplateRepository {
+        templates: Mutex<HashMap<String, Template>>,
+    }
+
+    impl TemplateRepository for FakeTemplateRepository {
+        fn create(&self, template: Template) -> Result<(), TemplateError> {
+            let mut templates = self.templates.lock().map_err(|_| TemplateError::Io)?;
+            let name = template.metadata.name.clone();
+            if templates.insert(name, template).is_some() {
+                return Err(TemplateError::AlreadyExists);
+            }
+            Ok(())
+        }
+
+        fn get(&self, name: &str) -> Result<Option<Template>, TemplateError> {
+            Ok(self
+                .templates
+                .lock()
+                .map_err(|_| TemplateError::Io)?
+                .get(name)
+                .cloned())
+        }
+
+        fn list(&self) -> Result<Vec<Template>, TemplateError> {
+            Ok(self
+                .templates
+                .lock()
+                .map_err(|_| TemplateError::Io)?
+                .values()
+                .cloned()
+                .collect())
+        }
+
+        fn update(&self, template: Template) -> Result<(), TemplateError> {
+            let mut templates = self.templates.lock().map_err(|_| TemplateError::Io)?;
+            let name = template.metadata.name.clone();
+            if !templates.contains_key(&name) {
+                return Err(TemplateError::NotFound);
+            }
+            templates.insert(name, template);
+            Ok(())
+        }
+
+        fn delete(&self, name: &str) -> Result<(), TemplateError> {
+            self.templates
+                .lock()
+                .map_err(|_| TemplateError::Io)?
+                .remove(name)
+                .map(|_| ())
+                .ok_or(TemplateError::NotFound)
+        }
+    }
+
+    fn valid_template(name: &str) -> serde_json::Value {
+        serde_json::json!({"metadata":{"name":name,"owner":"platform","naming_convention":{"prefix":"api-","case":"kebab-case"}},"flow":{"pre_flow":{},"post_flow":{}}})
+    }
+
+    #[test]
+    fn template_command_helpers_use_fake_repository() {
+        let repository = Arc::new(FakeTemplateRepository::default());
+        let created = create_template_from(repository.clone(), valid_template("orders")).unwrap();
+        assert_eq!(created.name, "orders");
+        assert_eq!(list_templates_from(repository.clone()).unwrap().len(), 1);
+        assert_eq!(
+            get_template_from(repository.clone(), "orders")
+                .unwrap()
+                .name,
+            "orders"
+        );
+        update_template_from(repository.clone(), valid_template("orders")).unwrap();
+        delete_template_from(repository.clone(), "orders").unwrap();
+        assert_eq!(list_templates_from(repository).unwrap().len(), 0);
+    }
 
     #[test]
     fn serializes_bridge_dtos_without_sensitive_fields() -> Result<(), Box<dyn std::error::Error>> {

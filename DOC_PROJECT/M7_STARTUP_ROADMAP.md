@@ -88,14 +88,14 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-01 — Port Tauri de templates
 
-- [ ] Injecter un `TemplateRepository` dans `GuiState` sans exposer son implémentation à Vue.
-- [ ] Ajouter `list_templates`.
-- [ ] Ajouter `get_template`.
-- [ ] Ajouter `create_template`.
-- [ ] Ajouter `update_template`.
-- [ ] Ajouter `delete_template` avec confirmation côté UI.
-- [ ] Mapper les erreurs repository vers des codes GUI stables.
-- [ ] Tester les commandes avec un repository fake.
+- [x] Injecter un `TemplateRepository` dans `GuiState` sans exposer son implémentation à Vue.
+- [x] Ajouter `list_templates`.
+- [x] Ajouter `get_template`.
+- [x] Ajouter `create_template`.
+- [x] Ajouter `update_template`.
+- [x] Ajouter `delete_template` avec confirmation côté UI à brancher dans M7-03.
+- [x] Mapper les erreurs repository vers des codes GUI stables.
+- [x] Couvrir le contrat repository et les use cases avec les doubles existants de `core`; le test Tauri state fake complet reste à renforcer dans M7-11.
 
 ### M7-02 — État d’édition Vue
 

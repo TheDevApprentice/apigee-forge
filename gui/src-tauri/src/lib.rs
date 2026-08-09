@@ -10,12 +10,12 @@ use apigee_forge_core::{
     error::AuthError,
     infra::{
         oauth_desktop_auth_provider::{OAuthDesktopAuthProvider, OAuthDesktopConfig},
-        InMemoryApigeeGateway, KeyringLocalKeyStore, ReqwestApigeeGateway,
-        SqlCipherLocalStateStore,
+        FilesystemTemplateRepository, InMemoryApigeeGateway, KeyringLocalKeyStore,
+        ReqwestApigeeGateway, SqlCipherLocalStateStore,
     },
     ports::{
         ApigeeDeploymentGateway, ApigeeGateway, ApigeeRevisionGateway, AuthProvider,
-        LocalStateStore,
+        LocalStateStore, TemplateRepository,
     },
     use_cases::SessionStatePersistence,
 };
@@ -65,6 +65,7 @@ pub struct GuiState {
     pub auth_context: Mutex<Option<AuthContext>>,
     pub session: Mutex<SessionState>,
     pub local_store: Mutex<Option<Arc<dyn LocalStateStore>>>,
+    pub template_repository: Mutex<Option<Arc<dyn TemplateRepository>>>,
 }
 
 impl Default for GuiState {
@@ -81,6 +82,7 @@ impl Default for GuiState {
             auth_context: Mutex::new(None),
             session: Mutex::new(SessionState::cloud()),
             local_store: Mutex::new(None),
+            template_repository: Mutex::new(None),
         }
     }
 }
@@ -143,6 +145,7 @@ pub fn build_state() -> GuiState {
         auth_context: Mutex::new(None),
         session: Mutex::new(SessionState::cloud()),
         local_store: Mutex::new(None),
+        template_repository: Mutex::new(None),
     }
 }
 
@@ -162,6 +165,16 @@ pub fn run() -> Result<(), tauri::Error> {
                 .join("state.sqlcipher");
             let key_store = KeyringLocalKeyStore::new("apigee-forge", "demo-local-state-key");
             let state = app.state::<GuiState>();
+            let template_root = app
+                .path()
+                .app_data_dir()
+                .map_err(|_| "application data directory is unavailable")?
+                .join("templates");
+            state
+                .template_repository
+                .lock()
+                .map_err(|_| "application state is unavailable")?
+                .replace(Arc::new(FilesystemTemplateRepository::new(template_root)));
             if let Ok(store) = SqlCipherLocalStateStore::open(path, &key_store) {
                 let store = Arc::new(store);
                 if let Ok(session) = SessionStatePersistence::new(store.clone()).load() {
@@ -190,7 +203,12 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::get_roles,
             commands::get_revision_detail,
             commands::list_environments,
-            commands::list_proxies
+            commands::list_proxies,
+            commands::list_templates,
+            commands::get_template,
+            commands::create_template,
+            commands::update_template,
+            commands::delete_template
         ])
         .run(tauri::generate_context!())
 }
