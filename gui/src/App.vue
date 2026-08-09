@@ -186,6 +186,33 @@ const metadataErrors = computed(() => ({
 }))
 
 const metadataValid = computed(() => Object.values(metadataErrors.value).every((message) => !message))
+
+type PolicyValidationError = { field: string; message: string }
+
+function validatePolicyStage(stage: Record<string, any>, stageLabel: string): PolicyValidationError[] {
+  const errors: PolicyValidationError[] = []
+  for (const lane of ['request', 'response'] as const) {
+    const policies = Array.isArray(stage[lane]) ? stage[lane] : []
+    policies.forEach((policy: Record<string, any>, index: number) => {
+      const prefix = `${stageLabel} / ${lane} / policy ${index + 1}`
+      if (policy.type === 'security_jwt') {
+        if (!String(policy.issuer || '').trim()) errors.push({ field: `${prefix} / issuer`, message: 'JWT issuer is required.' })
+        if (!String(policy.audience || '').trim()) errors.push({ field: `${prefix} / audience`, message: 'JWT audience is required.' })
+      }
+      if (policy.type === 'quota' && (!Number(policy.allow) || !Number(policy.interval))) errors.push({ field: prefix, message: 'Quota allow and interval must be greater than zero.' })
+      if (policy.type === 'spike_arrest' && !Number(policy.rate)) errors.push({ field: `${prefix} / rate`, message: 'Spike arrest rate must be greater than zero.' })
+      if (policy.type === 'cors' && (!Array.isArray(policy.allow_origins) || policy.allow_origins.length === 0)) errors.push({ field: `${prefix} / origins`, message: 'At least one CORS origin is required.' })
+    })
+  }
+  return errors
+}
+
+const policyValidationErrors = computed(() => [
+  ...validatePolicyStage(flowDraft.value.pre_flow, 'PreFlow'),
+  ...flowDraft.value.conditional_flows.flatMap((flow, index) => validatePolicyStage(flow, `Conditional Flow ${index + 1}`)),
+  ...validatePolicyStage(flowDraft.value.post_flow, 'PostFlow'),
+])
+const templateValid = computed(() => metadataValid.value && policyValidationErrors.value.length === 0)
 const selectedFlow = ref('pre_flow')
 const selectedLane = ref<'request' | 'response'>('request')
 const selectedPolicyType = ref('security_api_key')
@@ -347,7 +374,7 @@ function updateNamingCase(value: string) {
 }
 
 async function saveTemplate() {
-  if (!metadataValid.value) return
+  if (!templateValid.value) return
   await templateEditor.save()
   if (templateEditor.current.value?.name) void loadTemplates()
 }
@@ -369,7 +396,7 @@ async function closeTemplateEditor() {
 }
 
 function continueToReview() {
-  if (metadataValid.value && templateEditor.current.value) templateView.value = 'review'
+  if (templateValid.value && templateEditor.current.value) templateView.value = 'review'
 }
 async function newTemplate() {
   activeView.value = 'Templates'
@@ -807,7 +834,7 @@ void templateEditor
               </div>
               <div class="template-workspace__actions">
                 <button type="button" @click="closeTemplateEditor">Back to templates</button>
-                <button type="button" class="primary-action" :disabled="!metadataValid" @click="continueToReview">Continue to review</button>
+                <button type="button" class="primary-action" :disabled="!templateValid" @click="continueToReview">Continue to review</button>
               </div>
             </div>
             <nav class="template-steps" aria-label="Template editing steps">
@@ -861,18 +888,19 @@ void templateEditor
                 </li>
               </ol>
             </div>
-            <div class="flow-canvas__continue"><button type="button" class="primary-action" :disabled="!metadataValid" @click="continueToReview">Continue to review</button></div>
+            <div class="flow-canvas__continue"><button type="button" class="primary-action" :disabled="!templateValid" @click="continueToReview">Continue to review</button></div>
           </BaseCard>
-          <div v-if="currentTemplateValidationErrors.length" class="template-validation-errors" role="alert" aria-live="assertive">
+          <div v-if="currentTemplateValidationErrors.length || policyValidationErrors.length" class="template-validation-errors" role="alert" aria-live="assertive">
             <strong>Template validation</strong>
             <button v-for="validationError in currentTemplateValidationErrors" :key="`${validationError.code}-${validationError.field}`" type="button">{{ validationError.field || 'Template' }}: {{ validationError.message }}</button>
+            <button v-for="policyError in policyValidationErrors" :key="`${policyError.field}-${policyError.message}`" type="button">{{ policyError.field }}: {{ policyError.message }}</button>
           </div>
           </template>
           <template v-if="templateView === 'review'">
             <BaseCard eyebrow="Review and save">
               <div class="review-header"><div><h2>Ready to save</h2><p>Check the template summary before writing it to local storage.</p></div><BaseChip :label="currentTemplateDirty ? 'Unsaved changes' : 'Saved'" /></div>
               <div class="review-grid"><div><span>Name</span><strong>{{ metadataDraft.name || 'Missing' }}</strong></div><div><span>Owner</span><strong>{{ metadataDraft.owner || 'Missing' }}</strong></div><div><span>Target</span><strong>{{ metadataDraft.target_environment || 'None' }}</strong></div><div><span>Policies</span><strong>{{ totalPolicyCount }}</strong></div></div>
-              <div class="review-actions"><button type="button" @click="templateView = 'editor'">Back to editor</button><button type="button" class="primary-action" :disabled="!metadataValid || !currentTemplateDirty || currentTemplateStatus === 'saving'" @click="saveTemplate">{{ currentTemplateStatus === 'saving' ? 'Saving…' : 'Save template' }}</button></div>
+              <div class="review-actions"><button type="button" @click="templateView = 'editor'">Back to editor</button><button type="button" class="primary-action" :disabled="!templateValid || !currentTemplateDirty || currentTemplateStatus === 'saving'" @click="saveTemplate">{{ currentTemplateStatus === 'saving' ? 'Saving…' : 'Save template' }}</button></div>
             </BaseCard>
           </template>
         </template>
