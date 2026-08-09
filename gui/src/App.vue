@@ -647,6 +647,19 @@ void templateEditor
               <template #hint>The Demo dataset is intentionally deferred until the post-MVP tutorial.</template>
             </BaseEmptyState>
 
+          <section class="dashboard-actions" aria-label="Quick actions">
+            <button type="button" class="dashboard-action-card" @click="newTemplate">
+              <span class="dashboard-action-card__icon">+</span>
+              <span><strong>Create template</strong><small>Build a reusable template for the CLI and future proxies.</small></span>
+              <span class="dashboard-action-card__arrow">→</span>
+            </button>
+            <button type="button" class="dashboard-action-card" @click="openCreateProxy">
+              <span class="dashboard-action-card__icon">+</span>
+              <span><strong>Create proxy</strong><small>Start the guided Apigee proxy workflow.</small></span>
+              <span class="dashboard-action-card__arrow">→</span>
+            </button>
+          </section>
+
           <section class="dashboard-metrics" aria-label="Workspace summary">
             <BaseCard eyebrow="API proxies">
               <strong class="metric-card__value">{{ dashboardMetrics.proxies }}</strong>
