@@ -186,11 +186,18 @@ const appInfo = {
 }
 
 const profileIdentity = computed(() => authContext.value?.identity || (isDemo.value ? 'Demo workspace' : 'Not signed in'))
+const profileName = computed(() => authContext.value?.name || [authContext.value?.given_name, authContext.value?.family_name].filter(Boolean).join(' ') || '')
+const profilePicture = computed(() => authContext.value?.picture || '')
+const profileImageFailed = ref(false)
 const profileInitials = computed(() => {
   if (isDemo.value) return 'DF'
-  const name = profileIdentity.value.split('@')[0].replace(/[._-]+/g, ' ').trim()
-  const parts = name.split(/\s+/).filter(Boolean)
-  return (parts.length > 1 ? `${parts[0][0]}${parts.at(-1)?.[0]}` : name.slice(0, 2)).toUpperCase() || 'AF'
+  const source = profileName.value || profileIdentity.value.split('@')[0].replace(/[._-]+/g, ' ')
+  const parts = source.trim().split(/\s+/).filter(Boolean)
+  return (parts.length > 1 ? `${parts[0][0]}${parts.at(-1)?.[0]}` : source.slice(0, 2)).toUpperCase() || 'AF'
+})
+
+watch(profilePicture, () => {
+  profileImageFailed.value = false
 })
 
 void templateEditor
@@ -215,13 +222,25 @@ void templateEditor
       </nav>
       <div class="sidebar__footer">
         <div class="sidebar__profile" tabindex="0" :aria-label="`User profile: ${profileIdentity}`">
-          <div class="sidebar__avatar" aria-hidden="true">{{ profileInitials }}</div>
+          <div class="sidebar__avatar" aria-hidden="true">
+            <img v-if="profilePicture && !profileImageFailed" :src="profilePicture" alt="" @error="profileImageFailed = true" />
+            <span v-else>{{ profileInitials }}</span>
+          </div>
           <span class="connection-dot" :class="{ 'connection-dot--connected': isAuthenticated }" />
           <div class="sidebar__profile-tooltip" role="status">
-            <strong>{{ profileIdentity }}</strong>
-            <span>{{ isAuthenticated ? 'Connected' : 'Not connected' }}</span>
+            <div class="profile-tooltip__heading">
+              <div class="profile-tooltip__avatar" aria-hidden="true">
+                <img v-if="profilePicture && !profileImageFailed" :src="profilePicture" alt="" @error="profileImageFailed = true" />
+                <span v-else>{{ profileInitials }}</span>
+              </div>
+              <div>
+                <strong>{{ profileName || profileIdentity }}</strong>
+                <span>{{ profileIdentity }}</span>
+              </div>
+            </div>
+            <div class="profile-tooltip__status"><span class="profile-tooltip__dot" :class="{ 'profile-tooltip__dot--connected': isAuthenticated }" />{{ isAuthenticated ? 'Connected' : 'Not connected' }}</div>
             <span>{{ isDemo ? 'Demo mode' : 'Live mode' }}</span>
-            <span v-if="selectedOrganization">{{ selectedOrganization }} / {{ selectedEnvironment || 'No environment' }}</span>
+            <span v-if="selectedOrganization">Workspace: {{ selectedOrganization }} / {{ selectedEnvironment || 'No environment' }}</span>
           </div>
         </div>
       </div>
@@ -466,13 +485,18 @@ void templateEditor
           </BaseCard>
           <BaseCard eyebrow="User profile">
             <div class="settings-profile">
-              <div class="settings-profile__avatar" aria-hidden="true">{{ profileInitials }}</div>
+              <div class="settings-profile__avatar" aria-hidden="true">
+                <img v-if="profilePicture && !profileImageFailed" :src="profilePicture" alt="" @error="profileImageFailed = true" />
+                <span v-else>{{ profileInitials }}</span>
+              </div>
               <div class="settings-profile__summary">
-                <strong>{{ profileIdentity }}</strong>
+                <strong>{{ profileName || profileIdentity }}</strong>
+                <span>{{ profileIdentity }}</span>
                 <span>{{ isAuthenticated ? 'Connected account' : 'Not connected' }}</span>
               </div>
               <div class="settings-profile__hover" role="status">
-                <strong>{{ profileIdentity }}</strong>
+                <strong>{{ profileName || profileIdentity }}</strong>
+                <span>{{ profileIdentity }}</span>
                 <span>{{ isDemo ? 'Demo mode' : 'Live mode' }}</span>
                 <span>{{ isAuthenticated ? 'Session active' : 'Sign in to connect' }}</span>
               </div>

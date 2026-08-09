@@ -307,7 +307,13 @@ impl OAuthDesktopAuthProvider {
             return Err(AuthError::IdentityLookup);
         }
 
-        Ok(GoogleIdentity::new(identity.email))
+        Ok(GoogleIdentity::with_profile(
+            identity.email,
+            identity.given_name,
+            identity.family_name,
+            identity.name,
+            identity.picture,
+        ))
     }
 
     fn store_access_token(&self, access_token: &AccessToken) -> Result<(), AuthError> {
@@ -344,6 +350,14 @@ impl OAuthDesktopAuthProvider {
 #[derive(Debug, Deserialize)]
 struct GoogleUserInfo {
     email: String,
+    #[serde(default)]
+    given_name: Option<String>,
+    #[serde(default)]
+    family_name: Option<String>,
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    picture: Option<String>,
 }
 
 fn access_token_from_response<T: TokenResponse>(token: &T) -> Result<AccessToken, AuthError> {

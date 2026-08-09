@@ -128,6 +128,15 @@ button:focus-visible {
   font-weight: 500;
 }
 
+.sidebar__avatar img,
+.profile-tooltip__avatar img,
+.settings-profile__avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .connection-dot {
   position: absolute;
   right: 1px;
@@ -150,9 +159,9 @@ button:focus-visible {
   bottom: 0;
   z-index: 5;
   display: grid;
-  min-width: 210px;
-  gap: 5px;
-  padding: 12px 14px;
+  min-width: 270px;
+  gap: 8px;
+  padding: 16px;
   color: var(--text-secondary);
   background: var(--card-bg);
   border: 0.5px solid var(--border);
@@ -163,6 +172,55 @@ button:focus-visible {
   pointer-events: none;
   transform: translateX(-4px);
   transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.profile-tooltip__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.profile-tooltip__avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  color: var(--accent-text);
+  background: var(--accent-bg);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.profile-tooltip__heading > div:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.profile-tooltip__heading span {
+  overflow-wrap: anywhere;
+}
+
+.profile-tooltip__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.profile-tooltip__dot {
+  width: 7px;
+  height: 7px;
+  background: var(--text-muted);
+  border-radius: 50%;
+}
+
+.profile-tooltip__dot--connected {
+  background: #4f9f72;
 }
 
 .sidebar__profile-tooltip strong {

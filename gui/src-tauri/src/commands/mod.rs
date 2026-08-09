@@ -22,6 +22,10 @@ pub struct AuthDto {
     pub authenticated: bool,
     pub mode: Option<String>,
     pub identity: Option<String>,
+    pub given_name: Option<String>,
+    pub family_name: Option<String>,
+    pub name: Option<String>,
+    pub picture: Option<String>,
     pub project_id: Option<String>,
     pub selected_organization: Option<String>,
 }
@@ -173,6 +177,10 @@ fn auth_dto(context: Option<&AuthContext>) -> AuthDto {
             authenticated: false,
             mode: None,
             identity: None,
+            given_name: None,
+            family_name: None,
+            name: None,
+            picture: None,
             project_id: None,
             selected_organization: None,
         };
@@ -187,6 +195,22 @@ fn auth_dto(context: Option<&AuthContext>) -> AuthDto {
             .identity
             .as_ref()
             .map(|value| value.email().to_owned()),
+        given_name: context
+            .identity
+            .as_ref()
+            .and_then(|value| value.given_name.clone()),
+        family_name: context
+            .identity
+            .as_ref()
+            .and_then(|value| value.family_name.clone()),
+        name: context
+            .identity
+            .as_ref()
+            .and_then(|value| value.name.clone()),
+        picture: context
+            .identity
+            .as_ref()
+            .and_then(|value| value.picture.clone()),
         project_id: context
             .project_id
             .as_ref()
@@ -278,6 +302,10 @@ pub async fn auth_restore(state: State<'_, GuiState>) -> Result<AuthDto, GuiErro
             authenticated: false,
             mode: None,
             identity: None,
+            given_name: None,
+            family_name: None,
+            name: None,
+            picture: None,
             project_id: None,
             selected_organization: None,
         });
@@ -287,6 +315,10 @@ pub async fn auth_restore(state: State<'_, GuiState>) -> Result<AuthDto, GuiErro
             authenticated: false,
             mode: None,
             identity: None,
+            given_name: None,
+            family_name: None,
+            name: None,
+            picture: None,
             project_id: None,
             selected_organization: None,
         });
@@ -296,6 +328,10 @@ pub async fn auth_restore(state: State<'_, GuiState>) -> Result<AuthDto, GuiErro
             authenticated: false,
             mode: None,
             identity: None,
+            given_name: None,
+            family_name: None,
+            name: None,
+            picture: None,
             project_id: None,
             selected_organization: None,
         });
@@ -547,6 +583,10 @@ mod tests {
             authenticated: true,
             mode: Some("desktop".to_owned()),
             identity: Some("user@example.com".to_owned()),
+            given_name: Some("Test".to_owned()),
+            family_name: Some("User".to_owned()),
+            name: Some("Test User".to_owned()),
+            picture: None,
             project_id: None,
             selected_organization: Some("org-one".to_owned()),
         })?;
@@ -573,7 +613,7 @@ mod tests {
         assert_eq!(organization["id"], "org-one");
         assert_eq!(environment["name"], "prod");
         assert_eq!(proxy["revisions"][0]["number"], 1);
-        assert_eq!(auth.as_object().map(|value| value.len()), Some(5));
+        assert_eq!(auth.as_object().map(|value| value.len()), Some(9));
         let session = serde_json::to_value(session_dto(&SessionState::cloud_authenticated(
             GoogleIdentity::new("user@example.com"),
         )))?;

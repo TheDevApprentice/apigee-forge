@@ -15,6 +15,10 @@ export type AuthDto = {
   authenticated: boolean
   mode: 'desktop' | 'headless' | null
   identity: string | null
+  given_name: string | null
+  family_name: string | null
+  name: string | null
+  picture: string | null
   project_id: string | null
   selected_organization: string | null
 }
