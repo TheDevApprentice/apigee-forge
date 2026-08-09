@@ -1,4 +1,5 @@
 use std::{
+    env,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::{Arc, Mutex},
     time::{Duration, SystemTime},
@@ -203,7 +204,12 @@ impl OAuthDesktopAuthProvider {
             .exchange_refresh_token(&RefreshToken::new(refresh_token))
             .request_async(&self.http_client)
             .await
-            .map_err(|_| AuthError::TokenExchange)?;
+            .map_err(|error| {
+                if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
+                    eprintln!("OAuth token exchange failed: {error}");
+                }
+                AuthError::TokenExchange
+            })?;
 
         let access_token = access_token_from_response(&token)?;
         let replacement_refresh_token =
@@ -219,7 +225,7 @@ impl OAuthDesktopAuthProvider {
         .await
         .map_err(|_| AuthError::Callback)?;
         let redirect_address = listener.local_addr().map_err(|_| AuthError::Callback)?;
-        let redirect_url = format!("http://{}/callback", redirect_address);
+        let redirect_url = format!("http://{}", redirect_address);
         let client = self.oauth_client(redirect_url)?;
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
         let (authorization_url, csrf_token) = client
@@ -246,7 +252,12 @@ impl OAuthDesktopAuthProvider {
             .set_pkce_verifier(pkce_verifier)
             .request_async(&self.http_client)
             .await
-            .map_err(|_| AuthError::TokenExchange)?;
+            .map_err(|error| {
+                if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
+                    eprintln!("OAuth token exchange failed: {error}");
+                }
+                AuthError::TokenExchange
+            })?;
         let refresh_token = token.refresh_token().map(|token| token.secret().to_owned());
         if let Some(refresh_token) = refresh_token {
             self.refresh_tokens.save(&refresh_token)?;
