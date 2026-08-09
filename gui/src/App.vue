@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import packageJson from '../package.json'
 import { useAuth } from './composables/useAuth'
 import { useSession } from './composables/useSession'
 import type { AppMode, ProxyDto, RevisionDetailDto, SessionDto } from './types/bridge'
@@ -170,6 +171,20 @@ const visibleProxies = computed(() => proxyList.value.filter((proxy) => {
     : revision.status === 'NotDeployed')
 }))
 
+const dashboardMetrics = computed(() => ({
+  proxies: proxyList.value.length,
+  revisions: proxyList.value.reduce((total, proxy) => total + proxy.revisions.length, 0),
+  deployedProxies: proxyList.value.filter((proxy) => proxy.revisions.some((revision) => revision.status === 'Succeeded')).length,
+  deployedRevisions: proxyList.value.reduce((total, proxy) => total + proxy.revisions.filter((revision) => revision.status === 'Succeeded').length, 0),
+}))
+
+const appInfo = {
+  version: packageJson.version,
+  build: 'Development desktop build',
+  stack: 'Vue + Tauri + Rust',
+  branch: 'feature/m6-bis-gui',
+}
+
 void templateEditor
 </script>
 
@@ -296,6 +311,21 @@ void templateEditor
               <template #hint>The Demo dataset is intentionally deferred until the post-MVP tutorial.</template>
             </BaseEmptyState>
 
+          <section class="dashboard-metrics" aria-label="Workspace summary">
+            <BaseCard eyebrow="API proxies">
+              <strong class="metric-card__value">{{ dashboardMetrics.proxies }}</strong>
+              <span class="metric-card__hint">Visible in this environment</span>
+            </BaseCard>
+            <BaseCard eyebrow="Revisions">
+              <strong class="metric-card__value">{{ dashboardMetrics.revisions }}</strong>
+              <span class="metric-card__hint">Available revisions</span>
+            </BaseCard>
+            <BaseCard eyebrow="Deployed proxies">
+              <strong class="metric-card__value">{{ dashboardMetrics.deployedProxies }}</strong>
+              <span class="metric-card__hint">{{ dashboardMetrics.deployedRevisions }} deployed revisions</span>
+            </BaseCard>
+          </section>
+
           <BaseCard eyebrow="Identity and role">
             <div class="identity-row">
               <BaseChip :label="isDemo ? 'Demo data' : 'Live data'" />
@@ -409,10 +439,34 @@ void templateEditor
           </BaseCard>
         </template>
         <template v-else-if="activeView === 'Settings'">
-          <BaseCard eyebrow="Settings">
+          <BaseCard eyebrow="Application">
+            <div class="settings-grid">
+              <div class="settings-item"><span>Version</span><strong>{{ appInfo.version }}</strong></div>
+              <div class="settings-item"><span>Build</span><strong>{{ appInfo.build }}</strong></div>
+              <div class="settings-item"><span>Technology</span><strong>{{ appInfo.stack }}</strong></div>
+              <div class="settings-item"><span>Source branch</span><strong>{{ appInfo.branch }}</strong></div>
+            </div>
+          </BaseCard>
+          <BaseCard eyebrow="Workspace session">
+            <div class="settings-grid">
+              <div class="settings-item"><span>Mode</span><strong>{{ isDemo ? 'Demo' : 'Live' }}</strong></div>
+              <div class="settings-item"><span>Organization</span><strong>{{ selectedOrganization || 'Not selected' }}</strong></div>
+              <div class="settings-item"><span>Environment</span><strong>{{ selectedEnvironment || 'Not selected' }}</strong></div>
+              <div class="settings-item"><span>Identity</span><strong>{{ authContext?.identity || 'Local workspace' }}</strong></div>
+            </div>
+          </BaseCard>
+          <BaseCard eyebrow="Resources">
+            <nav class="resource-links" aria-label="Project resources">
+              <a href="https://github.com/TheDevApprentice/apigee-forge" target="_blank" rel="noreferrer">Project on GitHub</a>
+              <a href="https://cloud.google.com/apigee/docs" target="_blank" rel="noreferrer">Apigee documentation</a>
+              <a href="https://cloud.google.com/apigee/docs/reference/apis/apigee/rest" target="_blank" rel="noreferrer">Apigee Management API</a>
+              <a href="https://cloud.google.com/apigee/support" target="_blank" rel="noreferrer">Apigee support</a>
+            </nav>
+          </BaseCard>
+          <BaseCard eyebrow="Available configuration">
             <BaseEmptyState>
-              <template #title>No settings available yet</template>
-              <template #hint>Connection, local storage and appearance settings will be added in a later GUI pass.</template>
+              <template #title>No editable preferences yet</template>
+              <template #hint>Authentication, storage and appearance preferences will appear here as they become configurable.</template>
             </BaseEmptyState>
           </BaseCard>
         </template>
