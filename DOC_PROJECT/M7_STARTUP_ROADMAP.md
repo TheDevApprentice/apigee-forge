@@ -190,6 +190,17 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 - [x] Éviter les composants qui dépendent uniquement du drag-and-drop ; les boutons haut/bas restent disponibles.
 - [x] Préserver les tokens existants sans lancer le polish M9.
 
+### M7-UX-01 — Réorganisation du parcours Templates
+
+Cette passe n’était pas prévue dans le découpage initial de M7. Elle a été ajoutée après la première validation manuelle de l’éditeur, car l’interface fonctionnelle ne fournissait pas encore de parcours utilisateur suffisamment compréhensible.
+
+- [x] Séparer visuellement le catalogue et l’espace d’édition.
+- [x] Ajouter un en-tête d’édition avec retour au catalogue et sauvegarde visible.
+- [x] Ajouter une progression `Details → Flow → Policies → Save`.
+- [x] Ajouter un texte d’aide pour expliquer le parcours.
+- [x] Rendre les actions principales accessibles sans devoir atteindre le bas de la page.
+- [x] Conserver le polish visuel complet et les tokens finaux dans M9.
+
 ### M7-11 — Tests de parcours
 
 - [ ] Tester création d’un template minimal.

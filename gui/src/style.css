@@ -992,6 +992,101 @@ button:focus-visible {
   font-size: 11px;
 }
 
+.template-catalogue__intro,
+.editor-section__intro {
+  margin: -4px 0 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.template-workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.template-workspace__eyebrow {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.template-workspace-header h2 {
+  margin: 6px 0 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.template-workspace-header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.template-workspace__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.template-workspace__actions button {
+  padding: 8px 11px;
+  color: var(--text-secondary);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.template-workspace__actions button:hover:not(:disabled) {
+  color: var(--accent-active);
+  border-color: var(--accent-active);
+}
+
+.template-workspace__actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.template-steps {
+  display: flex;
+  gap: 8px;
+  margin: 20px 0;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--border);
+}
+
+.template-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.template-step b {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 0.5px solid var(--border);
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.template-step--active {
+  color: var(--accent-text);
+}
+
+.template-step--active b {
+  background: var(--accent-bg);
+  border-color: var(--accent-active);
+}
+
 .template-toolbar {
   display: flex;
   align-items: center;
@@ -1427,6 +1522,7 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .template-workspace-header,
   .template-toolbar,
   .policy-editor__toolbar {
     align-items: stretch;
@@ -1435,6 +1531,10 @@ button:focus-visible {
 
   .template-toolbar input {
     width: 100%;
+  }
+
+  .template-steps {
+    flex-wrap: wrap;
   }
 
   .flow-stage-detail {

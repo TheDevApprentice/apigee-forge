@@ -302,6 +302,11 @@ async function selectTemplate(name: string) {
   await templateEditor.load(name)
 }
 
+function closeTemplateEditor() {
+  if (templateEditor.dirty.value && !window.confirm('Discard unsaved template changes?')) return
+  templateEditor.discardChanges()
+}
+
 function newTemplate() {
   if (templateEditor.dirty.value && !window.confirm('Discard the current template changes?')) return
   templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: {}, post_flow: {} } })
@@ -651,7 +656,8 @@ void templateEditor
           </BaseCard>
         </template>
         <template v-else-if="activeView === 'Templates'">
-          <BaseCard eyebrow="Templates">
+          <BaseCard eyebrow="Template catalogue">
+            <p class="template-catalogue__intro">Start from an existing template or create a new one. Your templates are stored locally and can be reused by the CLI.</p>
             <div class="template-toolbar">
               <input v-model="templateSearch" type="search" placeholder="Search templates" aria-label="Search templates" />
               <button type="button" class="primary-action" @click="newTemplate">New template</button>
@@ -679,7 +685,24 @@ void templateEditor
               </li>
             </ul>
           </BaseCard>
-          <BaseCard v-if="templateEditor.current" eyebrow="Template metadata">
+          <BaseCard v-if="templateEditor.current" eyebrow="Template workspace">
+            <div class="template-workspace-header">
+              <div>
+                <span class="template-workspace__eyebrow">Editing template</span>
+                <h2>{{ metadataDraft.name || 'New template' }}</h2>
+                <p>Complete the details, configure the flow, then save your template.</p>
+              </div>
+              <div class="template-workspace__actions">
+                <button type="button" @click="closeTemplateEditor">Back to templates</button>
+                <button type="button" class="primary-action" :disabled="!templateEditor.dirty || !metadataValid || templateEditor.status === 'saving'" @click="saveTemplate">{{ templateEditor.status === 'saving' ? 'Saving…' : 'Save template' }}</button>
+              </div>
+            </div>
+            <nav class="template-steps" aria-label="Template editing steps">
+              <span class="template-step template-step--active"><b>1</b> Details</span>
+              <span class="template-step"><b>2</b> Flow</span>
+              <span class="template-step"><b>3</b> Policies</span>
+              <span class="template-step"><b>4</b> Save</span>
+            </nav>
             <div class="metadata-form">
               <label for="template-name"><span>Name</span><input id="template-name" :value="metadataDraft.name" :aria-invalid="Boolean(metadataErrors.name)" aria-describedby="template-name-error" @input="updateMetadata('name', ($event.target as HTMLInputElement).value)" /><small id="template-name-error" v-if="metadataErrors.name">{{ metadataErrors.name }}</small></label>
               <label for="template-description"><span>Description</span><textarea id="template-description" :value="metadataDraft.description" rows="2" @input="updateMetadata('description', ($event.target as HTMLTextAreaElement).value)" /></label>
@@ -689,7 +712,8 @@ void templateEditor
               <label for="template-name-case"><span>Name case</span><select id="template-name-case" :value="metadataDraft.naming_convention.case" @change="updateNamingCase(($event.target as HTMLSelectElement).value)"><option value="kebab-case">kebab-case</option><option value="snake_case">snake_case</option><option value="camelCase">camelCase</option></select></label>
             </div>
           </BaseCard>
-          <BaseCard v-if="templateEditor.current" eyebrow="Flow canvas">
+          <BaseCard v-if="templateEditor.current" eyebrow="2 · Flow and policies">
+            <p class="editor-section__intro">Choose where a policy runs, then add and configure it in the selected request or response lane.</p>
             <div class="flow-canvas" aria-label="Template flow stages">
               <button type="button" class="flow-stage" :class="{ 'flow-stage--selected': selectedFlow === 'pre_flow' }" @click="selectedFlow = 'pre_flow'"><strong>PreFlow</strong><span>{{ policyCount(flowDraft.pre_flow) }} policies</span></button>
               <div v-for="(flow, index) in flowDraft.conditional_flows" :key="`conditional-${index}`" class="flow-stage flow-stage--conditional" :class="{ 'flow-stage--selected': selectedFlow === `conditional_${index}` }">
@@ -725,23 +749,10 @@ void templateEditor
               </ol>
             </div>
           </BaseCard>
-          <BaseCard v-if="templateEditor.current" eyebrow="Template editor">
-            <div class="template-editor-summary">
-              <div>
-                <h2>{{ templateEditor.current.name || 'New template' }}</h2>
-                <p>{{ templateEditor.dirty ? 'Unsaved changes' : 'Saved template' }}</p>
-              </div>
-              <BaseChip :label="templateEditor.status" />
-            </div>
-            <div v-if="templateEditor.validationErrors.length" class="template-validation-errors" role="alert" aria-live="assertive">
-              <strong>Template validation</strong>
-              <button v-for="validationError in templateEditor.validationErrors" :key="`${validationError.code}-${validationError.field}`" type="button">{{ validationError.field || 'Template' }}: {{ validationError.message }}</button>
-            </div>
-            <div class="template-editor-actions">
-              <button type="button" :disabled="!templateEditor.dirty" @click="templateEditor.reset">Reset</button>
-              <button type="button" class="primary-action" :disabled="!templateEditor.dirty || !metadataValid || templateEditor.validationErrors.length > 0 || templateEditor.status === 'saving'" @click="saveTemplate">Save</button>
-            </div>
-          </BaseCard>
+          <div v-if="templateEditor.validationErrors.length" class="template-validation-errors" role="alert" aria-live="assertive">
+            <strong>Template validation</strong>
+            <button v-for="validationError in templateEditor.validationErrors" :key="`${validationError.code}-${validationError.field}`" type="button">{{ validationError.field || 'Template' }}: {{ validationError.message }}</button>
+          </div>
         </template>
         <template v-else-if="activeView === 'Deployments'">
           <BaseCard eyebrow="Deployments">
