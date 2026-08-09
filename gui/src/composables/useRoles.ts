@@ -1,26 +1,26 @@
 import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 import { ref } from 'vue'
-import type { ProxyDto } from '../types/bridge'
 import type { Invoke } from './useAuth'
+import type { RoleDto } from '../types/bridge'
 
 const defaultInvoke: Invoke = (command, args) => tauriInvoke(command, args)
 
-export function useProxies(invoke: Invoke = defaultInvoke) {
-  const proxies = ref<ProxyDto[]>([])
+export function useRoles(invoke: Invoke = defaultInvoke) {
+  const roles = ref<RoleDto[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function load(organization: string, environment: string) {
+  async function load(organization: string) {
     loading.value = true
     error.value = null
     try {
-      proxies.value = await invoke<ProxyDto[]>('list_proxies', { organization, environment })
+      roles.value = await invoke<RoleDto[]>('get_roles', { organization })
     } catch {
-      error.value = 'Proxies could not be loaded.'
+      error.value = 'Roles could not be loaded.'
     } finally {
       loading.value = false
     }
   }
 
-  return { proxies, loading, error, load }
+  return { roles, loading, error, load }
 }

@@ -20,15 +20,43 @@ impl ProjectId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct GoogleIdentity(String);
+pub struct GoogleIdentity {
+    email: String,
+    pub given_name: Option<String>,
+    pub family_name: Option<String>,
+    pub name: Option<String>,
+    pub picture: Option<String>,
+}
 
 impl GoogleIdentity {
     pub fn new(email: impl Into<String>) -> Self {
-        Self(email.into())
+        Self {
+            email: email.into(),
+            given_name: None,
+            family_name: None,
+            name: None,
+            picture: None,
+        }
+    }
+
+    pub fn with_profile(
+        email: impl Into<String>,
+        given_name: Option<String>,
+        family_name: Option<String>,
+        name: Option<String>,
+        picture: Option<String>,
+    ) -> Self {
+        Self {
+            email: email.into(),
+            given_name,
+            family_name,
+            name,
+            picture,
+        }
     }
 
     pub fn email(&self) -> &str {
-        &self.0
+        &self.email
     }
 }
 

@@ -5,6 +5,7 @@ pub mod in_memory_apigee_gateway;
 pub mod oauth_desktop_auth_provider;
 pub mod reqwest_apigee_gateway;
 pub mod service_account_auth_provider;
+pub mod sqlcipher_local_state_store;
 pub mod tera_bundle_renderer;
 pub mod zip_bundle_archiver;
 
@@ -15,6 +16,9 @@ pub use in_memory_apigee_gateway::InMemoryApigeeGateway;
 pub use oauth_desktop_auth_provider::OAuthDesktopAuthProvider;
 pub use reqwest_apigee_gateway::ReqwestApigeeGateway;
 pub use service_account_auth_provider::ServiceAccountAuthProvider;
+pub use sqlcipher_local_state_store::{
+    KeyringLocalKeyStore, LocalKeyStore, SqlCipherLocalStateStore,
+};
 pub use tera_bundle_renderer::TeraBundleRenderer;
 pub use zip_bundle_archiver::ZipBundleArchiver;
 

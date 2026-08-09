@@ -2,7 +2,10 @@ use std::{fmt, time::SystemTime};
 
 use async_trait::async_trait;
 
-use crate::{domain::AuthContext, error::AuthError};
+use crate::{
+    domain::{AuthContext, GoogleIdentity},
+    error::AuthError,
+};
 
 pub struct AccessToken {
     secret: String,
@@ -44,6 +47,9 @@ impl fmt::Debug for AccessToken {
 pub trait AuthProvider: Send + Sync {
     async fn authenticate(&self) -> Result<AuthContext, AuthError>;
     async fn access_token(&self) -> Result<AccessToken, AuthError>;
+    fn identity(&self) -> Option<GoogleIdentity> {
+        None
+    }
 }
 
 #[cfg(test)]

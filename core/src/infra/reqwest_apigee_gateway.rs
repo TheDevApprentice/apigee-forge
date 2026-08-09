@@ -16,7 +16,7 @@ use crate::{
     error::GatewayError,
     ports::{
         auth_provider::AuthProvider, ApigeeDeploymentGateway, ApigeeGateway,
-        ApigeeProxyBundleGateway,
+        ApigeeProxyBundleGateway, ApigeeRevisionGateway,
     },
 };
 
@@ -116,12 +116,14 @@ impl ReqwestApigeeGateway {
     }
 
     pub async fn get_roles(&self, project: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
-        let context = self
+        let identity = self
             .auth
-            .authenticate()
+            .identity()
+            .ok_or(GatewayError::IdentityUnavailable)?;
+        self.auth
+            .access_token()
             .await
             .map_err(|_| GatewayError::RequestFailed)?;
-        let identity = context.identity.ok_or(GatewayError::IdentityUnavailable)?;
         let path = format!("projects/{project}:getIamPolicy");
         let response: IamPolicyResponse = self
             .request_json_at(&self.iam_base_url, Method::POST, &path, Some(&json!({})))
@@ -261,6 +263,26 @@ impl ApigeeGateway for ReqwestApigeeGateway {
 
     async fn get_roles(&self, organization: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
         Self::get_roles(self, organization).await
+    }
+}
+
+#[async_trait]
+impl ApigeeRevisionGateway for ReqwestApigeeGateway {
+    async fn get_revision(
+        &self,
+        organization: &str,
+        proxy_name: &str,
+        revision: u32,
+    ) -> Result<serde_json::Value, GatewayError> {
+        validate_segment(organization)?;
+        validate_proxy_name(proxy_name)?;
+        if revision == 0 {
+            return Err(GatewayError::InvalidResponse);
+        }
+        self.get_json(&format!(
+            "organizations/{organization}/apis/{proxy_name}/revisions/{revision}"
+        ))
+        .await
     }
 }
 
@@ -614,6 +636,10 @@ mod tests {
                 Some(identity) => AuthContext::desktop_authenticated(identity.clone()),
                 None => AuthContext::headless(ProjectId::new("test-project")),
             })
+        }
+
+        fn identity(&self) -> Option<GoogleIdentity> {
+            self.identity.clone()
         }
 
         async fn access_token(&self) -> Result<AccessToken, AuthError> {

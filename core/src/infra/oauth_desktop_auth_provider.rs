@@ -1,4 +1,5 @@
 use std::{
+    env,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::{Arc, Mutex},
     time::{Duration, SystemTime},
@@ -6,8 +7,9 @@ use std::{
 
 use async_trait::async_trait;
 use oauth2::{
-    basic::BasicClient, reqwest, AuthUrl, AuthorizationCode, ClientId, CsrfToken, EndpointNotSet,
-    EndpointSet, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope, TokenResponse, TokenUrl,
+    basic::BasicClient, reqwest, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
+    EndpointNotSet, EndpointSet, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope,
+    TokenResponse, TokenUrl,
 };
 use reqwest::Client;
 use serde::Deserialize;
@@ -32,6 +34,7 @@ const MAX_CALLBACK_BYTES: usize = 8 * 1024;
 #[derive(Debug, Clone)]
 pub struct OAuthDesktopConfig {
     client_id: String,
+    client_secret: Option<String>,
     authorization_url: String,
     token_url: String,
     userinfo_url: String,
@@ -46,6 +49,7 @@ impl OAuthDesktopConfig {
     pub fn new(client_id: impl Into<String>, keyring_username: impl Into<String>) -> Self {
         Self {
             client_id: client_id.into(),
+            client_secret: None,
             authorization_url: DEFAULT_AUTHORIZATION_URL.to_owned(),
             token_url: DEFAULT_TOKEN_URL.to_owned(),
             userinfo_url: DEFAULT_USERINFO_URL.to_owned(),
@@ -55,6 +59,11 @@ impl OAuthDesktopConfig {
             keyring_service: "apigee-forge".to_owned(),
             keyring_username: keyring_username.into(),
         }
+    }
+
+    pub fn with_client_secret(mut self, client_secret: impl Into<String>) -> Self {
+        self.client_secret = Some(client_secret.into());
+        self
     }
 
     pub fn with_callback_timeout(mut self, callback_timeout: Duration) -> Self {
@@ -128,6 +137,7 @@ pub struct OAuthDesktopAuthProvider {
     refresh_tokens: Arc<dyn RefreshTokenStore>,
     http_client: Client,
     access_token: Mutex<Option<CachedAccessToken>>,
+    identity: Mutex<Option<GoogleIdentity>>,
 }
 
 impl OAuthDesktopAuthProvider {
@@ -161,12 +171,17 @@ impl OAuthDesktopAuthProvider {
             refresh_tokens,
             http_client,
             access_token: Mutex::new(None),
+            identity: Mutex::new(None),
         }
     }
 
     pub fn logout(&self) -> Result<(), AuthError> {
         self.refresh_tokens.delete()?;
         self.access_token
+            .lock()
+            .map_err(|_| AuthError::AuthenticationFailed)?
+            .take();
+        self.identity
             .lock()
             .map_err(|_| AuthError::AuthenticationFailed)?
             .take();
@@ -188,7 +203,13 @@ impl OAuthDesktopAuthProvider {
         let redirect_url =
             RedirectUrl::new(redirect_url).map_err(|_| AuthError::OAuthConfiguration)?;
 
-        Ok(BasicClient::new(client_id)
+        let client = match &self.config.client_secret {
+            Some(secret) => {
+                BasicClient::new(client_id).set_client_secret(ClientSecret::new(secret.clone()))
+            }
+            None => BasicClient::new(client_id),
+        };
+        Ok(client
             .set_auth_uri(auth_url)
             .set_token_uri(token_url)
             .set_redirect_uri(redirect_url))
@@ -203,7 +224,12 @@ impl OAuthDesktopAuthProvider {
             .exchange_refresh_token(&RefreshToken::new(refresh_token))
             .request_async(&self.http_client)
             .await
-            .map_err(|_| AuthError::TokenExchange)?;
+            .map_err(|error| {
+                if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
+                    eprintln!("OAuth token exchange failed: {error}");
+                }
+                AuthError::TokenExchange
+            })?;
 
         let access_token = access_token_from_response(&token)?;
         let replacement_refresh_token =
@@ -219,7 +245,7 @@ impl OAuthDesktopAuthProvider {
         .await
         .map_err(|_| AuthError::Callback)?;
         let redirect_address = listener.local_addr().map_err(|_| AuthError::Callback)?;
-        let redirect_url = format!("http://{}/callback", redirect_address);
+        let redirect_url = format!("http://{}", redirect_address);
         let client = self.oauth_client(redirect_url)?;
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
         let (authorization_url, csrf_token) = client
@@ -246,7 +272,12 @@ impl OAuthDesktopAuthProvider {
             .set_pkce_verifier(pkce_verifier)
             .request_async(&self.http_client)
             .await
-            .map_err(|_| AuthError::TokenExchange)?;
+            .map_err(|error| {
+                if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
+                    eprintln!("OAuth token exchange failed: {error}");
+                }
+                AuthError::TokenExchange
+            })?;
         let refresh_token = token.refresh_token().map(|token| token.secret().to_owned());
         if let Some(refresh_token) = refresh_token {
             self.refresh_tokens.save(&refresh_token)?;
@@ -280,7 +311,13 @@ impl OAuthDesktopAuthProvider {
             return Err(AuthError::IdentityLookup);
         }
 
-        Ok(GoogleIdentity::new(identity.email))
+        Ok(GoogleIdentity::with_profile(
+            identity.email,
+            identity.given_name,
+            identity.family_name,
+            identity.name,
+            identity.picture,
+        ))
     }
 
     fn store_access_token(&self, access_token: &AccessToken) -> Result<(), AuthError> {
@@ -317,6 +354,14 @@ impl OAuthDesktopAuthProvider {
 #[derive(Debug, Deserialize)]
 struct GoogleUserInfo {
     email: String,
+    #[serde(default)]
+    given_name: Option<String>,
+    #[serde(default)]
+    family_name: Option<String>,
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    picture: Option<String>,
 }
 
 fn access_token_from_response<T: TokenResponse>(token: &T) -> Result<AccessToken, AuthError> {
@@ -378,22 +423,45 @@ fn parse_callback_target(target: &str) -> Result<(String, String), AuthError> {
     Ok((code, state))
 }
 
+impl OAuthDesktopAuthProvider {
+    pub async fn restore_session(&self) -> Result<Option<AuthContext>, AuthError> {
+        let Some(refresh_token) = self.refresh_tokens.load()? else {
+            return Ok(None);
+        };
+        let (access_token, replacement) = self.refresh_access_token(refresh_token).await?;
+        if let Some(replacement) = replacement {
+            self.refresh_tokens.save(&replacement)?;
+        }
+        let identity = self.lookup_identity(&access_token).await?;
+        self.store_access_token(&access_token)?;
+        self.identity
+            .lock()
+            .map_err(|_| AuthError::AuthenticationFailed)?
+            .replace(identity.clone());
+        Ok(Some(AuthContext::desktop_authenticated(identity)))
+    }
+}
+
 #[async_trait]
 impl AuthProvider for OAuthDesktopAuthProvider {
     async fn authenticate(&self) -> Result<AuthContext, AuthError> {
-        let (access_token, identity) = match self.refresh_tokens.load()? {
-            Some(refresh_token) => {
-                let (access_token, replacement) = self.refresh_access_token(refresh_token).await?;
-                if let Some(replacement) = replacement {
-                    self.refresh_tokens.save(&replacement)?;
-                }
-                let identity = self.lookup_identity(&access_token).await?;
-                (access_token, identity)
-            }
-            None => self.authorize_interactively().await?,
-        };
+        if let Some(context) = self.restore_session().await? {
+            return Ok(context);
+        }
+        let (access_token, identity) = self.authorize_interactively().await?;
         self.store_access_token(&access_token)?;
+        self.identity
+            .lock()
+            .map_err(|_| AuthError::AuthenticationFailed)?
+            .replace(identity.clone());
         Ok(AuthContext::desktop_authenticated(identity))
+    }
+
+    fn identity(&self) -> Option<GoogleIdentity> {
+        self.identity
+            .lock()
+            .ok()
+            .and_then(|identity| identity.clone())
     }
 
     async fn access_token(&self) -> Result<AccessToken, AuthError> {
