@@ -146,7 +146,7 @@ button:focus-visible {
 
 .sidebar__profile-tooltip {
   position: absolute;
-  right: calc(100% + 12px);
+  left: calc(100% + 12px);
   bottom: 0;
   z-index: 5;
   display: grid;
@@ -666,6 +666,73 @@ button:focus-visible {
   margin: 6px 0 0;
   color: var(--text-main);
   font-size: 13px;
+}
+
+.settings-profile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+}
+
+.settings-profile__avatar {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  color: var(--accent-text);
+  background: var(--accent-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.settings-profile__summary {
+  display: grid;
+  gap: 5px;
+}
+
+.settings-profile__summary strong,
+.settings-profile__hover strong {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.settings-profile__summary span,
+.settings-profile__hover span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.settings-profile__hover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 3;
+  display: grid;
+  min-width: 220px;
+  gap: 5px;
+  padding: 12px 14px;
+  background: var(--card-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(28 36 32 / 12%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.settings-profile:hover .settings-profile__hover,
+.settings-profile:focus-within .settings-profile__hover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .settings-grid {

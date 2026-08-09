@@ -464,6 +464,20 @@ void templateEditor
               <div class="settings-item"><span>Source branch</span><strong>{{ appInfo.branch }}</strong></div>
             </div>
           </BaseCard>
+          <BaseCard eyebrow="User profile">
+            <div class="settings-profile">
+              <div class="settings-profile__avatar" aria-hidden="true">{{ profileInitials }}</div>
+              <div class="settings-profile__summary">
+                <strong>{{ profileIdentity }}</strong>
+                <span>{{ isAuthenticated ? 'Connected account' : 'Not connected' }}</span>
+              </div>
+              <div class="settings-profile__hover" role="status">
+                <strong>{{ profileIdentity }}</strong>
+                <span>{{ isDemo ? 'Demo mode' : 'Live mode' }}</span>
+                <span>{{ isAuthenticated ? 'Session active' : 'Sign in to connect' }}</span>
+              </div>
+            </div>
+          </BaseCard>
           <BaseCard eyebrow="Workspace session">
             <div class="settings-grid">
               <div class="settings-item"><span>Mode</span><strong>{{ isDemo ? 'Demo' : 'Live' }}</strong></div>

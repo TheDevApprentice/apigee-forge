@@ -107,6 +107,8 @@ describe('App M6-Bis flow', () => {
 
     await vi.waitFor(() => expect(wrapper.findAll('.workspace-selectors select')).toHaveLength(2))
     await vi.waitFor(() => expect(wrapper.text()).toContain('hello-world'))
+    expect(wrapper.find('.sidebar__avatar').text()).toBe('DE')
+    expect(wrapper.find('.sidebar__profile-tooltip').text()).toContain('developer@example.com')
     expect(invokeMock).toHaveBeenCalledWith('list_environments', { organization: 'org-one' })
     expect(invokeMock).toHaveBeenCalledWith('list_proxies', { organization: 'org-one', environment: 'test' })
   })
