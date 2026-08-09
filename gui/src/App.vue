@@ -37,6 +37,9 @@ const selectedMode = appSession.selectedMode
 const organizations = useOrganizations()
 const proxies = useProxies()
 const roles = useRoles()
+const roleList = roles.roles
+const rolesLoading = roles.loading
+const rolesError = roles.error
 const templateEditor = useTemplateEditor()
 const authContext = auth.context
 const authLoading = auth.loading
@@ -248,9 +251,9 @@ void templateEditor
             <div class="role-list">
               <span class="identity-row__label">Role</span>
               <span v-if="isDemo">Demo operator</span>
-              <span v-else-if="roles.loading">Loading role…</span>
-              <span v-else-if="roles.error">Role unavailable</span>
-              <span v-else>{{ roles.roles.map((role) => role.name).join(', ') || 'No role reported' }}</span>
+              <span v-else-if="rolesLoading">Loading role…</span>
+              <span v-else-if="rolesError">{{ rolesError }}</span>
+              <span v-else>{{ roleList.map((role) => role.name).join(', ') || 'No role reported' }}</span>
             </div>
           </BaseCard>
 
