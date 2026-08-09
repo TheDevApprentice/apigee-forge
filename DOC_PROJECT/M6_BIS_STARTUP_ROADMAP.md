@@ -273,7 +273,16 @@ Ces étapes ne figuraient pas dans le périmètre M6-Bis initial. Elles ont ét�
 - [x] Ajouter une bulle utilisateur au survol et au focus clavier.
 - [x] Ajouter le profil général dans Settings sans exposer les rôles détaillés ni les credentials.
 
-### M6-Bis-19 — Décision de sortie vers M7
+### M6-Bis-19 — Déconnexion OAuth réelle
+
+- [x] Ajouter un bouton `Sign out` dans la bulle utilisateur de la sidebar.
+- [x] Supprimer le refresh token du trousseau OS lors de la déconnexion.
+- [x] Vider l’access token et l’identité conservés en mémoire.
+- [x] Nettoyer le contexte organisation/environnement/proxies côté Vue.
+- [x] Revenir à l’écran Live Login après déconnexion.
+- [x] Ne pas afficher le bouton de déconnexion en mode Demo.
+
+### M6-Bis-20 — Décision de sortie vers M7
 
 - [x] Considérer M6-Bis de base comme atteint : modes, OAuth, contexte, navigation, catalogue proxy, états UX et stabilité du shell sont en place.
 - [x] Conserver l’éditeur XML/JSON/YAML complet hors de M6-Bis.
@@ -295,4 +304,5 @@ M6-Bis est terminé lorsque :
 7. le changement de mode ne mélange jamais les données Demo et Cloud ;
 8. le fichier SQLCipher est local, chiffré et absent du repository ;
 9. le parcours est couvert par tests avec doubles, sans dépendance réseau CI ;
-10. le GUI est une base stable pour M7, sans commencer l’éditeur visuel ni le déploiement GUI.
+10. le GUI est une base stable pour M7, sans commencer l’éditeur visuel ni le déploiement GUI ;
+11. l’utilisateur peut se déconnecter réellement de Google et revenir à l’écran Live Login.

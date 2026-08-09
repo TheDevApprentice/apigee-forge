@@ -130,6 +130,17 @@ function openProxy(proxy: ProxyDto) {
   activeView.value = 'Proxies'
 }
 
+async function logout() {
+  await auth.logout()
+  selectedOrganization.value = ''
+  selectedEnvironment.value = ''
+  environmentList.value = []
+  proxyList.value = []
+  selectedProxy.value = null
+  revisionDetail.value = null
+  activeView.value = 'Dashboard'
+}
+
 async function toggleRevision(revision: number) {
   if (!selectedProxy.value || selectedRevision.value === revision) {
     selectedRevision.value = null
@@ -235,6 +246,7 @@ void templateEditor
             <div class="profile-tooltip__status"><span class="profile-tooltip__dot" :class="{ 'profile-tooltip__dot--connected': isAuthenticated }" />{{ isAuthenticated ? 'Connected' : 'Not connected' }}</div>
             <span>{{ isDemo ? 'Demo mode' : 'Live mode' }}</span>
             <span v-if="selectedOrganization">Workspace: {{ selectedOrganization }} / {{ selectedEnvironment || 'No environment' }}</span>
+            <button v-if="isAuthenticated && !isDemo" type="button" class="profile-tooltip__logout" @click="logout">Sign out</button>
           </div>
         </div>
       </div>

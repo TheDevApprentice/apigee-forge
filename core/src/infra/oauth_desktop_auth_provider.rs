@@ -181,6 +181,10 @@ impl OAuthDesktopAuthProvider {
             .lock()
             .map_err(|_| AuthError::AuthenticationFailed)?
             .take();
+        self.identity
+            .lock()
+            .map_err(|_| AuthError::AuthenticationFailed)?
+            .take();
         Ok(())
     }
 

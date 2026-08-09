@@ -82,6 +82,7 @@ describe('App M6-Bis flow', () => {
   it('loads context and proxies only after explicit selections', async () => {
     invokeMock.mockImplementation(async (command: string) => {
       if (command === 'auth_status') return { authenticated: false }
+      if (command === 'auth_logout') return null
       if (command === 'auth_login') {
         return {
           authenticated: true,
@@ -111,5 +112,10 @@ describe('App M6-Bis flow', () => {
     expect(wrapper.find('.sidebar__profile-tooltip').text()).toContain('developer@example.com')
     expect(invokeMock).toHaveBeenCalledWith('list_environments', { organization: 'org-one' })
     expect(invokeMock).toHaveBeenCalledWith('list_proxies', { organization: 'org-one', environment: 'test' })
+
+    await wrapper.find('.profile-tooltip__logout').trigger('click')
+    await flushPromises()
+    expect(invokeMock).toHaveBeenCalledWith('auth_logout', undefined)
+    expect(wrapper.find('button.primary-action').exists()).toBe(true)
   })
 })

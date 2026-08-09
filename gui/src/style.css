@@ -234,6 +234,24 @@ button:focus-visible {
   color: var(--text-muted);
 }
 
+.profile-tooltip__logout {
+  margin-top: 4px;
+  padding: 8px 10px;
+  color: var(--text-main);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+}
+
+.profile-tooltip__logout:hover,
+.profile-tooltip__logout:focus-visible {
+  color: var(--accent-active);
+  border-color: var(--accent-active);
+}
+
 .sidebar__profile:hover .sidebar__profile-tooltip,
 .sidebar__profile:focus-visible .sidebar__profile-tooltip {
   opacity: 1;
