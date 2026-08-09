@@ -41,7 +41,7 @@ describe('App M6-Bis flow', () => {
     await flushPromises()
 
     expect(wrapper.find('button.primary-action').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Demo operator')
+    expect(wrapper.text()).toContain('Demo workspace')
     expect(invokeMock).not.toHaveBeenCalledWith('auth_login', undefined)
   })
 

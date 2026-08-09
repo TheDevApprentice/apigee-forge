@@ -199,12 +199,12 @@ Ce report ne bloque pas les contrats Demo/Live ni la suite M6-Bis ; il déplace 
 #### M6-Bis-12 — Checkpoint de stabilité GUI
 
 - [x] Exécuter tests workspace, Clippy, tests frontend et build Tauri.
-- [ ] Vérifier manuellement le runtime Demo sans dataset final : lancement, store local et retour au sélecteur.
+- [x] Vérifier manuellement le runtime Demo sans dataset final : lancement, store local et retour au sélecteur.
 - [x] Vérifier manuellement Live sans réseau réel : écran Login et erreurs contrôlées.
 - [ ] Vérifier manuellement Live avec le compte Apigee déjà provisionné : login Google, sélection org/env, dashboard et proxies.
 - [x] Reporter le tutoriel Demo et le seeding complet au checkpoint post-MVP dédié.
 - [x] Vérifier qu’aucun changement ne nécessite de refaire M3 ou la validation CLI M4.
-- [ ] Marquer M6-Bis terminé dans `ROADMAP.md` après validation manuelle Google et Demo.
+- [x] Marquer M6-Bis terminé dans `ROADMAP.md` après validation manuelle Google et Demo.
 
 Commit prévu :
 
@@ -214,7 +214,75 @@ docs(m6-bis): record Demo Cloud GUI stability checkpoint
 
 ---
 
-## 5. Critères d’acceptation M6-Bis
+## 5. Étapes supplémentaires réalisées pendant la stabilisation
+
+Ces étapes ne figuraient pas dans le périmètre M6-Bis initial. Elles ont été ajoutées au fil des validations manuelles afin de conserver une continuité entre les décisions réellement prises, les commits de stabilisation et la préparation de M7.
+
+### M6-Bis-13 — OAuth desktop Google réel
+
+- [x] Charger explicitement la configuration OAuth depuis `gui/.env`.
+- [x] Supporter le `client_secret` optionnel pour les configurations Google desktop.
+- [x] Utiliser le redirect URI loopback desktop conforme à Google.
+- [x] Restaurer la session sans relancer inutilement le navigateur.
+- [x] Réutiliser l’identité et le token OAuth déjà en cache lors du chargement des rôles.
+- [x] Conserver les erreurs OAuth structurées sans exposer de secret.
+
+### M6-Bis-14 — Dashboard, navigation et catalogue des proxies
+
+- [x] Transformer Dashboard, Templates, Proxies, Deployments et Settings en vues distinctes.
+- [x] Naviguer vers l’onglet Proxies lorsqu’un proxy est sélectionné depuis le Dashboard.
+- [x] Afficher tous les proxies du contexte organisation/environnement courant dans Proxies.
+- [x] Ajouter les filtres `All`, `Deployed` et `Not deployed`.
+- [x] Afficher les révisions et leur statut réel pour l’environnement sélectionné.
+- [x] Retirer le détail du proxy du Dashboard afin d’éviter le scroll inutile.
+
+### M6-Bis-15 — Statuts de déploiement et détail de révision
+
+- [x] Enrichir les révisions avec le statut Apigee réel (`ACTIVE`, `PROGRESSING`, `ERROR`, etc.).
+- [x] Ajouter le port `ApigeeRevisionGateway`.
+- [x] Brancher `organizations/{org}/apis/{proxy}/revisions/{revision}` derrière une commande Tauri.
+- [x] Permettre l’expansion d’une ligne de révision dans la page Proxies.
+- [x] Afficher les états loading et erreur de récupération du détail.
+- [ ] Compléter le mapping métier de tous les champs de la réponse lorsque le contrat de détail Apigee sera stabilisé.
+
+### M6-Bis-16 — Contexte workspace global et démarrage assisté
+
+- [x] Déplacer les sélecteurs organisation/environnement dans le topbar global.
+- [x] Sélectionner automatiquement la première organisation accessible après authentification.
+- [x] Sélectionner automatiquement le premier environnement accessible.
+- [x] Déclencher automatiquement le chargement des proxies après sélection du contexte.
+- [x] Garder le changement de contexte accessible depuis toutes les pages.
+- [x] Corriger le scroll pour maintenir sidebar, topbar et titre de page visibles.
+
+### M6-Bis-17 — Dashboard de synthèse et Settings
+
+- [x] Ajouter les cartes de synthèse proxies, révisions et déploiements.
+- [x] Ajouter les états vides explicites de Templates, Deployments et Settings.
+- [x] Afficher version, build, stack et branche dans Settings.
+- [x] Afficher le contexte Live/Demo et la session workspace dans Settings.
+- [x] Ajouter les liens GitHub, documentation Apigee, API Management et support.
+- [ ] Ajouter les statistiques Analytics Apigee (`environments.stats`) dans une passe dédiée.
+- [ ] Ajouter les informations détaillées d’organisation et d’environnement dans une passe dédiée.
+
+### M6-Bis-18 — Profil utilisateur et sidebar
+
+- [x] Ajouter l’indicateur de session connecté/non connecté dans la sidebar.
+- [x] Ajouter un avatar circulaire avec fallback initiales.
+- [x] Récupérer depuis Google l’email, prénom, nom, nom complet et photo optionnelle.
+- [x] Gérer les photos absentes, invalides ou inaccessibles sans afficher d’image cassée.
+- [x] Ajouter une bulle utilisateur au survol et au focus clavier.
+- [x] Ajouter le profil général dans Settings sans exposer les rôles détaillés ni les credentials.
+
+### M6-Bis-19 — Décision de sortie vers M7
+
+- [x] Considérer M6-Bis de base comme atteint : modes, OAuth, contexte, navigation, catalogue proxy, états UX et stabilité du shell sont en place.
+- [x] Conserver l’éditeur XML/JSON/YAML complet hors de M6-Bis.
+- [x] Conserver les actions de déploiement GUI hors de M6-Bis.
+- [x] Réserver le polish visuel avancé, les statistiques et les réglages éditables supplémentaires aux étapes suivantes.
+
+---
+
+## 6. Critères d’acceptation M6-Bis
 
 M6-Bis est terminé lorsque :
 
@@ -223,7 +291,7 @@ M6-Bis est terminé lorsque :
 3. Live ne montre pas le dashboard avant une authentification Google réussie ;
 4. la configuration OAuth et les erreurs sont compréhensibles sans exposer de secret ;
 5. les deux modes utilisent les mêmes ports/use cases côté `core` ;
-6. l’organisation et l’environnement Cloud sont toujours sélectionnés explicitement ;
+6. l’organisation et l’environnement Cloud sont sélectionnables depuis le topbar, avec un premier contexte chargé automatiquement ;
 7. le changement de mode ne mélange jamais les données Demo et Cloud ;
 8. le fichier SQLCipher est local, chiffré et absent du repository ;
 9. le parcours est couvert par tests avec doubles, sans dépendance réseau CI ;

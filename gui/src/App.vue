@@ -7,7 +7,6 @@ import { useSession } from './composables/useSession'
 import type { AppMode, ProxyDto, RevisionDetailDto, SessionDto } from './types/bridge'
 import { useOrganizations } from './composables/useOrganizations'
 import { useProxies } from './composables/useProxies'
-import { useRoles } from './composables/useRoles'
 import { useTemplateEditor } from './composables/useTemplateEditor'
 import BaseButton from './components/base/BaseButton.vue'
 import BaseCard from './components/base/BaseCard.vue'
@@ -43,10 +42,6 @@ const appSession = useSession()
 const selectedMode = appSession.selectedMode
 const organizations = useOrganizations()
 const proxies = useProxies()
-const roles = useRoles()
-const roleList = roles.roles
-const rolesLoading = roles.loading
-const rolesError = roles.error
 const templateEditor = useTemplateEditor()
 const authContext = auth.context
 const authLoading = auth.loading
@@ -105,7 +100,6 @@ watch(selectedOrganization, (organization) => {
   selectedProxy.value = null
   if (organization) {
     void organizations.loadEnvironments(organization)
-    if (!isDemo.value) void roles.load(organization)
   }
 })
 
@@ -361,24 +355,6 @@ void templateEditor
               <span class="metric-card__hint">{{ dashboardMetrics.deployedRevisions }} deployed revisions</span>
             </BaseCard>
           </section>
-
-          <BaseCard eyebrow="Identity and role">
-            <div class="identity-row">
-              <BaseChip :label="isDemo ? 'Demo data' : 'Live data'" />
-              <div>
-                <p class="identity-row__label">Authenticated identity</p>
-                <p class="identity-row__value">{{ authContext?.identity || 'Desktop OAuth user' }}</p>
-              </div>
-              <BaseChip :label="authContext?.mode || 'demo'" />
-            </div>
-            <div class="role-list">
-              <span class="identity-row__label">Role</span>
-              <span v-if="isDemo">Demo operator</span>
-              <span v-else-if="rolesLoading">Loading role…</span>
-              <span v-else-if="rolesError">{{ rolesError }}</span>
-              <span v-else>{{ roleList.map((role) => role.name).join(', ') || 'No role reported' }}</span>
-            </div>
-          </BaseCard>
 
           <BaseCard eyebrow="Proxies">
             <div v-if="proxiesLoading" class="loading-state"><BaseSpinner /> <span>Loading proxies…</span></div>
