@@ -183,12 +183,12 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-10 — UX responsive et accessibilité
 
-- [ ] Garantir la navigation clavier dans la liste et l’éditeur.
-- [ ] Associer chaque champ à un label accessible.
-- [ ] Rendre les erreurs lisibles par les technologies d’assistance.
-- [ ] Prévoir une disposition utilisable avec une fenêtre plus étroite.
-- [ ] Éviter les composants qui dépendent uniquement du drag-and-drop.
-- [ ] Préserver les tokens existants sans lancer le polish M9.
+- [x] Garantir la navigation clavier dans la liste et l’éditeur.
+- [x] Associer chaque champ à un label accessible.
+- [x] Rendre les erreurs lisibles par les technologies d’assistance via `role=alert` et `aria-live`.
+- [x] Prévoir une disposition utilisable avec une fenêtre plus étroite.
+- [x] Éviter les composants qui dépendent uniquement du drag-and-drop ; les boutons haut/bas restent disponibles.
+- [x] Préserver les tokens existants sans lancer le polish M9.
 
 ### M7-11 — Tests de parcours
 

@@ -1422,8 +1422,19 @@ button:focus-visible {
   .settings-grid,
   .resource-links,
   .metadata-form,
-  .flow-canvas {
+  .flow-canvas,
+  .policy-fields {
     grid-template-columns: 1fr;
+  }
+
+  .template-toolbar,
+  .policy-editor__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .template-toolbar input {
+    width: 100%;
   }
 
   .flow-stage-detail {
