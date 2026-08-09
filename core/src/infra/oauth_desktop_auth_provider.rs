@@ -137,6 +137,7 @@ pub struct OAuthDesktopAuthProvider {
     refresh_tokens: Arc<dyn RefreshTokenStore>,
     http_client: Client,
     access_token: Mutex<Option<CachedAccessToken>>,
+    identity: Mutex<Option<GoogleIdentity>>,
 }
 
 impl OAuthDesktopAuthProvider {
@@ -170,6 +171,7 @@ impl OAuthDesktopAuthProvider {
             refresh_tokens,
             http_client,
             access_token: Mutex::new(None),
+            identity: Mutex::new(None),
         }
     }
 
@@ -414,6 +416,10 @@ impl OAuthDesktopAuthProvider {
         }
         let identity = self.lookup_identity(&access_token).await?;
         self.store_access_token(&access_token)?;
+        self.identity
+            .lock()
+            .map_err(|_| AuthError::AuthenticationFailed)?
+            .replace(identity.clone());
         Ok(Some(AuthContext::desktop_authenticated(identity)))
     }
 }
@@ -426,7 +432,18 @@ impl AuthProvider for OAuthDesktopAuthProvider {
         }
         let (access_token, identity) = self.authorize_interactively().await?;
         self.store_access_token(&access_token)?;
+        self.identity
+            .lock()
+            .map_err(|_| AuthError::AuthenticationFailed)?
+            .replace(identity.clone());
         Ok(AuthContext::desktop_authenticated(identity))
+    }
+
+    fn identity(&self) -> Option<GoogleIdentity> {
+        self.identity
+            .lock()
+            .ok()
+            .and_then(|identity| identity.clone())
     }
 
     async fn access_token(&self) -> Result<AccessToken, AuthError> {

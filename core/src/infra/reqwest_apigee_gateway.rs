@@ -116,12 +116,14 @@ impl ReqwestApigeeGateway {
     }
 
     pub async fn get_roles(&self, project: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
-        let context = self
+        let identity = self
             .auth
-            .authenticate()
+            .identity()
+            .ok_or(GatewayError::IdentityUnavailable)?;
+        self.auth
+            .access_token()
             .await
             .map_err(|_| GatewayError::RequestFailed)?;
-        let identity = context.identity.ok_or(GatewayError::IdentityUnavailable)?;
         let path = format!("projects/{project}:getIamPolicy");
         let response: IamPolicyResponse = self
             .request_json_at(&self.iam_base_url, Method::POST, &path, Some(&json!({})))
@@ -634,6 +636,10 @@ mod tests {
                 Some(identity) => AuthContext::desktop_authenticated(identity.clone()),
                 None => AuthContext::headless(ProjectId::new("test-project")),
             })
+        }
+
+        fn identity(&self) -> Option<GoogleIdentity> {
+            self.identity.clone()
         }
 
         async fn access_token(&self) -> Result<AccessToken, AuthError> {
