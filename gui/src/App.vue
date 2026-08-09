@@ -139,8 +139,13 @@ async function toggleRevision(revision: number) {
       proxy_name: selectedProxy.value.name,
       revision,
     })
-  } catch {
-    revisionDetailError.value = 'Revision details could not be loaded.'
+  } catch (caught) {
+    const message = typeof caught === 'object' && caught !== null && 'message' in caught
+      ? (caught as { message?: unknown }).message
+      : null
+    revisionDetailError.value = typeof message === 'string' && message.length > 0
+      ? message
+      : 'Revision details could not be loaded.'
   } finally {
     revisionDetailLoading.value = false
   }

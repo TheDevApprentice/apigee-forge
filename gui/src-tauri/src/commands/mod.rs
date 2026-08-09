@@ -124,10 +124,32 @@ fn auth_error(error: AuthError) -> GuiError {
     GuiError { code, message }
 }
 
-fn gateway_error(_error: GatewayError) -> GuiError {
-    GuiError {
-        code: "GATEWAY_ERROR",
-        message: "Apigee data could not be loaded",
+fn gateway_error(error: GatewayError) -> GuiError {
+    match error {
+        GatewayError::Unauthorized => GuiError {
+            code: "AUTH_REQUIRED",
+            message: "Google authentication is required",
+        },
+        GatewayError::Forbidden => GuiError {
+            code: "ACCESS_DENIED",
+            message: "The Google account has no permission for this Apigee resource",
+        },
+        GatewayError::NotFound => GuiError {
+            code: "REVISION_NOT_FOUND",
+            message: "This Apigee revision was not found",
+        },
+        GatewayError::InvalidResponse => GuiError {
+            code: "INVALID_APIGEE_RESPONSE",
+            message: "Apigee returned an unsupported revision response",
+        },
+        GatewayError::Timeout => GuiError {
+            code: "APIGEE_TIMEOUT",
+            message: "Apigee did not respond in time",
+        },
+        _ => GuiError {
+            code: "GATEWAY_ERROR",
+            message: "Apigee data could not be loaded",
+        },
     }
 }
 
