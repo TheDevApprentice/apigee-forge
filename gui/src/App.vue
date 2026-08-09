@@ -12,6 +12,7 @@ import BaseButton from './components/base/BaseButton.vue'
 import BaseCard from './components/base/BaseCard.vue'
 import BaseChip from './components/base/BaseChip.vue'
 import BaseEmptyState from './components/base/BaseEmptyState.vue'
+import BaseModal from './components/base/BaseModal.vue'
 import BaseErrorState from './components/base/BaseErrorState.vue'
 import BaseSpinner from './components/base/BaseSpinner.vue'
 
@@ -49,6 +50,8 @@ const templatesLoading = ref(false)
 const templatesError = ref<string | null>(null)
 const templateDeletePending = ref<string | null>(null)
 const templateView = ref<'catalogue' | 'editor' | 'review'>('catalogue')
+const modal = ref<{ title: string; message: string; confirmLabel?: string; tone?: 'default' | 'danger' } | null>(null)
+const modalAction = ref<(() => void | Promise<void>) | null>(null)
 const authContext = auth.context
 const authLoading = auth.loading
 const authError = auth.error
@@ -207,10 +210,18 @@ function addConditionalFlow() {
   selectedFlow.value = `conditional_${flowDraft.value.conditional_flows.length}`
 }
 
-function removeConditionalFlow(index: number) {
-  if (!window.confirm('Remove this conditional flow?')) return
-  updateFlow({ ...flowDraft.value, conditional_flows: flowDraft.value.conditional_flows.filter((_, flowIndex) => flowIndex !== index) })
-  selectedFlow.value = 'pre_flow'
+async function askConfirmation(title: string, message: string, action: () => void | Promise<void>, tone: 'default' | 'danger' = 'default') {
+  return new Promise<boolean>((resolve) => {
+    modalAction.value = async () => { await action(); resolve(true); modal.value = null }
+    modal.value = { title, message, confirmLabel: tone === 'danger' ? 'Delete' : 'Continue', tone }
+  })
+}
+
+async function removeConditionalFlow(index: number) {
+  await askConfirmation('Remove conditional flow?', 'The flow and its policies will be removed from this template.', () => {
+    updateFlow({ ...flowDraft.value, conditional_flows: flowDraft.value.conditional_flows.filter((_, flowIndex) => flowIndex !== index) })
+    selectedFlow.value = 'pre_flow'
+  }, 'danger')
 }
 
 function updateConditionalCondition(index: number, condition: string) {
@@ -303,8 +314,14 @@ async function selectTemplate(name: string) {
   if (await templateEditor.load(name)) templateView.value = 'editor'
 }
 
-function closeTemplateEditor() {
-  if (templateEditor.dirty.value && !window.confirm('Discard unsaved template changes?')) return
+async function closeTemplateEditor() {
+  if (templateEditor.dirty.value) {
+    await askConfirmation('Leave editor?', 'Your unsaved changes will be discarded.', () => {
+      templateEditor.discardChanges()
+      templateView.value = 'catalogue'
+    })
+    return
+  }
   templateEditor.discardChanges()
   templateView.value = 'catalogue'
 }
@@ -312,14 +329,25 @@ function closeTemplateEditor() {
 function continueToReview() {
   if (metadataValid.value && templateEditor.current.value) templateView.value = 'review'
 }
-function newTemplate() {
-  if (templateEditor.dirty.value && !window.confirm('Discard the current template changes?')) return
+async function newTemplate() {
+  if (templateEditor.dirty.value) {
+    await askConfirmation('Start a new template?', 'Your unsaved changes will be discarded.', () => {
+      templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: {}, post_flow: {} } })
+      templateView.value = 'editor'
+    })
+    return
+  }
   templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: {}, post_flow: {} } })
   templateView.value = 'editor'
 }
 
 async function deleteTemplate(name: string) {
-  if (!window.confirm(`Delete template "${name}"?`)) return
+  await askConfirmation('Delete template?', `Delete "${name}" from local storage?`, async () => {
+    await performDeleteTemplate(name)
+  }, 'danger')
+}
+
+async function performDeleteTemplate(name: string) {
   templateDeletePending.value = name
   try {
     await invoke('delete_template', { name })
@@ -832,6 +860,7 @@ void templateEditor
           </BaseCard>
         </template>
         </template>
+        <BaseModal v-if="modal" :open="true" :title="modal.title" :message="modal.message" :confirm-label="modal.confirmLabel" :tone="modal.tone" @close="modal = null" @confirm="modalAction?.()" />
       </main>
     </div>
   </div>

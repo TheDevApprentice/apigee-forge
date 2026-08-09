@@ -213,6 +213,16 @@ Cette passe UX n’était pas prévue dans le découpage initial. Elle transform
 - [x] Ajouter `Back to editor`, `Back to templates` et `Continue to review`.
 - [x] Conserver le polish visuel approfondi pour M9.
 
+### M7-UX-03 — Modal et clarification du workflow Apigee
+
+Cette passe UX et produit complète M7 après les validations manuelles de l’éditeur.
+
+- [x] Remplacer les confirmations navigateur par un modal centré réutilisable.
+- [x] Corriger le parcours Catalogue → Éditeur → Review & Save.
+- [x] Documenter la différence entre cible logique du template et environnement Apigee réel.
+- [x] Documenter les workflows futurs OpenAPI, bundle, création de révision et déploiement.
+- [ ] Ajouter les workflows mutatifs Apigee dans M8 avec preview et confirmation.
+
 ### M7-11 — Tests de parcours
 
 - [ ] Tester création d’un template minimal.
