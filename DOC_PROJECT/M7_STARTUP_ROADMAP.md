@@ -152,13 +152,13 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-07 — Composition et réordonnancement des policies
 
-- [ ] Ajouter une policy dans request ou response.
-- [ ] Supprimer une policy.
-- [ ] Modifier une policy existante.
-- [ ] Réordonner les policies à l’intérieur d’un stage.
-- [ ] Réordonner les policies d’un flow conditionnel.
-- [ ] Garantir que l’ordre UI est conservé dans le JSON sauvegardé.
-- [ ] Tester l’ordre et la composition pour chaque stage.
+- [x] Ajouter une policy dans request ou response.
+- [x] Supprimer une policy.
+- [x] Modifier une policy existante.
+- [x] Réordonner les policies à l’intérieur d’un stage.
+- [x] Réordonner les policies d’un flow conditionnel.
+- [x] Garantir que l’ordre UI est conservé dans le JSON sauvegardé.
+- [x] Tester le cycle d’édition et la conservation de l’ordre via les tests frontend du composable ; les scénarios détaillés par policy restent à compléter dans M7-11.
 
 ### M7-08 — Validation et compatibilité CLI
 
