@@ -177,34 +177,34 @@ Ce report ne bloque pas les contrats Demo/Live ni la suite M6-Bis ; il déplace 
 
 #### M6-Bis-10 — Écran Demo et Dashboard partagé
 
-- [ ] Afficher un badge `Demo` persistant et non ambigu.
-- [ ] Charger le dataset Demo sans appel réseau.
-- [ ] Afficher les cartes organisation/environnement/proxies et le rôle Demo.
-- [ ] Afficher le badge `Cloud` et l’identité Google en mode Cloud.
-- [ ] Partager les composants de liste et d’état entre Demo et Cloud.
-- [ ] Préserver les états loading, empty, error et success.
+- [x] Afficher un badge `Demo` persistant et non ambigu.
+- [ ] Charger le dataset Demo sans appel réseau — reporté post-MVP avec le seeding.
+- [x] Afficher les cartes organisation/environnement/proxies et le rôle Demo.
+- [x] Afficher le badge `Live` et l’identité Google en mode Live.
+- [x] Partager les composants de liste et d’état entre Demo et Live.
+- [x] Préserver les états loading, empty, error et success.
 
 ### Catégorie E — Tests et critères d’acceptation
 
 #### M6-Bis-11 — Tests automatisés du parcours
 
-- [ ] Ajouter tests Vitest du sélecteur Demo/Cloud.
-- [ ] Ajouter tests du démarrage Demo sans réseau ni OAuth.
-- [ ] Ajouter tests du démarrage Cloud bloqué sur Login.
-- [ ] Ajouter tests Cloud login success/error avec provider Tauri fake.
-- [ ] Ajouter tests de changement de mode et nettoyage de session.
-- [ ] Ajouter tests Tauri/Rust du store SQLCipher et des commandes mode.
-- [ ] Vérifier absence de secrets dans fixtures, logs et sorties de test.
+- [x] Ajouter tests Vitest du sélecteur Demo/Live.
+- [x] Ajouter tests du démarrage Demo sans réseau ni OAuth.
+- [x] Ajouter tests du démarrage Live bloqué sur Login.
+- [x] Ajouter tests Live login success/error avec provider Tauri fake.
+- [x] Ajouter tests de changement de mode et nettoyage de session.
+- [x] Ajouter tests Tauri/Rust du store SQLCipher et des commandes mode.
+- [x] Vérifier absence de secrets dans fixtures, logs et sorties de test.
 
 #### M6-Bis-12 — Checkpoint de stabilité GUI
 
-- [ ] Exécuter tests workspace, Clippy, tests frontend et build Tauri.
+- [x] Exécuter tests workspace, Clippy, tests frontend et build Tauri.
 - [ ] Vérifier manuellement le runtime Demo sans dataset final : lancement, store local et retour au sélecteur.
-- [ ] Vérifier manuellement Live sans réseau réel : écran Login et erreurs contrôlées.
+- [x] Vérifier manuellement Live sans réseau réel : écran Login et erreurs contrôlées.
 - [ ] Vérifier manuellement Live avec le compte Apigee déjà provisionné : login Google, sélection org/env, dashboard et proxies.
-- [ ] Reporter le tutoriel Demo et le seeding complet au checkpoint post-MVP dédié.
-- [ ] Vérifier qu’aucun changement ne nécessite de refaire M3 ou la validation CLI M4.
-- [ ] Marquer M6-Bis terminé dans `ROADMAP.md`.
+- [x] Reporter le tutoriel Demo et le seeding complet au checkpoint post-MVP dédié.
+- [x] Vérifier qu’aucun changement ne nécessite de refaire M3 ou la validation CLI M4.
+- [ ] Marquer M6-Bis terminé dans `ROADMAP.md` après validation manuelle Google et Demo.
 
 Commit prévu :
 
