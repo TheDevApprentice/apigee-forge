@@ -174,6 +174,17 @@ const metadataErrors = computed(() => ({
 
 const metadataValid = computed(() => Object.values(metadataErrors.value).every((message) => !message))
 const selectedFlow = ref('pre_flow')
+const selectedLane = ref<'request' | 'response'>('request')
+const selectedPolicyType = ref('security_api_key')
+const policyTypes = [
+  ['security_api_key', 'API key security'],
+  ['security_oauth2', 'OAuth2 security'],
+  ['security_jwt', 'JWT security'],
+  ['quota', 'Quota'],
+  ['spike_arrest', 'Spike arrest'],
+  ['cors', 'CORS'],
+  ['transform', 'Transform'],
+] as const
 
 const flowDraft = computed(() => {
   const flow = templateEditor.current.value?.data.flow as Record<string, any> | undefined
@@ -207,6 +218,53 @@ function updateConditionalCondition(index: number, condition: string) {
 
 function policyCount(stage: Record<string, any>) {
   return (stage.request?.length || 0) + (stage.response?.length || 0)
+}
+
+const selectedStage = computed(() => selectedFlow.value === 'pre_flow'
+  ? flowDraft.value.pre_flow
+  : selectedFlow.value === 'post_flow'
+    ? flowDraft.value.post_flow
+    : flowDraft.value.conditional_flows[Number(selectedFlow.value.split('_')[1])] || { request: [], response: [] })
+
+function policyFactory(type: string): Record<string, any> {
+  const defaults: Record<string, Record<string, any>> = {
+    security_api_key: { type, key_location: 'header', key_param_name: 'apikey' },
+    security_oauth2: { type, scopes: [] },
+    security_jwt: { type, algorithm: 'RS256', issuer: '', audience: '', public_key_source: 'jwks_url', jwks_url: '' },
+    quota: { type, allow: 1000, interval: 1, time_unit: 'day', quota_type: 'default' },
+    spike_arrest: { type, rate: 10, rate_unit: 'ps' },
+    cors: { type, allow_origins: ['*'], allow_headers: [], allow_methods: ['GET', 'POST'], expose_headers: [], max_age_seconds: 3600, support_credentials: false },
+    transform: { type, direction: 'json_to_xml' },
+  }
+  return JSON.parse(JSON.stringify(defaults[type] || defaults.security_api_key))
+}
+
+function updatePolicies(policies: Record<string, any>[]) {
+  updateFlow({ ...flowDraft.value, [selectedFlow.value === 'pre_flow' ? 'pre_flow' : selectedFlow.value === 'post_flow' ? 'post_flow' : 'conditional_flows']: selectedFlow.value.startsWith('conditional_')
+    ? flowDraft.value.conditional_flows.map((flow, index) => index === Number(selectedFlow.value.split('_')[1]) ? { ...flow, [selectedLane.value]: policies } : flow)
+    : { ...selectedStage.value, [selectedLane.value]: policies } })
+}
+
+function addPolicy() {
+  updatePolicies([...selectedStage.value[selectedLane.value] || [], policyFactory(selectedPolicyType.value)])
+}
+
+function removePolicy(index: number) {
+  updatePolicies(selectedStage.value[selectedLane.value].filter((_: unknown, policyIndex: number) => policyIndex !== index))
+}
+
+function movePolicy(index: number, direction: number) {
+  const policies = [...selectedStage.value[selectedLane.value]]
+  const target = index + direction
+  if (target < 0 || target >= policies.length) return
+  const [policy] = policies.splice(index, 1)
+  policies.splice(target, 0, policy)
+  updatePolicies(policies)
+}
+
+function updatePolicyField(index: number, field: string, value: unknown) {
+  const policies = selectedStage.value[selectedLane.value].map((policy: Record<string, any>, policyIndex: number) => policyIndex === index ? { ...policy, [field]: value } : policy)
+  updatePolicies(policies)
 }
 
 function updateMetadata(field: 'name' | 'description' | 'owner' | 'target_environment', value: string) {
@@ -645,8 +703,26 @@ void templateEditor
             <div class="flow-stage-detail">
               <span>Selected stage</span>
               <strong>{{ selectedFlow === 'pre_flow' ? 'PreFlow' : selectedFlow === 'post_flow' ? 'PostFlow' : `Conditional Flow ${Number(selectedFlow.split('_')[1]) + 1}` }}</strong>
-              <span>Request: {{ selectedFlow === 'pre_flow' ? flowDraft.pre_flow.request?.length || 0 : selectedFlow === 'post_flow' ? flowDraft.post_flow.request?.length || 0 : flowDraft.conditional_flows[Number(selectedFlow.split('_')[1])]?.request?.length || 0 }} policies</span>
-              <span>Response: {{ selectedFlow === 'pre_flow' ? flowDraft.pre_flow.response?.length || 0 : selectedFlow === 'post_flow' ? flowDraft.post_flow.response?.length || 0 : flowDraft.conditional_flows[Number(selectedFlow.split('_')[1])]?.response?.length || 0 }} policies</span>
+              <span>Request: {{ selectedStage.request?.length || 0 }} policies</span>
+              <span>Response: {{ selectedStage.response?.length || 0 }} policies</span>
+            </div>
+            <div class="policy-editor">
+              <div class="policy-editor__toolbar">
+                <div class="policy-lanes"><button type="button" :class="{ 'policy-lane--active': selectedLane === 'request' }" @click="selectedLane = 'request'">Request ({{ selectedStage.request?.length || 0 }})</button><button type="button" :class="{ 'policy-lane--active': selectedLane === 'response' }" @click="selectedLane = 'response'">Response ({{ selectedStage.response?.length || 0 }})</button></div>
+                <div class="policy-add"><select v-model="selectedPolicyType" aria-label="Policy type"><option v-for="[value, label] in policyTypes" :key="value" :value="value">{{ label }}</option></select><button type="button" @click="addPolicy">Add policy</button></div>
+              </div>
+              <ol class="policy-list">
+                <li v-for="(policy, index) in selectedStage[selectedLane]" :key="`${policy.type}-${index}`" class="policy-item">
+                  <div class="policy-item__header"><strong>{{ policyTypes.find(([value]) => value === policy.type)?.[1] || policy.type }}</strong><div><button type="button" :disabled="index === 0" @click="movePolicy(index, -1)">↑</button><button type="button" :disabled="index === selectedStage[selectedLane].length - 1" @click="movePolicy(index, 1)">↓</button><button type="button" @click="removePolicy(index)">Remove</button></div></div>
+                  <div v-if="policy.type === 'security_api_key'" class="policy-fields"><label>Location<select :value="policy.key_location" @change="updatePolicyField(index, 'key_location', ($event.target as HTMLSelectElement).value)"><option value="header">Header</option><option value="query_param">Query param</option></select></label><label>Parameter<input :value="policy.key_param_name" @input="updatePolicyField(index, 'key_param_name', ($event.target as HTMLInputElement).value)" /></label></div>
+                  <div v-else-if="policy.type === 'security_oauth2'" class="policy-fields"><label>Scopes<input :value="(policy.scopes || []).join(', ')" @input="updatePolicyField(index, 'scopes', ($event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))" /></label></div>
+                  <div v-else-if="policy.type === 'security_jwt'" class="policy-fields"><label>Algorithm<select :value="policy.algorithm" @change="updatePolicyField(index, 'algorithm', ($event.target as HTMLSelectElement).value)"><option>RS256</option><option>HS256</option></select></label><label>Issuer<input :value="policy.issuer" @input="updatePolicyField(index, 'issuer', ($event.target as HTMLInputElement).value)" /></label><label>Audience<input :value="policy.audience" @input="updatePolicyField(index, 'audience', ($event.target as HTMLInputElement).value)" /></label><label>JWKS URL<input :value="policy.jwks_url" @input="updatePolicyField(index, 'jwks_url', ($event.target as HTMLInputElement).value)" /></label></div>
+                  <div v-else-if="policy.type === 'quota'" class="policy-fields"><label>Allow<input type="number" :value="policy.allow" @input="updatePolicyField(index, 'allow', Number(($event.target as HTMLInputElement).value))" /></label><label>Interval<input type="number" :value="policy.interval" @input="updatePolicyField(index, 'interval', Number(($event.target as HTMLInputElement).value))" /></label><label>Time unit<select :value="policy.time_unit" @change="updatePolicyField(index, 'time_unit', ($event.target as HTMLSelectElement).value)"><option>hour</option><option>day</option><option>week</option><option>month</option></select></label></div>
+                  <div v-else-if="policy.type === 'spike_arrest'" class="policy-fields"><label>Rate<input type="number" :value="policy.rate" @input="updatePolicyField(index, 'rate', Number(($event.target as HTMLInputElement).value))" /></label><label>Unit<select :value="policy.rate_unit" @change="updatePolicyField(index, 'rate_unit', ($event.target as HTMLSelectElement).value)"><option>ps</option><option>pm</option></select></label></div>
+                  <div v-else-if="policy.type === 'cors'" class="policy-fields"><label>Origins<input :value="(policy.allow_origins || []).join(', ')" @input="updatePolicyField(index, 'allow_origins', ($event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))" /></label><label>Methods<input :value="(policy.allow_methods || []).join(', ')" @input="updatePolicyField(index, 'allow_methods', ($event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))" /></label></div>
+                  <div v-else-if="policy.type === 'transform'" class="policy-fields"><label>Direction<select :value="policy.direction" @change="updatePolicyField(index, 'direction', ($event.target as HTMLSelectElement).value)"><option value="json_to_xml">JSON to XML</option><option value="xml_to_json">XML to JSON</option></select></label></div>
+                </li>
+              </ol>
             </div>
           </BaseCard>
           <BaseCard v-if="templateEditor.current" eyebrow="Template editor">

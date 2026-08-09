@@ -845,6 +845,114 @@ button:focus-visible {
   font-weight: 500;
 }
 
+.policy-editor {
+  margin-top: 16px;
+}
+
+.policy-editor__toolbar,
+.policy-add,
+.policy-lanes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.policy-editor__toolbar {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.policy-lanes button,
+.policy-add button,
+.policy-add select {
+  padding: 7px 9px;
+  color: var(--text-secondary);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.policy-lanes button:hover,
+.policy-lane--active,
+.policy-add button:hover {
+  color: var(--accent-active) !important;
+  background: var(--accent-bg) !important;
+  border-color: var(--accent-active) !important;
+}
+
+.policy-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 12px 0 0;
+  list-style: none;
+}
+
+.policy-item {
+  padding: 10px;
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+}
+
+.policy-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.policy-item__header div {
+  display: flex;
+  gap: 4px;
+}
+
+.policy-item__header button {
+  padding: 4px 7px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0.5px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.policy-item__header button:hover:not(:disabled) {
+  color: var(--accent-active);
+  border-color: var(--accent-active);
+}
+
+.policy-item__header button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.policy-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.policy-fields label {
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.policy-fields input,
+.policy-fields select {
+  padding: 7px 8px;
+  color: var(--text-main);
+  background: var(--card-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
 .metadata-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

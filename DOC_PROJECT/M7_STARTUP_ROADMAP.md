@@ -140,15 +140,15 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-06 — Catalogue des policies MVP
 
-- [ ] Ajouter le catalogue des types autorisés par `PolicyType`.
-- [ ] Créer un formulaire `security_api_key`.
-- [ ] Créer un formulaire `security_oauth2`.
-- [ ] Créer un formulaire `security_jwt`.
-- [ ] Créer un formulaire `quota`.
-- [ ] Créer un formulaire `spike_arrest`.
-- [ ] Créer un formulaire `cors`.
-- [ ] Créer un formulaire `transform`.
-- [ ] Refuser explicitement l’ajout d’un type non supporté.
+- [x] Ajouter le catalogue des types autorisés par `PolicyType`.
+- [x] Créer un formulaire `security_api_key`.
+- [x] Créer un formulaire `security_oauth2`.
+- [x] Créer un formulaire `security_jwt`.
+- [x] Créer un formulaire `quota`.
+- [x] Créer un formulaire `spike_arrest`.
+- [x] Créer un formulaire `cors`.
+- [x] Créer un formulaire `transform`.
+- [x] Refuser explicitement l’ajout d’un type non supporté par le catalogue UI.
 
 ### M7-07 — Composition et réordonnancement des policies
 
