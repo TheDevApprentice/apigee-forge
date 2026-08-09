@@ -173,6 +173,41 @@ const metadataErrors = computed(() => ({
 }))
 
 const metadataValid = computed(() => Object.values(metadataErrors.value).every((message) => !message))
+const selectedFlow = ref('pre_flow')
+
+const flowDraft = computed(() => {
+  const flow = templateEditor.current.value?.data.flow as Record<string, any> | undefined
+  return {
+    pre_flow: flow?.pre_flow || { request: [], response: [] },
+    conditional_flows: Array.isArray(flow?.conditional_flows) ? flow.conditional_flows : [],
+    post_flow: flow?.post_flow || { request: [], response: [] },
+  }
+})
+
+function updateFlow(flow: Record<string, any>) {
+  const current = templateEditor.current.value
+  if (!current) return
+  templateEditor.updateDraft({ ...current, data: { ...current.data, flow } })
+}
+
+function addConditionalFlow() {
+  updateFlow({ ...flowDraft.value, conditional_flows: [...flowDraft.value.conditional_flows, { condition: '', request: [], response: [] }] })
+  selectedFlow.value = `conditional_${flowDraft.value.conditional_flows.length}`
+}
+
+function removeConditionalFlow(index: number) {
+  if (!window.confirm('Remove this conditional flow?')) return
+  updateFlow({ ...flowDraft.value, conditional_flows: flowDraft.value.conditional_flows.filter((_, flowIndex) => flowIndex !== index) })
+  selectedFlow.value = 'pre_flow'
+}
+
+function updateConditionalCondition(index: number, condition: string) {
+  updateFlow({ ...flowDraft.value, conditional_flows: flowDraft.value.conditional_flows.map((flow, flowIndex) => flowIndex === index ? { ...flow, condition } : flow) })
+}
+
+function policyCount(stage: Record<string, any>) {
+  return (stage.request?.length || 0) + (stage.response?.length || 0)
+}
 
 function updateMetadata(field: 'name' | 'description' | 'owner' | 'target_environment', value: string) {
   const current = templateEditor.current.value
@@ -594,6 +629,24 @@ void templateEditor
               <label><span>Target environment</span><select :value="metadataDraft.target_environment" @change="updateMetadata('target_environment', ($event.target as HTMLSelectElement).value)"><option value="">None</option><option value="dev">dev</option><option value="test">test</option><option value="prod">prod</option></select></label>
               <label><span>Name prefix</span><input :value="metadataDraft.naming_convention.prefix" @input="updatePrefix(($event.target as HTMLInputElement).value)" /><small v-if="metadataErrors.prefix">{{ metadataErrors.prefix }}</small></label>
               <label><span>Name case</span><select :value="metadataDraft.naming_convention.case" @change="updateNamingCase(($event.target as HTMLSelectElement).value)"><option value="kebab-case">kebab-case</option><option value="snake_case">snake_case</option><option value="camelCase">camelCase</option></select></label>
+            </div>
+          </BaseCard>
+          <BaseCard v-if="templateEditor.current" eyebrow="Flow canvas">
+            <div class="flow-canvas" aria-label="Template flow stages">
+              <button type="button" class="flow-stage" :class="{ 'flow-stage--selected': selectedFlow === 'pre_flow' }" @click="selectedFlow = 'pre_flow'"><strong>PreFlow</strong><span>{{ policyCount(flowDraft.pre_flow) }} policies</span></button>
+              <div v-for="(flow, index) in flowDraft.conditional_flows" :key="`conditional-${index}`" class="flow-stage flow-stage--conditional" :class="{ 'flow-stage--selected': selectedFlow === `conditional_${index}` }">
+                <button type="button" class="flow-stage__main" @click="selectedFlow = `conditional_${index}`"><strong>Conditional Flow {{ index + 1 }}</strong><span>{{ policyCount(flow) }} policies</span></button>
+                <input :value="flow.condition || ''" placeholder="Condition" aria-label="Conditional flow condition" @input="updateConditionalCondition(index, ($event.target as HTMLInputElement).value)" />
+                <button type="button" class="flow-stage__remove" @click="removeConditionalFlow(index)">Remove</button>
+              </div>
+              <button type="button" class="flow-stage" :class="{ 'flow-stage--selected': selectedFlow === 'post_flow' }" @click="selectedFlow = 'post_flow'"><strong>PostFlow</strong><span>{{ policyCount(flowDraft.post_flow) }} policies</span></button>
+            </div>
+            <div class="flow-canvas__actions"><button type="button" @click="addConditionalFlow">Add conditional flow</button></div>
+            <div class="flow-stage-detail">
+              <span>Selected stage</span>
+              <strong>{{ selectedFlow === 'pre_flow' ? 'PreFlow' : selectedFlow === 'post_flow' ? 'PostFlow' : `Conditional Flow ${Number(selectedFlow.split('_')[1]) + 1}` }}</strong>
+              <span>Request: {{ selectedFlow === 'pre_flow' ? flowDraft.pre_flow.request?.length || 0 : selectedFlow === 'post_flow' ? flowDraft.post_flow.request?.length || 0 : flowDraft.conditional_flows[Number(selectedFlow.split('_')[1])]?.request?.length || 0 }} policies</span>
+              <span>Response: {{ selectedFlow === 'pre_flow' ? flowDraft.pre_flow.response?.length || 0 : selectedFlow === 'post_flow' ? flowDraft.post_flow.response?.length || 0 : flowDraft.conditional_flows[Number(selectedFlow.split('_')[1])]?.response?.length || 0 }} policies</span>
             </div>
           </BaseCard>
           <BaseCard v-if="templateEditor.current" eyebrow="Template editor">

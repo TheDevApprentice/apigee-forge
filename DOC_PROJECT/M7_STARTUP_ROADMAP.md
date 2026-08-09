@@ -129,13 +129,14 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-05 — Canevas visuel du flux
 
-- [ ] Représenter les trois zones `PreFlow`, `Conditional Flows`, `PostFlow`.
-- [ ] Distinguer request et response dans chaque stage.
-- [ ] Afficher le nombre de policies par stage.
-- [ ] Permettre de sélectionner une policy pour l’éditer.
-- [ ] Ajouter un flux conditionnel avec sa condition.
-- [ ] Supprimer un flux conditionnel avec confirmation si nécessaire.
-- [ ] Préparer une structure compatible avec un diagramme amélioré M9 sans bloquer M7.
+- [x] Représenter les trois zones `PreFlow`, `Conditional Flows`, `PostFlow`.
+- [x] Distinguer request et response dans chaque stage.
+- [x] Afficher le nombre de policies par stage.
+- [x] Permettre de sélectionner un stage pour préparer l’édition de ses policies.
+- [x] Ajouter un flux conditionnel avec sa condition.
+- [x] Supprimer un flux conditionnel avec confirmation.
+- [x] Préparer une structure compatible avec un diagramme amélioré M9 sans bloquer M7.
+- [ ] Sélectionner et éditer une policy individuelle : reporté à M7-06.
 
 ### M7-06 — Catalogue des policies MVP
 

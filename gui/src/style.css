@@ -744,6 +744,107 @@ button:focus-visible {
   font-size: 13px;
 }
 
+.flow-canvas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.flow-stage {
+  display: grid;
+  min-height: 76px;
+  gap: 6px;
+  padding: 14px;
+  color: var(--text-main);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.flow-stage:hover,
+.flow-stage--selected {
+  background: var(--accent-bg);
+  border-color: var(--accent-active);
+}
+
+.flow-stage strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.flow-stage span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.flow-stage--conditional {
+  cursor: default;
+}
+
+.flow-stage__main {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.flow-stage input {
+  width: 100%;
+  padding: 7px 8px;
+  background: var(--card-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.flow-stage__remove,
+.flow-canvas__actions button {
+  justify-self: start;
+  padding: 6px 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.flow-stage__remove:hover,
+.flow-canvas__actions button:hover {
+  color: var(--accent-active);
+  border-color: var(--accent-active);
+}
+
+.flow-canvas__actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.flow-stage-detail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  color: var(--text-muted);
+  background: var(--sidebar-bg);
+  border-radius: 7px;
+  font-size: 11px;
+}
+
+.flow-stage-detail strong {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
 .metadata-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1211,8 +1312,16 @@ button:focus-visible {
 
   .dashboard-metrics,
   .settings-grid,
-  .resource-links {
+  .resource-links,
+  .metadata-form,
+  .flow-canvas {
     grid-template-columns: 1fr;
+  }
+
+  .flow-stage-detail {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 }
 
