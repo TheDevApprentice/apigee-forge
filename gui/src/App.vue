@@ -395,8 +395,10 @@ async function closeTemplateEditor() {
   templateView.value = 'catalogue'
 }
 
-function continueToReview() {
-  if (templateValid.value && templateEditor.current.value) templateView.value = 'review'
+async function continueToReview() {
+  if (!templateValid.value || !templateEditor.current.value) return
+  const valid = await templateEditor.validate()
+  if (valid) templateView.value = 'review'
 }
 async function newTemplate() {
   activeView.value = 'Templates'
