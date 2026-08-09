@@ -1468,6 +1468,20 @@ button:focus-visible {
   border-color: var(--accent-active);
 }
 
+.proxy-catalogue__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.proxy-catalogue__intro {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 .proxy-filter {
   display: inline-flex;
   gap: 4px;
@@ -1681,7 +1695,8 @@ button:focus-visible {
 
   .template-workspace-header,
   .template-toolbar,
-  .policy-editor__toolbar {
+  .policy-editor__toolbar,
+  .proxy-catalogue__header {
     align-items: stretch;
     flex-direction: column;
   }

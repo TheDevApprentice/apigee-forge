@@ -360,6 +360,15 @@ async function performDeleteTemplate(name: string) {
   }
 }
 
+function openCreateProxy() {
+  modal.value = {
+    title: 'Create proxy',
+    message: 'The guided proxy wizard will be available in M8. It will support templates, OpenAPI specifications, bundle upload and an explicit deployment review.',
+    confirmLabel: 'Close',
+  }
+  modalAction.value = () => { modal.value = null }
+}
+
 function retryProxies() {
   if (selectedOrganization.value && selectedEnvironment.value) {
     void proxies.load(selectedOrganization.value, selectedEnvironment.value)
@@ -633,6 +642,10 @@ void templateEditor
         </template>
         <template v-else-if="activeView === 'Proxies'">
           <BaseCard eyebrow="Proxy catalogue">
+            <div class="proxy-catalogue__header">
+              <div><p class="proxy-catalogue__intro">Manage proxies in the selected Apigee organization and environment.</p></div>
+              <button type="button" class="primary-action" @click="openCreateProxy">Create proxy</button>
+            </div>
             <div class="proxy-filter" role="group" aria-label="Proxy deployment filter">
               <button type="button" :class="{ 'proxy-filter--active': proxyFilter === 'all' }" @click="proxyFilter = 'all'">All</button>
               <button type="button" :class="{ 'proxy-filter--active': proxyFilter === 'deployed' }" @click="proxyFilter = 'deployed'">Deployed</button>
