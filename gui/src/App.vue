@@ -293,18 +293,6 @@ void templateEditor
               </li>
             </ul>
           </BaseCard>
-          <BaseCard v-if="selectedProxy" eyebrow="Selected proxy">
-            <div class="proxy-detail">
-              <h2>{{ selectedProxy.name }}</h2>
-              <p>{{ selectedProxy.source === 'cloud' ? 'Live Apigee proxy' : 'Demo proxy' }}</p>
-              <ul class="proxy-revisions">
-                <li v-for="revision in selectedProxy.revisions" :key="revision.number">
-                  <span>Revision {{ revision.number }}</span>
-                  <BaseChip :label="revision.status === 'Succeeded' ? 'Deployed' : revision.status === 'NotDeployed' ? 'Not deployed' : revision.status" />
-                </li>
-              </ul>
-            </div>
-          </BaseCard>
         </template>
         <template v-else-if="activeView === 'Proxies'">
           <BaseCard eyebrow="Proxy catalogue">
@@ -326,10 +314,27 @@ void templateEditor
               </li>
             </ul>
           </BaseCard>
-          <BaseCard v-if="selectedProxy" eyebrow="Selected proxy">
+          <BaseCard v-if="selectedProxy" eyebrow="Selected proxy details">
             <div class="proxy-detail">
-              <h2>{{ selectedProxy.name }}</h2>
-              <p>{{ selectedProxy.source === 'cloud' ? 'Live Apigee proxy' : 'Demo proxy' }}</p>
+              <div class="proxy-detail__header">
+                <div>
+                  <h2>{{ selectedProxy.name }}</h2>
+                  <p>{{ selectedProxy.source === 'cloud' ? 'Live Apigee proxy' : 'Demo proxy' }}</p>
+                </div>
+                <BaseChip :label="selectedProxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" />
+              </div>
+              <dl class="proxy-metadata">
+                <div><dt>Organization</dt><dd>{{ selectedOrganization }}</dd></div>
+                <div><dt>Environment</dt><dd>{{ selectedEnvironment }}</dd></div>
+                <div><dt>Revision count</dt><dd>{{ selectedProxy.revisions.length }}</dd></div>
+              </dl>
+              <h3>Revisions</h3>
+              <ul class="proxy-revisions">
+                <li v-for="revision in selectedProxy.revisions" :key="revision.number">
+                  <span>Revision {{ revision.number }}</span>
+                  <BaseChip :label="revision.status === 'Succeeded' ? 'Deployed' : revision.status === 'NotDeployed' ? 'Not deployed' : revision.status" />
+                </li>
+              </ul>
             </div>
           </BaseCard>
         </template>

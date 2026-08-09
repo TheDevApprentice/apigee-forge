@@ -580,9 +580,48 @@ button:focus-visible {
   outline-offset: 4px;
 }
 
+.proxy-detail__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .proxy-detail h2,
 .proxy-detail p {
   margin: 0;
+}
+
+.proxy-detail h3 {
+  margin: 20px 0 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.proxy-metadata {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0 0;
+}
+
+.proxy-metadata div {
+  padding: 10px;
+  background: var(--sidebar-bg);
+  border-radius: 8px;
+}
+
+.proxy-metadata dt {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.proxy-metadata dd {
+  margin: 5px 0 0;
+  font-size: 13px;
 }
 
 .proxy-detail p {
