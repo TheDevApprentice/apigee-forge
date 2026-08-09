@@ -122,6 +122,7 @@ export function useTemplateEditor(invoke: Invoke = defaultInvoke) {
     startNew,
     updateDraft,
     load,
+    validate,
     save,
     reset,
     discardChanges,

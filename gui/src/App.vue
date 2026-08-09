@@ -207,7 +207,19 @@ function validatePolicyStage(stage: Record<string, any>, stageLabel: string): Po
   return errors
 }
 
+const flowValidationErrors = computed<PolicyValidationError[]>(() => {
+  const flow = templateEditor.current.value?.data.flow as Record<string, any> | undefined
+  const errors: PolicyValidationError[] = []
+  for (const stage of ['pre_flow', 'post_flow'] as const) {
+    if (!flow?.[stage] || !Array.isArray(flow[stage].request) || !Array.isArray(flow[stage].response)) {
+      errors.push({ field: `flow.${stage}`, message: 'Request and response policy lists are required.' })
+    }
+  }
+  return errors
+})
+
 const policyValidationErrors = computed(() => [
+  ...flowValidationErrors.value,
   ...validatePolicyStage(flowDraft.value.pre_flow, 'PreFlow'),
   ...flowDraft.value.conditional_flows.flatMap((flow, index) => validatePolicyStage(flow, `Conditional Flow ${index + 1}`)),
   ...validatePolicyStage(flowDraft.value.post_flow, 'PostFlow'),
@@ -373,7 +385,16 @@ function updateNamingCase(value: string) {
   })
 }
 
+function normalizeCurrentTemplate() {
+  const current = templateEditor.current.value
+  if (!current) return
+  const flow = current.data.flow as Record<string, any> | undefined
+  const normalizeStage = (stage: Record<string, any> | undefined) => ({ request: Array.isArray(stage?.request) ? stage.request : [], response: Array.isArray(stage?.response) ? stage.response : [] })
+  templateEditor.updateDraft({ ...current, data: { ...current.data, flow: { ...flow, pre_flow: normalizeStage(flow?.pre_flow), post_flow: normalizeStage(flow?.post_flow), conditional_flows: Array.isArray(flow?.conditional_flows) ? flow.conditional_flows.map((item) => ({ ...item, ...normalizeStage(item) })) : [] } } })
+}
+
 async function saveTemplate() {
+  normalizeCurrentTemplate()
   if (!templateValid.value) return
   await templateEditor.save()
   if (templateEditor.current.value?.name) void loadTemplates()
@@ -396,6 +417,7 @@ async function closeTemplateEditor() {
 }
 
 async function continueToReview() {
+  normalizeCurrentTemplate()
   if (!templateValid.value || !templateEditor.current.value) return
   const valid = await templateEditor.validate()
   if (valid) templateView.value = 'review'
@@ -405,12 +427,12 @@ async function newTemplate() {
   resetContentScroll()
   if (templateEditor.dirty.value) {
     await askConfirmation('Start a new template?', 'Your unsaved changes will be discarded.', () => {
-      templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: {}, post_flow: {} } })
+      templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: { request: [], response: [] }, post_flow: { request: [], response: [] } } })
       templateView.value = 'editor'
     })
     return
   }
-  templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: {}, post_flow: {} } })
+  templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: { request: [], response: [] }, post_flow: { request: [], response: [] } } })
   templateView.value = 'editor'
 }
 
