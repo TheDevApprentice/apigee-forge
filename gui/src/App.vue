@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useAuth } from './composables/useAuth'
 import { useSession } from './composables/useSession'
-import type { AppMode, SessionDto } from './types/bridge'
+import type { AppMode, ProxyDto, SessionDto } from './types/bridge'
 import { useOrganizations } from './composables/useOrganizations'
 import { useProxies } from './composables/useProxies'
 import { useRoles } from './composables/useRoles'
@@ -31,6 +31,7 @@ const navigation: NavigationItem[] = [
 const activeView = ref('Dashboard')
 const selectedOrganization = ref('')
 const selectedEnvironment = ref('')
+const selectedProxy = ref<ProxyDto | null>(null)
 const auth = useAuth()
 const appSession = useSession()
 const selectedMode = appSession.selectedMode
@@ -83,6 +84,7 @@ watch(selectedOrganization, (organization) => {
   selectedEnvironment.value = ''
   environmentList.value = []
   proxyList.value = []
+  selectedProxy.value = null
   if (organization) {
     void organizations.loadEnvironments(organization)
     if (!isDemo.value) void roles.load(organization)
@@ -203,7 +205,8 @@ void templateEditor
         </template>
 
         <template v-else>
-          <BaseCard eyebrow="Workspace context">
+          <template v-if="activeView === 'Dashboard'">
+            <BaseCard eyebrow="Workspace context">
             <div class="context-grid">
               <label>
                 <span>Organization</span>
@@ -269,11 +272,42 @@ void templateEditor
             </BaseEmptyState>
             <ul v-else class="proxy-list">
               <li v-for="proxy in proxyList" :key="proxy.name">
-                <span>{{ proxy.name }}</span>
-                <span class="proxy-list__revision">revision {{ proxy.revisions.at(-1)?.number || '—' }}</span>
+                <button type="button" class="proxy-list__button" @click="selectedProxy = proxy">
+                  <span>{{ proxy.name }}</span>
+                  <span class="proxy-list__revision">revision {{ proxy.revisions.at(-1)?.number || '—' }}</span>
+                </button>
               </li>
             </ul>
           </BaseCard>
+          <BaseCard v-if="selectedProxy" eyebrow="Selected proxy">
+            <div class="proxy-detail">
+              <h2>{{ selectedProxy.name }}</h2>
+              <p>{{ selectedProxy.source === 'cloud' ? 'Live Apigee proxy' : 'Demo proxy' }}</p>
+              <ul class="proxy-revisions">
+                <li v-for="revision in selectedProxy.revisions" :key="revision.number">
+                  <span>Revision {{ revision.number }}</span>
+                  <BaseChip :label="revision.deployed ? 'Deployed' : 'Not deployed'" />
+                </li>
+              </ul>
+            </div>
+          </BaseCard>
+        </template>
+        <template v-else-if="activeView === 'Templates'">
+          <BaseCard eyebrow="Templates">
+            <BaseEmptyState>
+              <template #title>No templates loaded</template>
+              <template #hint>Template files and the editor will be connected in the next M7 step.</template>
+            </BaseEmptyState>
+          </BaseCard>
+        </template>
+        <template v-else-if="activeView === 'Deployments'">
+          <BaseCard eyebrow="Deployments">
+            <BaseEmptyState>
+              <template #title>No deployment selected</template>
+              <template #hint>Select a proxy from the Dashboard to inspect its revisions.</template>
+            </BaseEmptyState>
+          </BaseCard>
+        </template>
         </template>
       </main>
     </div>

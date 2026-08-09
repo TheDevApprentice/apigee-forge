@@ -521,6 +521,57 @@ button:focus-visible {
   font-size: 13px;
 }
 
+.proxy-list__button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.proxy-list li:has(.proxy-list__button):hover {
+  background: var(--accent-bg);
+}
+
+.proxy-list__button:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: 4px;
+}
+
+.proxy-detail h2,
+.proxy-detail p {
+  margin: 0;
+}
+
+.proxy-detail p {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.proxy-revisions {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proxy-revisions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border: 0.5px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
 .proxy-list__revision {
   color: var(--text-muted);
   font-size: 11px;
