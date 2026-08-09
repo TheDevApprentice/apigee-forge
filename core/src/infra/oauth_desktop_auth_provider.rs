@@ -7,8 +7,9 @@ use std::{
 
 use async_trait::async_trait;
 use oauth2::{
-    basic::BasicClient, reqwest, AuthUrl, AuthorizationCode, ClientId, CsrfToken, EndpointNotSet,
-    EndpointSet, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope, TokenResponse, TokenUrl,
+    basic::BasicClient, reqwest, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
+    EndpointNotSet, EndpointSet, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope,
+    TokenResponse, TokenUrl,
 };
 use reqwest::Client;
 use serde::Deserialize;
@@ -33,6 +34,7 @@ const MAX_CALLBACK_BYTES: usize = 8 * 1024;
 #[derive(Debug, Clone)]
 pub struct OAuthDesktopConfig {
     client_id: String,
+    client_secret: Option<String>,
     authorization_url: String,
     token_url: String,
     userinfo_url: String,
@@ -47,6 +49,7 @@ impl OAuthDesktopConfig {
     pub fn new(client_id: impl Into<String>, keyring_username: impl Into<String>) -> Self {
         Self {
             client_id: client_id.into(),
+            client_secret: None,
             authorization_url: DEFAULT_AUTHORIZATION_URL.to_owned(),
             token_url: DEFAULT_TOKEN_URL.to_owned(),
             userinfo_url: DEFAULT_USERINFO_URL.to_owned(),
@@ -56,6 +59,11 @@ impl OAuthDesktopConfig {
             keyring_service: "apigee-forge".to_owned(),
             keyring_username: keyring_username.into(),
         }
+    }
+
+    pub fn with_client_secret(mut self, client_secret: impl Into<String>) -> Self {
+        self.client_secret = Some(client_secret.into());
+        self
     }
 
     pub fn with_callback_timeout(mut self, callback_timeout: Duration) -> Self {
@@ -189,7 +197,13 @@ impl OAuthDesktopAuthProvider {
         let redirect_url =
             RedirectUrl::new(redirect_url).map_err(|_| AuthError::OAuthConfiguration)?;
 
-        Ok(BasicClient::new(client_id)
+        let client = match &self.config.client_secret {
+            Some(secret) => {
+                BasicClient::new(client_id).set_client_secret(ClientSecret::new(secret.clone()))
+            }
+            None => BasicClient::new(client_id),
+        };
+        Ok(client
             .set_auth_uri(auth_url)
             .set_token_uri(token_url)
             .set_redirect_uri(redirect_url))

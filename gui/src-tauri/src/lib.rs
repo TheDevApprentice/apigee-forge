@@ -22,6 +22,7 @@ use tauri::Manager;
 use url::Url;
 
 const OAUTH_CLIENT_ID: &str = "APIGEE_FORGE_OAUTH_CLIENT_ID";
+const OAUTH_CLIENT_SECRET: &str = "APIGEE_FORGE_OAUTH_CLIENT_SECRET";
 const OAUTH_USERNAME: &str = "APIGEE_FORGE_OAUTH_USERNAME";
 
 #[async_trait]
@@ -84,9 +85,11 @@ pub fn build_state() -> GuiState {
         return GuiState::default();
     };
     let username = env::var(OAUTH_USERNAME).unwrap_or_else(|_| "desktop".to_owned());
-    let Ok(provider) =
-        OAuthDesktopAuthProvider::from_config(OAuthDesktopConfig::new(client_id, username))
-    else {
+    let mut oauth_config = OAuthDesktopConfig::new(client_id, username);
+    if let Ok(client_secret) = env::var(OAUTH_CLIENT_SECRET) {
+        oauth_config = oauth_config.with_client_secret(client_secret);
+    }
+    let Ok(provider) = OAuthDesktopAuthProvider::from_config(oauth_config) else {
         return GuiState::default();
     };
     let provider = Arc::new(provider);
