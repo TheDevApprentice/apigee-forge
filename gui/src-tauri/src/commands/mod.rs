@@ -87,15 +87,31 @@ pub struct ProxyRevisionDto {
 }
 
 fn auth_error(error: AuthError) -> GuiError {
-    let code = match error {
-        AuthError::CredentialStore => "AUTH_STORAGE_ERROR",
-        AuthError::OAuthConfiguration => "AUTH_CONFIGURATION",
-        _ => "AUTH_FAILED",
+    let (code, message) = match error {
+        AuthError::CredentialStore => (
+            "AUTH_STORAGE_ERROR",
+            "Google session storage is unavailable",
+        ),
+        AuthError::OAuthConfiguration => (
+            "AUTH_CONFIGURATION",
+            "OAuth desktop configuration is invalid",
+        ),
+        AuthError::TokenExchange => (
+            "AUTH_TOKEN_EXCHANGE",
+            "Google rejected the OAuth token exchange",
+        ),
+        AuthError::IdentityLookup => (
+            "AUTH_IDENTITY_LOOKUP",
+            "Google sign-in succeeded but identity lookup failed",
+        ),
+        AuthError::Callback => ("AUTH_CALLBACK", "Google callback was invalid or expired"),
+        AuthError::BrowserLaunch => (
+            "AUTH_BROWSER",
+            "The Google sign-in browser could not be opened",
+        ),
+        _ => ("AUTH_FAILED", "Google authentication failed"),
     };
-    GuiError {
-        code,
-        message: "authentication failed",
-    }
+    GuiError { code, message }
 }
 
 fn gateway_error(_error: GatewayError) -> GuiError {

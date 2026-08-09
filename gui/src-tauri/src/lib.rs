@@ -112,6 +112,10 @@ pub fn build_state() -> GuiState {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<(), tauri::Error> {
+    let env_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join(".env");
+    let _ = dotenvy::from_path(env_path);
     tauri::Builder::default()
         .manage(build_state())
         .setup(|app| {
