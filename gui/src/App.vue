@@ -286,7 +286,7 @@ void templateEditor
               <ul class="proxy-revisions">
                 <li v-for="revision in selectedProxy.revisions" :key="revision.number">
                   <span>Revision {{ revision.number }}</span>
-                  <BaseChip :label="revision.deployed ? 'Deployed' : 'Not deployed'" />
+                  <BaseChip :label="revision.status === 'Succeeded' ? 'Deployed' : revision.status === 'NotDeployed' ? 'Not deployed' : revision.status" />
                 </li>
               </ul>
             </div>

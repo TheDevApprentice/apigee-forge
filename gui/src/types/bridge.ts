@@ -34,6 +34,7 @@ export type EnvironmentDto = {
 export type ProxyRevisionDto = {
   number: number
   deployed: boolean
+  status: 'Pending' | 'InProgress' | 'Succeeded' | 'Failed' | 'NotDeployed'
 }
 
 export type ProxyDto = {

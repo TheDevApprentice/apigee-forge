@@ -9,8 +9,8 @@ use apigee_forge_core::{
     error::{AuthError, GatewayError},
     ports::ApigeeGateway,
     use_cases::{
-        GetApigeeRolesUseCase, ListEnvironmentsUseCase, ListOrganizationsUseCase,
-        ListProxiesUseCase,
+        GetApigeeRolesUseCase, GetDeploymentStatusUseCase, ListEnvironmentsUseCase,
+        ListOrganizationsUseCase, ListProxiesUseCase,
     },
 };
 use tauri::State;
@@ -84,6 +84,7 @@ pub struct ProxyDto {
 pub struct ProxyRevisionDto {
     pub number: u32,
     pub deployed: bool,
+    pub status: String,
 }
 
 fn auth_error(error: AuthError) -> GuiError {
@@ -404,10 +405,32 @@ pub async fn list_proxies(
         .await
         .map_err(gateway_error)?;
     let source = session_lock(&state)?.mode;
-    Ok(values
-        .into_iter()
-        .map(|value| proxy_dto(value, source))
-        .collect())
+    let deployment_gateway = state
+        .deployment_gateway
+        .lock()
+        .map_err(|_| GuiError {
+            code: "STATE_ERROR",
+            message: "application state is unavailable",
+        })?
+        .clone();
+    let mut result = Vec::new();
+    for value in values {
+        let mut dto = proxy_dto(value, source);
+        if let Some(deployment_gateway) = &deployment_gateway {
+            for revision in &mut dto.revisions {
+                revision.status = match GetDeploymentStatusUseCase::new(deployment_gateway.clone())
+                    .execute(&organization, &environment, &dto.name, revision.number)
+                    .await
+                {
+                    Ok(deployment) => format!("{:?}", deployment.status),
+                    Err(_) => "NotDeployed".to_owned(),
+                };
+                revision.deployed = revision.status == "Succeeded";
+            }
+        }
+        result.push(dto);
+    }
+    Ok(result)
 }
 
 fn organization_dto(value: Organization, source: AppMode) -> OrganizationDto {
@@ -436,6 +459,12 @@ fn proxy_dto(value: Proxy, source: AppMode) -> ProxyDto {
             .map(|revision| ProxyRevisionDto {
                 number: revision.number,
                 deployed: revision.deployed,
+                status: if revision.deployed {
+                    "Succeeded"
+                } else {
+                    "NotDeployed"
+                }
+                .to_owned(),
             })
             .collect(),
     }
@@ -473,6 +502,7 @@ mod tests {
             revisions: vec![ProxyRevisionDto {
                 number: 1,
                 deployed: false,
+                status: "NotDeployed".to_owned(),
             }],
         })?;
         assert_eq!(auth["mode"], "desktop");

@@ -13,7 +13,7 @@ use apigee_forge_core::{
         InMemoryApigeeGateway, KeyringLocalKeyStore, ReqwestApigeeGateway,
         SqlCipherLocalStateStore,
     },
-    ports::{ApigeeGateway, AuthProvider, LocalStateStore},
+    ports::{ApigeeDeploymentGateway, ApigeeGateway, AuthProvider, LocalStateStore},
     use_cases::SessionStatePersistence,
 };
 use async_trait::async_trait;
@@ -54,6 +54,8 @@ pub struct GuiState {
     pub auth_provider: Option<Arc<dyn GuiAuthProvider>>,
     pub gateway: Mutex<Option<Arc<dyn ApigeeGateway>>>,
     pub cloud_gateway: Option<Arc<dyn ApigeeGateway>>,
+    pub deployment_gateway: Mutex<Option<Arc<dyn ApigeeDeploymentGateway>>>,
+    pub cloud_deployment_gateway: Option<Arc<dyn ApigeeDeploymentGateway>>,
     pub demo_gateway: Arc<InMemoryApigeeGateway>,
     pub auth_context: Mutex<Option<AuthContext>>,
     pub session: Mutex<SessionState>,
@@ -66,6 +68,8 @@ impl Default for GuiState {
             auth_provider: None,
             gateway: Mutex::new(None),
             cloud_gateway: None,
+            deployment_gateway: Mutex::new(None),
+            cloud_deployment_gateway: None,
             demo_gateway: Arc::new(InMemoryApigeeGateway::new()),
             auth_context: Mutex::new(None),
             session: Mutex::new(SessionState::cloud()),
@@ -101,11 +105,22 @@ pub fn build_state() -> GuiState {
         return GuiState::default();
     };
     let cloud_gateway: Arc<dyn ApigeeGateway> = Arc::new(gateway);
+    let cloud_deployment_gateway: Arc<dyn ApigeeDeploymentGateway> = Arc::new(
+        ReqwestApigeeGateway::new(
+            Url::parse("https://apigee.googleapis.com/v1/")
+                .map_err(|_| ())
+                .unwrap(),
+            provider.clone() as Arc<dyn AuthProvider>,
+        )
+        .unwrap(),
+    );
     let demo_gateway = Arc::new(InMemoryApigeeGateway::new());
     GuiState {
         auth_provider: Some(Arc::new(DesktopGuiAuthProvider { provider })),
         gateway: Mutex::new(Some(cloud_gateway.clone())),
         cloud_gateway: Some(cloud_gateway),
+        deployment_gateway: Mutex::new(Some(cloud_deployment_gateway.clone())),
+        cloud_deployment_gateway: Some(cloud_deployment_gateway),
         demo_gateway,
         auth_context: Mutex::new(None),
         session: Mutex::new(SessionState::cloud()),
