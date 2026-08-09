@@ -464,6 +464,16 @@ button:focus-visible {
   font-size: 11px;
 }
 
+.select-placeholder {
+  display: block;
+  padding: 9px 10px;
+  color: var(--text-muted);
+  background: var(--sidebar-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
 .context-grid select {
   width: 100%;
   padding: 9px 10px;

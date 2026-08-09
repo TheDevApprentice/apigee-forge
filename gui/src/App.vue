@@ -232,12 +232,13 @@ void templateEditor
               </label>
               <label>
                 <span>Environment</span>
-                <select v-model="selectedEnvironment" :disabled="!selectedOrganization">
+                <select v-if="selectedOrganization" v-model="selectedEnvironment">
                   <option value="">Select an environment</option>
                   <option v-for="environment in environmentList" :key="environment.name" :value="environment.name">
                     {{ environment.name }}
                   </option>
                 </select>
+                <span v-else class="select-placeholder">Select an organization first</span>
               </label>
             </div>
             <BaseSpinner v-if="organizationsLoading" />
@@ -345,6 +346,14 @@ void templateEditor
             <BaseEmptyState>
               <template #title>No deployment selected</template>
               <template #hint>Select a proxy from the Dashboard to inspect its revisions.</template>
+            </BaseEmptyState>
+          </BaseCard>
+        </template>
+        <template v-else-if="activeView === 'Settings'">
+          <BaseCard eyebrow="Settings">
+            <BaseEmptyState>
+              <template #title>No settings available yet</template>
+              <template #hint>Connection, local storage and appearance settings will be added in a later GUI pass.</template>
             </BaseEmptyState>
           </BaseCard>
         </template>

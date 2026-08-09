@@ -104,12 +104,13 @@ describe('App M6-Bis flow', () => {
     await flushPromises()
     await flushPromises()
 
-    await vi.waitFor(() => expect(wrapper.findAll('.context-grid select')).toHaveLength(2))
-    const selects = wrapper.findAll('.context-grid select')
+    await vi.waitFor(() => expect(wrapper.findAll('.context-grid select')).toHaveLength(1))
     expect(invokeMock).not.toHaveBeenCalledWith('list_proxies', expect.anything())
 
-    await selects[0].setValue('org-one')
+    await wrapper.find('.context-grid select').setValue('org-one')
     await flushPromises()
+    await vi.waitFor(() => expect(wrapper.findAll('.context-grid select')).toHaveLength(2))
+    const selects = wrapper.findAll('.context-grid select')
     await selects[1].setValue('test')
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('hello-world'))
