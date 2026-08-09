@@ -1051,6 +1051,76 @@ button:focus-visible {
   cursor: not-allowed;
 }
 
+.review-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.review-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.review-header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.review-grid div {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  background: var(--sidebar-bg);
+  border-radius: 8px;
+}
+
+.review-grid span {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.review-grid strong {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.review-actions,
+.flow-canvas__continue {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.review-actions button {
+  padding: 8px 11px;
+  color: var(--text-secondary);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.review-actions button:hover {
+  color: var(--accent-active);
+  border-color: var(--accent-active);
+}
+
 .template-steps {
   display: flex;
   gap: 8px;
@@ -1518,6 +1588,7 @@ button:focus-visible {
   .resource-links,
   .metadata-form,
   .flow-canvas,
+  .review-grid,
   .policy-fields {
     grid-template-columns: 1fr;
   }

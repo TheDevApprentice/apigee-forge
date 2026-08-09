@@ -48,6 +48,7 @@ const templateSearch = ref('')
 const templatesLoading = ref(false)
 const templatesError = ref<string | null>(null)
 const templateDeletePending = ref<string | null>(null)
+const templateView = ref<'catalogue' | 'editor' | 'review'>('catalogue')
 const authContext = auth.context
 const authLoading = auth.loading
 const authError = auth.error
@@ -299,17 +300,22 @@ async function saveTemplate() {
 }
 
 async function selectTemplate(name: string) {
-  await templateEditor.load(name)
+  if (await templateEditor.load(name)) templateView.value = 'editor'
 }
 
 function closeTemplateEditor() {
   if (templateEditor.dirty.value && !window.confirm('Discard unsaved template changes?')) return
   templateEditor.discardChanges()
+  templateView.value = 'catalogue'
 }
 
+function continueToReview() {
+  if (metadataValid.value && templateEditor.current.value) templateView.value = 'review'
+}
 function newTemplate() {
   if (templateEditor.dirty.value && !window.confirm('Discard the current template changes?')) return
   templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: {}, post_flow: {} } })
+  templateView.value = 'editor'
 }
 
 async function deleteTemplate(name: string) {
@@ -656,6 +662,7 @@ void templateEditor
           </BaseCard>
         </template>
         <template v-else-if="activeView === 'Templates'">
+          <template v-if="templateView === 'catalogue'">
           <BaseCard eyebrow="Template catalogue">
             <p class="template-catalogue__intro">Start from an existing template or create a new one. Your templates are stored locally and can be reused by the CLI.</p>
             <div class="template-toolbar">
@@ -685,6 +692,8 @@ void templateEditor
               </li>
             </ul>
           </BaseCard>
+          </template>
+          <template v-if="templateView === 'editor'">
           <BaseCard v-if="templateEditor.current" eyebrow="Template workspace">
             <div class="template-workspace-header">
               <div>
@@ -694,7 +703,7 @@ void templateEditor
               </div>
               <div class="template-workspace__actions">
                 <button type="button" @click="closeTemplateEditor">Back to templates</button>
-                <button type="button" class="primary-action" :disabled="!templateEditor.dirty || !metadataValid || templateEditor.status === 'saving'" @click="saveTemplate">{{ templateEditor.status === 'saving' ? 'Saving…' : 'Save template' }}</button>
+                <button type="button" class="primary-action" :disabled="!metadataValid" @click="continueToReview">Continue to review</button>
               </div>
             </div>
             <nav class="template-steps" aria-label="Template editing steps">
@@ -748,11 +757,20 @@ void templateEditor
                 </li>
               </ol>
             </div>
+            <div class="flow-canvas__continue"><button type="button" class="primary-action" :disabled="!metadataValid" @click="continueToReview">Continue to review</button></div>
           </BaseCard>
           <div v-if="templateEditor.validationErrors.length" class="template-validation-errors" role="alert" aria-live="assertive">
             <strong>Template validation</strong>
             <button v-for="validationError in templateEditor.validationErrors" :key="`${validationError.code}-${validationError.field}`" type="button">{{ validationError.field || 'Template' }}: {{ validationError.message }}</button>
           </div>
+          </template>
+          <template v-if="templateView === 'review'">
+            <BaseCard eyebrow="Review and save">
+              <div class="review-header"><div><h2>Ready to save</h2><p>Check the template summary before writing it to local storage.</p></div><BaseChip :label="templateEditor.dirty ? 'Unsaved changes' : 'Saved'" /></div>
+              <div class="review-grid"><div><span>Name</span><strong>{{ metadataDraft.name || 'Missing' }}</strong></div><div><span>Owner</span><strong>{{ metadataDraft.owner || 'Missing' }}</strong></div><div><span>Target</span><strong>{{ metadataDraft.target_environment || 'None' }}</strong></div><div><span>Policies</span><strong>{{ policyCount(flowDraft.pre_flow) + policyCount(flowDraft.post_flow) + flowDraft.conditional_flows.reduce((total, flow) => total + policyCount(flow), 0) }}</strong></div></div>
+              <div class="review-actions"><button type="button" @click="templateView = 'editor'">Back to editor</button><button type="button" class="primary-action" :disabled="!metadataValid || !templateEditor.dirty || templateEditor.status === 'saving'" @click="saveTemplate">{{ templateEditor.status === 'saving' ? 'Saving…' : 'Save template' }}</button></div>
+            </BaseCard>
+          </template>
         </template>
         <template v-else-if="activeView === 'Deployments'">
           <BaseCard eyebrow="Deployments">

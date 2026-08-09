@@ -201,6 +201,18 @@ Cette passe n’était pas prévue dans le découpage initial de M7. Elle a ét�
 - [x] Rendre les actions principales accessibles sans devoir atteindre le bas de la page.
 - [x] Conserver le polish visuel complet et les tokens finaux dans M9.
 
+### M7-UX-02 — Parcours multi-page de l’éditeur
+
+Cette passe UX n’était pas prévue dans le découpage initial. Elle transforme les sections verticales de l’éditeur en états de parcours explicites afin que l’utilisateur comprenne quand il catalogue, édite ou confirme son template.
+
+- [x] Ouvrir `New template` directement dans l’état Éditeur.
+- [x] Ouvrir un template sélectionné directement dans l’état Éditeur.
+- [x] Garder le Catalogue séparé de l’espace d’édition.
+- [x] Ajouter un état Review & Save séparé.
+- [x] Ajouter un résumé du template, de la cible et du nombre de policies avant sauvegarde.
+- [x] Ajouter `Back to editor`, `Back to templates` et `Continue to review`.
+- [x] Conserver le polish visuel approfondi pour M9.
+
 ### M7-11 — Tests de parcours
 
 - [ ] Tester création d’un template minimal.
