@@ -26,7 +26,7 @@ describe('App M6-03 flow', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Connect your Apigee workspace.')
-    expect(wrapper.text()).toContain('Offline workspace ready')
+    expect(wrapper.text()).toContain('Sign in with Google')
     expect(wrapper.find('button.primary-action').exists()).toBe(true)
   })
 

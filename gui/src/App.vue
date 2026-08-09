@@ -110,8 +110,8 @@ void templateEditor
 </script>
 
 <template>
-  <div class="app-shell">
-    <aside class="sidebar" aria-label="Primary navigation">
+  <div class="app-shell" :class="{ 'app-shell--locked': !isAuthenticated }">
+    <aside v-if="isAuthenticated" class="sidebar" aria-label="Primary navigation">
       <div class="brand-mark" aria-label="Apigee Forge" title="Apigee Forge">AF</div>
       <nav class="sidebar__nav">
         <BaseButton
@@ -132,7 +132,7 @@ void templateEditor
     </aside>
 
     <div class="app-frame">
-      <header class="topbar">
+      <header v-if="isAuthenticated" class="topbar">
         <div>
           <p class="topbar__eyebrow">Workspace</p>
           <p class="topbar__context">
@@ -166,6 +166,16 @@ void templateEditor
         </template>
 
         <template v-else-if="!isAuthenticated">
+          <div class="login-screen__header">
+            <span>Apigee Forge</span>
+            <label class="mode-switcher">
+              <span>Mode</span>
+              <select v-model="selectedMode" @change="changeMode(selectedMode as AppMode)">
+                <option value="cloud">Live</option>
+                <option value="demo">Demo</option>
+              </select>
+            </label>
+          </div>
           <BaseCard eyebrow="Welcome">
             <section class="login-panel" aria-labelledby="login-title">
               <div class="login-panel__copy">
@@ -179,9 +189,9 @@ void templateEditor
           </BaseCard>
           <BaseErrorState v-if="authError" @retry="auth.refresh">
             <template #title>Authentication is not configured</template>
-            <template #hint>{{ authError }} Configure OAuth later to use a real Apigee account.</template>
+            <template #hint>{{ authError }} Set APIGEE_FORGE_OAUTH_CLIENT_ID and APIGEE_FORGE_OAUTH_USERNAME before starting the GUI.</template>
           </BaseErrorState>
-          <BaseCard eyebrow="M6 preview">
+          <BaseCard v-if="isDemo" eyebrow="Demo workspace">
             <BaseEmptyState>
               <template #title>Offline workspace ready</template>
               <template #hint>The GUI is intentionally usable without a provisioned Apigee organization.</template>
