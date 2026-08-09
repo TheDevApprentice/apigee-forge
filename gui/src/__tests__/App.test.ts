@@ -8,7 +8,7 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: invokeMock,
 }))
 
-describe('App M6-03 flow', () => {
+describe('App M6-Bis flow', () => {
   beforeEach(() => {
     invokeMock.mockReset()
   })
@@ -28,6 +28,54 @@ describe('App M6-03 flow', () => {
     expect(wrapper.text()).toContain('Connect your Apigee workspace.')
     expect(wrapper.text()).toContain('Sign in with Google')
     expect(wrapper.find('button.primary-action').exists()).toBe(true)
+  })
+
+  it('starts Demo without OAuth or a network call', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
+      if (command === 'list_organizations') return []
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.find('button.primary-action').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Demo operator')
+    expect(invokeMock).not.toHaveBeenCalledWith('auth_login', undefined)
+  })
+
+  it('keeps Live behind the Login screen until OAuth succeeds', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'cloud', status: 'authentication_required', identity: null, organization: null, environment: null, error: null }
+      if (command === 'auth_restore') return { authenticated: false }
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.find('button.primary-action').exists()).toBe(true)
+    expect(wrapper.find('.sidebar').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Sign in with Google')
+  })
+
+  it('changes mode explicitly without starting OAuth', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'cloud', status: 'authentication_required', identity: null, organization: null, environment: null, error: null }
+      if (command === 'auth_restore') return { authenticated: false }
+      if (command === 'set_app_mode') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
+      if (command === 'list_organizations') return []
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.find('.mode-switcher select').setValue('demo')
+    await flushPromises()
+
+    expect(invokeMock).toHaveBeenCalledWith('set_app_mode', { mode: 'demo' })
+    expect(wrapper.find('button.primary-action').exists()).toBe(false)
   })
 
   it('loads context and proxies only after explicit selections', async () => {

@@ -168,7 +168,7 @@ Ce report ne bloque pas les contrats Demo/Live ni la suite M6-Bis ; il déplace 
 
 #### M6-Bis-09 — Écran Live Login réel
 
-- [ ] En mode Live, n’afficher que l’écran de connexion tant que la session n’est pas authentifiée ; le shell/navigation actuels doivent encore être masqués.
+- [x] En mode Live, n’afficher que l’écran de connexion tant que la session n’est pas authentifiée ; le shell/navigation actuels doivent encore être masqués.
 - [x] Afficher la configuration manquante sans exposer de secret.
 - [x] Lancer le flux Google OAuth desktop via la commande Tauri.
 - [x] Afficher les spinners de restauration/OAuth et les erreurs dédiées ; l’extraction du shell visuel en écran Login dédié reste à finaliser.
