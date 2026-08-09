@@ -6,6 +6,10 @@ const unauthenticated: AuthDto = {
   authenticated: false,
   mode: null,
   identity: null,
+  given_name: null,
+  family_name: null,
+  name: null,
+  picture: null,
   project_id: null,
   selected_organization: null,
 }
@@ -14,6 +18,10 @@ const authenticated: AuthDto = {
   authenticated: true,
   mode: 'desktop',
   identity: 'developer@example.com',
+  given_name: null,
+  family_name: null,
+  name: null,
+  picture: null,
   project_id: null,
   selected_organization: null,
 }

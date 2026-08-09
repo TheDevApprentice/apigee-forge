@@ -50,6 +50,10 @@ const templatesLoading = ref(false)
 const templatesError = ref<string | null>(null)
 const templateDeletePending = ref<string | null>(null)
 const templateView = ref<'catalogue' | 'editor' | 'review'>('catalogue')
+const currentTemplate = templateEditor.current
+const currentTemplateDirty = templateEditor.dirty
+const currentTemplateStatus = templateEditor.status
+const currentTemplateValidationErrors = templateEditor.validationErrors
 const modal = ref<{ title: string; message: string; confirmLabel?: string; tone?: 'default' | 'danger' } | null>(null)
 const modalAction = ref<(() => void | Promise<void>) | null>(null)
 const authContext = auth.context
@@ -148,6 +152,11 @@ const visibleTemplates = computed(() => {
   return query ? templateList.value.filter((template) => template.name.toLowerCase().includes(query)) : templateList.value
 })
 
+function templateOwner(template: TemplateDto): string {
+  const metadata = template.data.metadata as { owner?: unknown } | undefined
+  return typeof metadata?.owner === 'string' && metadata.owner.length > 0 ? metadata.owner : 'No owner'
+}
+
 type TemplateMetadataDraft = {
   name: string
   description?: string
@@ -228,15 +237,48 @@ function updateConditionalCondition(index: number, condition: string) {
   updateFlow({ ...flowDraft.value, conditional_flows: flowDraft.value.conditional_flows.map((flow, flowIndex) => flowIndex === index ? { ...flow, condition } : flow) })
 }
 
-function policyCount(stage: Record<string, any>) {
-  return (stage.request?.length || 0) + (stage.response?.length || 0)
+function policyCount(stage: Record<string, any>): number {
+  const requestCount = Array.isArray(stage.request) ? stage.request.length : 0
+  const responseCount = Array.isArray(stage.response) ? stage.response.length : 0
+  return requestCount + responseCount
 }
+
+const totalPolicyCount = computed(() => {
+  const conditionalCount = flowDraft.value.conditional_flows.reduce((total: number, flow: Record<string, any>) => total + policyCount(flow), 0)
+  return policyCount(flowDraft.value.pre_flow) + policyCount(flowDraft.value.post_flow) + conditionalCount
+})
 
 const selectedStage = computed(() => selectedFlow.value === 'pre_flow'
   ? flowDraft.value.pre_flow
   : selectedFlow.value === 'post_flow'
     ? flowDraft.value.post_flow
     : flowDraft.value.conditional_flows[Number(selectedFlow.value.split('_')[1])] || { request: [], response: [] })
+const selectedPolicies = computed(() => (selectedStage.value[selectedLane.value] || []) as Record<string, any>[])
+
+function policyLabel(policy: Record<string, any>): string {
+  return policyTypes.find(([value]) => value === String(policy.type))?.[1] || String(policy.type || 'Policy')
+}
+
+function policyText(policy: Record<string, any>, field: string): string {
+  const value = policy[field]
+  return typeof value === 'string' ? value : ''
+}
+
+function policyStringList(policy: Record<string, any>, field: string): string {
+  return Array.isArray(policy[field]) ? policy[field].join(', ') : ''
+}
+
+function updatePolicyText(index: number, field: string, event: Event) {
+  updatePolicyField(index, field, (event.target as HTMLInputElement | HTMLSelectElement).value)
+}
+
+function updatePolicyNumber(index: number, field: string, event: Event) {
+  updatePolicyField(index, field, Number((event.target as HTMLInputElement).value))
+}
+
+function updatePolicyList(index: number, field: string, event: Event) {
+  updatePolicyField(index, field, (event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))
+}
 
 function policyFactory(type: string): Record<string, any> {
   const defaults: Record<string, Record<string, any>> = {
@@ -258,15 +300,15 @@ function updatePolicies(policies: Record<string, any>[]) {
 }
 
 function addPolicy() {
-  updatePolicies([...selectedStage.value[selectedLane.value] || [], policyFactory(selectedPolicyType.value)])
+  updatePolicies([...selectedPolicies.value, policyFactory(selectedPolicyType.value)])
 }
 
 function removePolicy(index: number) {
-  updatePolicies(selectedStage.value[selectedLane.value].filter((_: unknown, policyIndex: number) => policyIndex !== index))
+  updatePolicies(selectedPolicies.value.filter((_: unknown, policyIndex: number) => policyIndex !== index))
 }
 
 function movePolicy(index: number, direction: number) {
-  const policies = [...selectedStage.value[selectedLane.value]]
+  const policies = [...selectedPolicies.value]
   const target = index + direction
   if (target < 0 || target >= policies.length) return
   const [policy] = policies.splice(index, 1)
@@ -275,7 +317,7 @@ function movePolicy(index: number, direction: number) {
 }
 
 function updatePolicyField(index: number, field: string, value: unknown) {
-  const policies = selectedStage.value[selectedLane.value].map((policy: Record<string, any>, policyIndex: number) => policyIndex === index ? { ...policy, [field]: value } : policy)
+  const policies = selectedPolicies.value.map((policy: Record<string, any>, policyIndex: number) => policyIndex === index ? { ...policy, [field]: value } : policy)
   updatePolicies(policies)
 }
 
@@ -724,10 +766,10 @@ void templateEditor
               <template #hint>Try another search term.</template>
             </BaseEmptyState>
             <ul v-else class="template-list">
-              <li v-for="template in visibleTemplates" :key="template.name" :class="{ 'template-list__item--selected': templateEditor.current?.name === template.name }">
+              <li v-for="template in visibleTemplates" :key="template.name" :class="{ 'template-list__item--selected': currentTemplate?.name === template.name }">
                 <button type="button" class="template-list__select" @click="selectTemplate(template.name)">
                   <strong>{{ template.name || 'Untitled template' }}</strong>
-                  <span>{{ String(template.data.metadata?.owner || 'No owner') }}</span>
+                  <span>{{ templateOwner(template) }}</span>
                 </button>
                 <button type="button" class="template-list__delete" :disabled="templateDeletePending === template.name" @click="deleteTemplate(template.name)">Delete</button>
               </li>
@@ -735,7 +777,7 @@ void templateEditor
           </BaseCard>
           </template>
           <template v-if="templateView === 'editor'">
-          <BaseCard v-if="templateEditor.current" eyebrow="Template workspace">
+          <BaseCard v-if="currentTemplate" eyebrow="Template workspace">
             <div class="template-workspace-header">
               <div>
                 <span class="template-workspace__eyebrow">Editing template</span>
@@ -762,7 +804,7 @@ void templateEditor
               <label for="template-name-case"><span>Name case</span><select id="template-name-case" :value="metadataDraft.naming_convention.case" @change="updateNamingCase(($event.target as HTMLSelectElement).value)"><option value="kebab-case">kebab-case</option><option value="snake_case">snake_case</option><option value="camelCase">camelCase</option></select></label>
             </div>
           </BaseCard>
-          <BaseCard v-if="templateEditor.current" eyebrow="2 · Flow and policies">
+          <BaseCard v-if="currentTemplate" eyebrow="2 · Flow and policies">
             <p class="editor-section__intro">Choose where a policy runs, then add and configure it in the selected request or response lane.</p>
             <div class="flow-canvas" aria-label="Template flow stages">
               <button type="button" class="flow-stage" :class="{ 'flow-stage--selected': selectedFlow === 'pre_flow' }" @click="selectedFlow = 'pre_flow'"><strong>PreFlow</strong><span>{{ policyCount(flowDraft.pre_flow) }} policies</span></button>
@@ -786,30 +828,30 @@ void templateEditor
                 <div class="policy-add"><select v-model="selectedPolicyType" aria-label="Policy type"><option v-for="[value, label] in policyTypes" :key="value" :value="value">{{ label }}</option></select><button type="button" @click="addPolicy">Add policy</button></div>
               </div>
               <ol class="policy-list">
-                <li v-for="(policy, index) in selectedStage[selectedLane]" :key="`${policy.type}-${index}`" class="policy-item">
-                  <div class="policy-item__header"><strong>{{ policyTypes.find(([value]) => value === policy.type)?.[1] || policy.type }}</strong><div><button type="button" :aria-label="`Move policy ${index + 1} up`" :disabled="index === 0" @click="movePolicy(index, -1)">↑</button><button type="button" :aria-label="`Move policy ${index + 1} down`" :disabled="index === selectedStage[selectedLane].length - 1" @click="movePolicy(index, 1)">↓</button><button type="button" :aria-label="`Remove policy ${index + 1}`" @click="removePolicy(index)">Remove</button></div></div>
+                <li v-for="(policy, index) in selectedPolicies" :key="`${policy.type}-${index}`" class="policy-item">
+                  <div class="policy-item__header"><strong>{{ policyLabel(policy) }}</strong><div><button type="button" :aria-label="`Move policy ${index + 1} up`" :disabled="index === 0" @click="movePolicy(index, -1)">↑</button><button type="button" :aria-label="`Move policy ${index + 1} down`" :disabled="index === selectedPolicies.length - 1" @click="movePolicy(index, 1)">↓</button><button type="button" :aria-label="`Remove policy ${index + 1}`" @click="removePolicy(index)">Remove</button></div></div>
                   <div v-if="policy.type === 'security_api_key'" class="policy-fields"><label>Location<select :value="policy.key_location" @change="updatePolicyField(index, 'key_location', ($event.target as HTMLSelectElement).value)"><option value="header">Header</option><option value="query_param">Query param</option></select></label><label>Parameter<input :value="policy.key_param_name" @input="updatePolicyField(index, 'key_param_name', ($event.target as HTMLInputElement).value)" /></label></div>
-                  <div v-else-if="policy.type === 'security_oauth2'" class="policy-fields"><label>Scopes<input :value="(policy.scopes || []).join(', ')" @input="updatePolicyField(index, 'scopes', ($event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))" /></label></div>
+                  <div v-else-if="policy.type === 'security_oauth2'" class="policy-fields"><label>Scopes<input :value="policyStringList(policy, 'scopes')" @input="updatePolicyField(index, 'scopes', ($event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))" /></label></div>
                   <div v-else-if="policy.type === 'security_jwt'" class="policy-fields"><label>Algorithm<select :value="policy.algorithm" @change="updatePolicyField(index, 'algorithm', ($event.target as HTMLSelectElement).value)"><option>RS256</option><option>HS256</option></select></label><label>Issuer<input :value="policy.issuer" @input="updatePolicyField(index, 'issuer', ($event.target as HTMLInputElement).value)" /></label><label>Audience<input :value="policy.audience" @input="updatePolicyField(index, 'audience', ($event.target as HTMLInputElement).value)" /></label><label>JWKS URL<input :value="policy.jwks_url" @input="updatePolicyField(index, 'jwks_url', ($event.target as HTMLInputElement).value)" /></label></div>
                   <div v-else-if="policy.type === 'quota'" class="policy-fields"><label>Allow<input type="number" :value="policy.allow" @input="updatePolicyField(index, 'allow', Number(($event.target as HTMLInputElement).value))" /></label><label>Interval<input type="number" :value="policy.interval" @input="updatePolicyField(index, 'interval', Number(($event.target as HTMLInputElement).value))" /></label><label>Time unit<select :value="policy.time_unit" @change="updatePolicyField(index, 'time_unit', ($event.target as HTMLSelectElement).value)"><option>hour</option><option>day</option><option>week</option><option>month</option></select></label></div>
                   <div v-else-if="policy.type === 'spike_arrest'" class="policy-fields"><label>Rate<input type="number" :value="policy.rate" @input="updatePolicyField(index, 'rate', Number(($event.target as HTMLInputElement).value))" /></label><label>Unit<select :value="policy.rate_unit" @change="updatePolicyField(index, 'rate_unit', ($event.target as HTMLSelectElement).value)"><option>ps</option><option>pm</option></select></label></div>
-                  <div v-else-if="policy.type === 'cors'" class="policy-fields"><label>Origins<input :value="(policy.allow_origins || []).join(', ')" @input="updatePolicyField(index, 'allow_origins', ($event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))" /></label><label>Methods<input :value="(policy.allow_methods || []).join(', ')" @input="updatePolicyField(index, 'allow_methods', ($event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))" /></label></div>
+                  <div v-else-if="policy.type === 'cors'" class="policy-fields"><label>Origins<input :value="policyStringList(policy, 'allow_origins')" @input="updatePolicyField(index, 'allow_origins', ($event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))" /></label><label>Methods<input :value="policyStringList(policy, 'allow_methods')" @input="updatePolicyField(index, 'allow_methods', ($event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))" /></label></div>
                   <div v-else-if="policy.type === 'transform'" class="policy-fields"><label>Direction<select :value="policy.direction" @change="updatePolicyField(index, 'direction', ($event.target as HTMLSelectElement).value)"><option value="json_to_xml">JSON to XML</option><option value="xml_to_json">XML to JSON</option></select></label></div>
                 </li>
               </ol>
             </div>
             <div class="flow-canvas__continue"><button type="button" class="primary-action" :disabled="!metadataValid" @click="continueToReview">Continue to review</button></div>
           </BaseCard>
-          <div v-if="templateEditor.validationErrors.length" class="template-validation-errors" role="alert" aria-live="assertive">
+          <div v-if="currentTemplateValidationErrors.length" class="template-validation-errors" role="alert" aria-live="assertive">
             <strong>Template validation</strong>
-            <button v-for="validationError in templateEditor.validationErrors" :key="`${validationError.code}-${validationError.field}`" type="button">{{ validationError.field || 'Template' }}: {{ validationError.message }}</button>
+            <button v-for="validationError in currentTemplateValidationErrors" :key="`${validationError.code}-${validationError.field}`" type="button">{{ validationError.field || 'Template' }}: {{ validationError.message }}</button>
           </div>
           </template>
           <template v-if="templateView === 'review'">
             <BaseCard eyebrow="Review and save">
-              <div class="review-header"><div><h2>Ready to save</h2><p>Check the template summary before writing it to local storage.</p></div><BaseChip :label="templateEditor.dirty ? 'Unsaved changes' : 'Saved'" /></div>
-              <div class="review-grid"><div><span>Name</span><strong>{{ metadataDraft.name || 'Missing' }}</strong></div><div><span>Owner</span><strong>{{ metadataDraft.owner || 'Missing' }}</strong></div><div><span>Target</span><strong>{{ metadataDraft.target_environment || 'None' }}</strong></div><div><span>Policies</span><strong>{{ policyCount(flowDraft.pre_flow) + policyCount(flowDraft.post_flow) + flowDraft.conditional_flows.reduce((total, flow) => total + policyCount(flow), 0) }}</strong></div></div>
-              <div class="review-actions"><button type="button" @click="templateView = 'editor'">Back to editor</button><button type="button" class="primary-action" :disabled="!metadataValid || !templateEditor.dirty || templateEditor.status === 'saving'" @click="saveTemplate">{{ templateEditor.status === 'saving' ? 'Saving…' : 'Save template' }}</button></div>
+              <div class="review-header"><div><h2>Ready to save</h2><p>Check the template summary before writing it to local storage.</p></div><BaseChip :label="currentTemplateDirty ? 'Unsaved changes' : 'Saved'" /></div>
+              <div class="review-grid"><div><span>Name</span><strong>{{ metadataDraft.name || 'Missing' }}</strong></div><div><span>Owner</span><strong>{{ metadataDraft.owner || 'Missing' }}</strong></div><div><span>Target</span><strong>{{ metadataDraft.target_environment || 'None' }}</strong></div><div><span>Policies</span><strong>{{ totalPolicyCount }}</strong></div></div>
+              <div class="review-actions"><button type="button" @click="templateView = 'editor'">Back to editor</button><button type="button" class="primary-action" :disabled="!metadataValid || !currentTemplateDirty || currentTemplateStatus === 'saving'" @click="saveTemplate">{{ currentTemplateStatus === 'saving' ? 'Saving…' : 'Save template' }}</button></div>
             </BaseCard>
           </template>
         </template>
