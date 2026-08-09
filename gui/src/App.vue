@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import packageJson from '../package.json'
 import { useAuth } from './composables/useAuth'
@@ -372,6 +372,8 @@ function continueToReview() {
   if (metadataValid.value && templateEditor.current.value) templateView.value = 'review'
 }
 async function newTemplate() {
+  activeView.value = 'Templates'
+  resetContentScroll()
   if (templateEditor.dirty.value) {
     await askConfirmation('Start a new template?', 'Your unsaved changes will be discarded.', () => {
       templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: {}, post_flow: {} } })
@@ -402,7 +404,13 @@ async function performDeleteTemplate(name: string) {
   }
 }
 
+function resetContentScroll() {
+  void nextTick(() => document.querySelector<HTMLElement>('.main-content')?.scrollTo({ top: 0, behavior: 'smooth' }))
+}
+
 function openCreateProxy() {
+  activeView.value = 'Proxies'
+  resetContentScroll()
   modal.value = {
     title: 'Create proxy',
     message: 'The guided proxy wizard will be available in M8. It will support templates, OpenAPI specifications, bundle upload and an explicit deployment review.',
