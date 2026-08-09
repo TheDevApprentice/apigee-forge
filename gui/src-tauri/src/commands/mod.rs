@@ -162,21 +162,6 @@ pub fn get_app_mode(state: State<'_, GuiState>) -> Result<AppMode, GuiError> {
 
 #[tauri::command]
 pub fn set_app_mode(state: State<'_, GuiState>, mode: AppMode) -> Result<SessionDto, GuiError> {
-    if mode == AppMode::Demo
-        && state
-            .local_store
-            .lock()
-            .map_err(|_| GuiError {
-                code: "STATE_ERROR",
-                message: "application state is unavailable",
-            })?
-            .is_none()
-    {
-        return Err(GuiError {
-            code: "DEMO_STORE_UNAVAILABLE",
-            message: "Demo local storage is unavailable",
-        });
-    }
     let next = match mode {
         AppMode::Demo => SessionState::demo(),
         AppMode::Cloud => SessionState::cloud(),

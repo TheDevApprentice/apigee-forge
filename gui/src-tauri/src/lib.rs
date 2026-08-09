@@ -80,10 +80,10 @@ pub struct GuiError {
 }
 
 pub fn build_state() -> GuiState {
-    let (Ok(client_id), Ok(username)) = (env::var(OAUTH_CLIENT_ID), env::var(OAUTH_USERNAME))
-    else {
+    let Ok(client_id) = env::var(OAUTH_CLIENT_ID) else {
         return GuiState::default();
     };
+    let username = env::var(OAUTH_USERNAME).unwrap_or_else(|_| "desktop".to_owned());
     let Ok(provider) =
         OAuthDesktopAuthProvider::from_config(OAuthDesktopConfig::new(client_id, username))
     else {

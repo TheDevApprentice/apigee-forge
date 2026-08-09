@@ -125,10 +125,9 @@ Le mode OAuth desktop utilise :
 
 ```text
 APIGEE_FORGE_OAUTH_CLIENT_ID
-APIGEE_FORGE_OAUTH_USERNAME
 ```
 
-Aucun credential ou token n’est accepté en argument CLI.
+`APIGEE_FORGE_OAUTH_USERNAME` reste optionnel et sert uniquement d’alias local du trousseau OS ; sa valeur par défaut est `desktop`. Aucun credential ou token n’est accepté en argument CLI.
 
 ### Composition root
 

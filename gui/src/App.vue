@@ -189,7 +189,7 @@ void templateEditor
           </BaseCard>
           <BaseErrorState v-if="authError" @retry="auth.refresh">
             <template #title>Authentication is not configured</template>
-            <template #hint>{{ authError }} Set APIGEE_FORGE_OAUTH_CLIENT_ID and APIGEE_FORGE_OAUTH_USERNAME before starting the GUI.</template>
+            <template #hint>{{ authError }} Set APIGEE_FORGE_OAUTH_CLIENT_ID before starting the GUI; the optional keyring alias defaults to desktop.</template>
           </BaseErrorState>
           <BaseCard v-if="isDemo" eyebrow="Demo workspace">
             <BaseEmptyState>
