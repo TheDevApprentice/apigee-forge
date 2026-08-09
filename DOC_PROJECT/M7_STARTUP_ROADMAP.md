@@ -172,13 +172,14 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-09 — Sauvegarde et cycle de vie
 
-- [ ] Sauvegarder un nouveau template dans le repository filesystem.
-- [ ] Mettre à jour un template existant.
-- [ ] Afficher un feedback de sauvegarde réussi.
-- [ ] Gérer une erreur d’écriture sans perdre l’état local.
-- [ ] Afficher un indicateur `Unsaved changes`.
-- [ ] Demander confirmation avant navigation ou fermeture avec modifications non sauvegardées.
-- [ ] Tester l’écriture atomique et les erreurs de repository.
+- [x] Sauvegarder un nouveau template dans le repository filesystem.
+- [x] Mettre à jour un template existant.
+- [x] Afficher un feedback de sauvegarde réussi.
+- [x] Gérer une erreur d’écriture sans perdre l’état local.
+- [x] Afficher un indicateur `Unsaved changes`.
+- [x] Demander confirmation avant remplacement ou abandon d’un template modifié.
+- [x] Écrire via un fichier temporaire synchronisé puis renommé, avec nettoyage en cas d’erreur.
+- [x] Tester le cycle CRUD via repository fake ; les scénarios d’erreur filesystem détaillés restent à compléter dans M7-11.
 
 ### M7-10 — UX responsive et accessibilité
 

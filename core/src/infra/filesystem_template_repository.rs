@@ -1,6 +1,6 @@
 use std::{
     ffi::OsStr,
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     path::{Path, PathBuf},
 };
 
@@ -35,8 +35,25 @@ impl FilesystemTemplateRepository {
 
     fn write_template(&self, path: &Path, template: &Template) -> Result<(), TemplateError> {
         template.validate()?;
-        let file = File::create(path).map_err(|_| TemplateError::Io)?;
-        serde_json::to_writer_pretty(file, template).map_err(|_| TemplateError::Serialization)
+        let temporary_path = path.with_extension(format!("json.tmp-{}", std::process::id()));
+        let result = (|| {
+            let mut file = OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .open(&temporary_path)
+                .map_err(|_| TemplateError::Io)?;
+            serde_json::to_writer_pretty(&mut file, template)
+                .map_err(|_| TemplateError::Serialization)?;
+            file.sync_all().map_err(|_| TemplateError::Io)?;
+            if path.exists() {
+                fs::remove_file(path).map_err(|_| TemplateError::Io)?;
+            }
+            fs::rename(&temporary_path, path).map_err(|_| TemplateError::Io)
+        })();
+        if result.is_err() {
+            let _ = fs::remove_file(&temporary_path);
+        }
+        result
     }
 }
 
