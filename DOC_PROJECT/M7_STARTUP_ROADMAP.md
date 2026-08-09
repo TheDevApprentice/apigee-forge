@@ -99,12 +99,12 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-02 — État d’édition Vue
 
-- [ ] Remplacer le placeholder `useTemplateEditor` par un état complet.
-- [ ] Gérer template courant, état initial, état modifié et état sauvegardé.
-- [ ] Gérer loading, empty, saving, saved et error.
-- [ ] Ajouter une action reset/undo vers le dernier état sauvegardé.
-- [ ] Ajouter une protection contre l’écrasement d’un template ouvert pendant une modification.
-- [ ] Tester les transitions de l’état d’édition.
+- [x] Remplacer le placeholder `useTemplateEditor` par un état complet.
+- [x] Gérer template courant, état initial, état modifié et état sauvegardé.
+- [x] Gérer loading, empty, saving, saved et error.
+- [x] Ajouter une action reset/undo vers le dernier état sauvegardé.
+- [x] Ajouter une protection contre l’écrasement d’un template ouvert pendant une modification.
+- [x] Tester les transitions de l’état d’édition.
 
 ### M7-03 — Liste et sélection des templates
 
