@@ -32,6 +32,7 @@ const activeView = ref('Dashboard')
 const selectedOrganization = ref('')
 const selectedEnvironment = ref('')
 const selectedProxy = ref<ProxyDto | null>(null)
+const proxyFilter = ref<'all' | 'deployed' | 'not-deployed'>('all')
 const auth = useAuth()
 const appSession = useSession()
 const selectedMode = appSession.selectedMode
@@ -110,6 +111,18 @@ function retryProxies() {
     void proxies.load(selectedOrganization.value, selectedEnvironment.value)
   }
 }
+
+function openProxy(proxy: ProxyDto) {
+  selectedProxy.value = proxy
+  activeView.value = 'Proxies'
+}
+
+const visibleProxies = computed(() => proxyList.value.filter((proxy) => {
+  if (proxyFilter.value === 'all') return true
+  return proxy.revisions.some((revision) => proxyFilter.value === 'deployed'
+    ? revision.status === 'Succeeded'
+    : revision.status === 'NotDeployed')
+}))
 
 void templateEditor
 </script>
@@ -271,8 +284,8 @@ void templateEditor
               <template #hint>{{ selectedEnvironment ? 'This organization has no visible proxies.' : 'Choose an organization and environment to load proxies.' }}</template>
             </BaseEmptyState>
             <ul v-else class="proxy-list">
-              <li v-for="proxy in proxyList" :key="proxy.name">
-                <button type="button" class="proxy-list__button" @click="selectedProxy = proxy">
+              <li v-for="proxy in visibleProxies" :key="proxy.name">
+                <button type="button" class="proxy-list__button" @click="openProxy(proxy)">
                   <span>{{ proxy.name }}</span>
                   <span class="proxy-list__revision">revision {{ proxy.revisions.at(-1)?.number || '—' }}</span>
                 </button>
@@ -289,6 +302,33 @@ void templateEditor
                   <BaseChip :label="revision.status === 'Succeeded' ? 'Deployed' : revision.status === 'NotDeployed' ? 'Not deployed' : revision.status" />
                 </li>
               </ul>
+            </div>
+          </BaseCard>
+        </template>
+        <template v-else-if="activeView === 'Proxies'">
+          <BaseCard eyebrow="Proxy catalogue">
+            <div class="proxy-filter" role="group" aria-label="Proxy deployment filter">
+              <button type="button" :class="{ 'proxy-filter--active': proxyFilter === 'all' }" @click="proxyFilter = 'all'">All</button>
+              <button type="button" :class="{ 'proxy-filter--active': proxyFilter === 'deployed' }" @click="proxyFilter = 'deployed'">Deployed</button>
+              <button type="button" :class="{ 'proxy-filter--active': proxyFilter === 'not-deployed' }" @click="proxyFilter = 'not-deployed'">Not deployed</button>
+            </div>
+            <BaseEmptyState v-if="!visibleProxies.length">
+              <template #title>No proxies match this filter</template>
+              <template #hint>Choose another deployment state or change the workspace context.</template>
+            </BaseEmptyState>
+            <ul v-else class="proxy-list">
+              <li v-for="proxy in visibleProxies" :key="proxy.name">
+                <button type="button" class="proxy-list__button" @click="selectedProxy = proxy">
+                  <span>{{ proxy.name }}</span>
+                  <span class="proxy-list__revision">{{ proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed' }}</span>
+                </button>
+              </li>
+            </ul>
+          </BaseCard>
+          <BaseCard v-if="selectedProxy" eyebrow="Selected proxy">
+            <div class="proxy-detail">
+              <h2>{{ selectedProxy.name }}</h2>
+              <p>{{ selectedProxy.source === 'cloud' ? 'Live Apigee proxy' : 'Demo proxy' }}</p>
             </div>
           </BaseCard>
         </template>
