@@ -733,9 +733,13 @@ void templateEditor
               </div>
               <BaseChip :label="templateEditor.status" />
             </div>
+            <div v-if="templateEditor.validationErrors.length" class="template-validation-errors">
+              <strong>Template validation</strong>
+              <button v-for="validationError in templateEditor.validationErrors" :key="`${validationError.code}-${validationError.field}`" type="button">{{ validationError.field || 'Template' }}: {{ validationError.message }}</button>
+            </div>
             <div class="template-editor-actions">
               <button type="button" :disabled="!templateEditor.dirty" @click="templateEditor.reset">Reset</button>
-              <button type="button" class="primary-action" :disabled="!templateEditor.dirty || templateEditor.status === 'saving'" @click="saveTemplate">Save</button>
+              <button type="button" class="primary-action" :disabled="!templateEditor.dirty || !metadataValid || templateEditor.validationErrors.length > 0 || templateEditor.status === 'saving'" @click="saveTemplate">Save</button>
             </div>
           </BaseCard>
         </template>

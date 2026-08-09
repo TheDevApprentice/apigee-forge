@@ -208,7 +208,8 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::get_template,
             commands::create_template,
             commands::update_template,
-            commands::delete_template
+            commands::delete_template,
+            commands::validate_template
         ])
         .run(tauri::generate_context!())
 }

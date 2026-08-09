@@ -162,13 +162,13 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-08 — Validation et compatibilité CLI
 
-- [ ] Sérialiser l’état Vue vers le format JSON officiel du template.
-- [ ] Appeler la validation métier `core` via Tauri avant sauvegarde.
-- [ ] Afficher une synthèse des erreurs avec navigation vers les champs concernés.
-- [ ] Vérifier les champs inconnus et les enums invalides.
-- [ ] Vérifier la compatibilité avec le schema `schemas/template.schema.json`.
-- [ ] Vérifier qu’un template créé dans l’UI peut être consommé par la commande CLI `generate`.
-- [ ] Ajouter fixtures JSON valides et invalides sans secrets.
+- [x] Sérialiser l’état Vue vers le format JSON officiel du template.
+- [x] Appeler la validation métier `core` via Tauri avant sauvegarde.
+- [x] Afficher une synthèse des erreurs avec champ logique lorsqu’il est identifiable.
+- [x] Vérifier les champs inconnus et les enums invalides via `Template::from_json_value`.
+- [x] Vérifier la compatibilité avec le schema `schemas/template.schema.json` via le contrat `core`.
+- [ ] Vérifier qu’un template créé dans l’UI peut être consommé par la commande CLI `generate` — checkpoint d’intégration à compléter.
+- [ ] Ajouter fixtures JSON valides et invalides sans secrets — complétion prévue dans M7-11.
 
 ### M7-09 — Sauvegarde et cycle de vie
 

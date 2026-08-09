@@ -1,7 +1,7 @@
 import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 import { computed, ref } from 'vue'
 import type { Invoke } from './useAuth'
-import type { TemplateDto } from '../types/bridge'
+import type { TemplateDto, TemplateValidationErrorDto } from '../types/bridge'
 
 export type TemplateEditorStatus = 'idle' | 'loading' | 'saving' | 'saved' | 'error'
 
@@ -21,6 +21,7 @@ export function useTemplateEditor(invoke: Invoke = defaultInvoke) {
   const saved = ref<TemplateDto | null>(null)
   const status = ref<TemplateEditorStatus>('idle')
   const error = ref<string | null>(null)
+  const validationErrors = ref<TemplateValidationErrorDto[]>([])
   const dirty = computed(() => !sameTemplate(current.value, saved.value))
 
   function setCurrent(template: TemplateDto | null) {
@@ -29,6 +30,7 @@ export function useTemplateEditor(invoke: Invoke = defaultInvoke) {
     saved.value = cloneTemplate(template)
     status.value = template ? 'saved' : 'idle'
     error.value = null
+    validationErrors.value = []
   }
 
   function startNew(data: Record<string, unknown> = {}) {
@@ -42,6 +44,7 @@ export function useTemplateEditor(invoke: Invoke = defaultInvoke) {
   function updateDraft(template: TemplateDto) {
     current.value = cloneTemplate(template)
     error.value = null
+    validationErrors.value = []
     if (status.value === 'saved') status.value = 'idle'
   }
 
@@ -64,8 +67,22 @@ export function useTemplateEditor(invoke: Invoke = defaultInvoke) {
     }
   }
 
-  async function save() {
+  async function validate() {
     if (!current.value) return false
+    try {
+      await invoke('validate_template', { data: current.value.data })
+      validationErrors.value = []
+      return true
+    } catch (caught) {
+      validationErrors.value = Array.isArray(caught) ? caught as TemplateValidationErrorDto[] : []
+      error.value = validationErrors.value[0]?.message || 'Template validation failed.'
+      status.value = 'error'
+      return false
+    }
+  }
+
+  async function save() {
+    if (!current.value || !(await validate())) return false
     status.value = 'saving'
     error.value = null
     try {
@@ -99,6 +116,7 @@ export function useTemplateEditor(invoke: Invoke = defaultInvoke) {
     saved,
     status,
     error,
+    validationErrors,
     dirty,
     setCurrent,
     startNew,

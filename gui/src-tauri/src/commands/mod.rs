@@ -168,6 +168,53 @@ fn template_dto(template: Template) -> Result<TemplateDto, GuiError> {
     Ok(TemplateDto { name, data })
 }
 
+fn template_validation_error(
+    error: apigee_forge_core::error::TemplateError,
+) -> TemplateValidationErrorDto {
+    let (code, message, field) = match error {
+        apigee_forge_core::error::TemplateError::InvalidName => (
+            "TEMPLATE_INVALID_NAME",
+            "Template name is invalid",
+            Some("metadata.name"),
+        ),
+        apigee_forge_core::error::TemplateError::InvalidContent => (
+            "TEMPLATE_INVALID_CONTENT",
+            "Template content is invalid",
+            None,
+        ),
+        apigee_forge_core::error::TemplateError::Serialization => (
+            "TEMPLATE_SERIALIZATION",
+            "Template could not be serialized",
+            None,
+        ),
+        apigee_forge_core::error::TemplateError::Io => (
+            "TEMPLATE_IO",
+            "Template storage could not be accessed",
+            None,
+        ),
+        apigee_forge_core::error::TemplateError::NotFound => {
+            ("TEMPLATE_NOT_FOUND", "Template was not found", None)
+        }
+        apigee_forge_core::error::TemplateError::AlreadyExists => (
+            "TEMPLATE_ALREADY_EXISTS",
+            "A template with this name already exists",
+            Some("metadata.name"),
+        ),
+    };
+    TemplateValidationErrorDto {
+        code,
+        message,
+        field,
+    }
+}
+
+#[tauri::command]
+pub fn validate_template(data: serde_json::Value) -> Result<(), Vec<TemplateValidationErrorDto>> {
+    Template::from_json_value(data)
+        .map(|_| ())
+        .map_err(|error| vec![template_validation_error(error)])
+}
+
 fn template_error(error: apigee_forge_core::error::TemplateError) -> GuiError {
     match error {
         apigee_forge_core::error::TemplateError::Io => GuiError {
