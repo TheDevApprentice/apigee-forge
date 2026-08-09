@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useAuth } from './composables/useAuth'
 import { useSession } from './composables/useSession'
-import type { AppMode, ProxyDto, SessionDto } from './types/bridge'
+import type { AppMode, ProxyDto, RevisionDetailDto, SessionDto } from './types/bridge'
 import { useOrganizations } from './composables/useOrganizations'
 import { useProxies } from './composables/useProxies'
 import { useRoles } from './composables/useRoles'
@@ -32,6 +32,10 @@ const activeView = ref('Dashboard')
 const selectedOrganization = ref('')
 const selectedEnvironment = ref('')
 const selectedProxy = ref<ProxyDto | null>(null)
+const selectedRevision = ref<number | null>(null)
+const revisionDetail = ref<RevisionDetailDto | null>(null)
+const revisionDetailLoading = ref(false)
+const revisionDetailError = ref<string | null>(null)
 const proxyFilter = ref<'all' | 'deployed' | 'not-deployed'>('all')
 const auth = useAuth()
 const appSession = useSession()
@@ -114,7 +118,32 @@ function retryProxies() {
 
 function openProxy(proxy: ProxyDto) {
   selectedProxy.value = proxy
+  selectedRevision.value = null
+  revisionDetail.value = null
   activeView.value = 'Proxies'
+}
+
+async function toggleRevision(revision: number) {
+  if (!selectedProxy.value || selectedRevision.value === revision) {
+    selectedRevision.value = null
+    revisionDetail.value = null
+    return
+  }
+  selectedRevision.value = revision
+  revisionDetail.value = null
+  revisionDetailError.value = null
+  revisionDetailLoading.value = true
+  try {
+    revisionDetail.value = await invoke<RevisionDetailDto>('get_revision_detail', {
+      organization: selectedOrganization.value,
+      proxy_name: selectedProxy.value.name,
+      revision,
+    })
+  } catch {
+    revisionDetailError.value = 'Revision details could not be loaded.'
+  } finally {
+    revisionDetailLoading.value = false
+  }
 }
 
 const visibleProxies = computed(() => proxyList.value.filter((proxy) => {
@@ -331,8 +360,22 @@ void templateEditor
               <h3>Revisions</h3>
               <ul class="proxy-revisions">
                 <li v-for="revision in selectedProxy.revisions" :key="revision.number">
-                  <span>Revision {{ revision.number }}</span>
-                  <BaseChip :label="revision.status === 'Succeeded' ? 'Deployed' : revision.status === 'NotDeployed' ? 'Not deployed' : revision.status" />
+                  <button type="button" class="revision-row__button" @click="toggleRevision(revision.number)">
+                    <span>Revision {{ revision.number }}</span>
+                    <BaseChip :label="revision.status === 'Succeeded' ? 'Deployed' : revision.status === 'NotDeployed' ? 'Not deployed' : revision.status" />
+                  </button>
+                  <div v-if="selectedRevision === revision.number" class="revision-detail">
+                    <BaseSpinner v-if="revisionDetailLoading" />
+                    <BaseErrorState v-else-if="revisionDetailError">
+                      <template #title>Revision unavailable</template>
+                      <template #hint>{{ revisionDetailError }}</template>
+                    </BaseErrorState>
+                    <dl v-else-if="revisionDetail" class="revision-detail__metadata">
+                      <div><dt>Revision</dt><dd>{{ revisionDetail.revision }}</dd></div>
+                      <div><dt>Proxy</dt><dd>{{ revisionDetail.proxy_name }}</dd></div>
+                      <div><dt>API fields</dt><dd>{{ Object.keys(revisionDetail.data).length }}</dd></div>
+                    </dl>
+                  </div>
                 </li>
               </ul>
             </div>

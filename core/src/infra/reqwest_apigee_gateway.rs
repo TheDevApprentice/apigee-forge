@@ -16,7 +16,7 @@ use crate::{
     error::GatewayError,
     ports::{
         auth_provider::AuthProvider, ApigeeDeploymentGateway, ApigeeGateway,
-        ApigeeProxyBundleGateway,
+        ApigeeProxyBundleGateway, ApigeeRevisionGateway,
     },
 };
 
@@ -261,6 +261,26 @@ impl ApigeeGateway for ReqwestApigeeGateway {
 
     async fn get_roles(&self, organization: &str) -> Result<Vec<ApigeeRole>, GatewayError> {
         Self::get_roles(self, organization).await
+    }
+}
+
+#[async_trait]
+impl ApigeeRevisionGateway for ReqwestApigeeGateway {
+    async fn get_revision(
+        &self,
+        organization: &str,
+        proxy_name: &str,
+        revision: u32,
+    ) -> Result<serde_json::Value, GatewayError> {
+        validate_segment(organization)?;
+        validate_proxy_name(proxy_name)?;
+        if revision == 0 {
+            return Err(GatewayError::InvalidResponse);
+        }
+        self.get_json(&format!(
+            "organizations/{organization}/apis/{proxy_name}/revisions/{revision}"
+        ))
+        .await
     }
 }
 

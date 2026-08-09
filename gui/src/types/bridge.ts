@@ -48,6 +48,14 @@ export type RoleDto = {
   source: AppMode
 }
 
+export type RevisionDetailDto = {
+  source: AppMode
+  organization: string
+  proxy_name: string
+  revision: number
+  data: Record<string, unknown>
+}
+
 export type GuiCommandError = {
   code: string
   message: string

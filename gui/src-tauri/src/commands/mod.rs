@@ -42,6 +42,15 @@ pub struct RoleDto {
     pub source: AppMode,
 }
 
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct RevisionDetailDto {
+    pub source: AppMode,
+    pub organization: String,
+    pub proxy_name: String,
+    pub revision: u32,
+    pub data: serde_json::Value,
+}
+
 pub fn session_dto(session: &SessionState) -> SessionDto {
     SessionDto {
         mode: session.mode,
@@ -345,6 +354,39 @@ pub async fn list_organizations(
         .into_iter()
         .map(|value| organization_dto(value, source))
         .collect())
+}
+
+#[tauri::command]
+pub async fn get_revision_detail(
+    state: State<'_, GuiState>,
+    organization: String,
+    proxy_name: String,
+    revision: u32,
+) -> Result<RevisionDetailDto, GuiError> {
+    let source = session_lock(&state)?.mode;
+    let gateway = state
+        .revision_gateway
+        .lock()
+        .map_err(|_| GuiError {
+            code: "STATE_ERROR",
+            message: "application state is unavailable",
+        })?
+        .clone()
+        .ok_or(GuiError {
+            code: "GATEWAY_CONFIGURATION",
+            message: "revision gateway is unavailable",
+        })?;
+    let data = gateway
+        .get_revision(&organization, &proxy_name, revision)
+        .await
+        .map_err(gateway_error)?;
+    Ok(RevisionDetailDto {
+        source,
+        organization,
+        proxy_name,
+        revision,
+        data,
+    })
 }
 
 #[tauri::command]

@@ -13,7 +13,10 @@ use apigee_forge_core::{
         InMemoryApigeeGateway, KeyringLocalKeyStore, ReqwestApigeeGateway,
         SqlCipherLocalStateStore,
     },
-    ports::{ApigeeDeploymentGateway, ApigeeGateway, AuthProvider, LocalStateStore},
+    ports::{
+        ApigeeDeploymentGateway, ApigeeGateway, ApigeeRevisionGateway, AuthProvider,
+        LocalStateStore,
+    },
     use_cases::SessionStatePersistence,
 };
 use async_trait::async_trait;
@@ -56,6 +59,8 @@ pub struct GuiState {
     pub cloud_gateway: Option<Arc<dyn ApigeeGateway>>,
     pub deployment_gateway: Mutex<Option<Arc<dyn ApigeeDeploymentGateway>>>,
     pub cloud_deployment_gateway: Option<Arc<dyn ApigeeDeploymentGateway>>,
+    pub revision_gateway: Mutex<Option<Arc<dyn ApigeeRevisionGateway>>>,
+    pub cloud_revision_gateway: Option<Arc<dyn ApigeeRevisionGateway>>,
     pub demo_gateway: Arc<InMemoryApigeeGateway>,
     pub auth_context: Mutex<Option<AuthContext>>,
     pub session: Mutex<SessionState>,
@@ -70,6 +75,8 @@ impl Default for GuiState {
             cloud_gateway: None,
             deployment_gateway: Mutex::new(None),
             cloud_deployment_gateway: None,
+            revision_gateway: Mutex::new(None),
+            cloud_revision_gateway: None,
             demo_gateway: Arc::new(InMemoryApigeeGateway::new()),
             auth_context: Mutex::new(None),
             session: Mutex::new(SessionState::cloud()),
@@ -114,6 +121,15 @@ pub fn build_state() -> GuiState {
         )
         .unwrap(),
     );
+    let cloud_revision_gateway: Arc<dyn ApigeeRevisionGateway> = Arc::new(
+        ReqwestApigeeGateway::new(
+            Url::parse("https://apigee.googleapis.com/v1/")
+                .map_err(|_| ())
+                .unwrap(),
+            provider.clone() as Arc<dyn AuthProvider>,
+        )
+        .unwrap(),
+    );
     let demo_gateway = Arc::new(InMemoryApigeeGateway::new());
     GuiState {
         auth_provider: Some(Arc::new(DesktopGuiAuthProvider { provider })),
@@ -121,6 +137,8 @@ pub fn build_state() -> GuiState {
         cloud_gateway: Some(cloud_gateway),
         deployment_gateway: Mutex::new(Some(cloud_deployment_gateway.clone())),
         cloud_deployment_gateway: Some(cloud_deployment_gateway),
+        revision_gateway: Mutex::new(Some(cloud_revision_gateway.clone())),
+        cloud_revision_gateway: Some(cloud_revision_gateway),
         demo_gateway,
         auth_context: Mutex::new(None),
         session: Mutex::new(SessionState::cloud()),
@@ -170,6 +188,7 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::auth_logout,
             commands::list_organizations,
             commands::get_roles,
+            commands::get_revision_detail,
             commands::list_environments,
             commands::list_proxies
         ])
