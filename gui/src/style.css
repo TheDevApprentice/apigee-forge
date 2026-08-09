@@ -150,10 +150,11 @@ button:focus-visible {
 
 .topbar {
   display: flex;
-  flex: 0 0 64px;
+  flex: 0 0 76px;
   align-items: center;
   justify-content: space-between;
-  min-height: 64px;
+  min-height: 76px;
+  gap: 24px;
   padding: 0 24px;
   background: var(--card-bg);
   border-bottom: 0.5px solid var(--border);
@@ -170,10 +171,53 @@ button:focus-visible {
   text-transform: uppercase;
 }
 
-.topbar__context {
-  margin: 5px 0 0;
+.topbar__workspace {
+  min-width: 0;
+}
+
+.workspace-selectors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.workspace-selectors label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.workspace-selectors select,
+.workspace-selectors__placeholder {
+  min-width: 140px;
+  padding: 6px 26px 6px 9px;
   color: var(--text-secondary);
-  font-size: 13px;
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.workspace-selectors select:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: 2px;
+}
+
+.workspace-selectors select:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.workspace-selector__separator {
+  color: var(--connector);
+}
+
+.workspace-selectors__placeholder {
+  display: inline-block;
+  color: var(--text-muted);
 }
 
 .topbar__context span {

@@ -85,6 +85,18 @@ watch(isAuthenticated, (authenticated) => {
   }
 })
 
+watch(organizationList, (list) => {
+  if (!selectedOrganization.value && list.length > 0) {
+    selectedOrganization.value = list[0].id
+  }
+})
+
+watch(environmentList, (list) => {
+  if (!selectedEnvironment.value && list.length > 0) {
+    selectedEnvironment.value = list[0].name
+  }
+})
+
 watch(selectedOrganization, (organization) => {
   selectedEnvironment.value = ''
   environmentList.value = []
@@ -185,13 +197,30 @@ void templateEditor
 
     <div class="app-frame">
       <header v-if="isAuthenticated" class="topbar">
-        <div>
+        <div class="topbar__workspace">
           <p class="topbar__eyebrow">Workspace</p>
-          <p class="topbar__context">
-            {{ selectedOrganization || 'No organization selected' }}
-            <span>/</span>
-            {{ selectedEnvironment || 'No environment selected' }}
-          </p>
+          <div class="workspace-selectors">
+            <label>
+              <span>Organization</span>
+              <select v-model="selectedOrganization" :disabled="organizationsLoading">
+                <option value="">Select an organization</option>
+                <option v-for="organization in organizationList" :key="organization.id" :value="organization.id">
+                  {{ organization.id }}
+                </option>
+              </select>
+            </label>
+            <span class="workspace-selector__separator">/</span>
+            <label>
+              <span>Environment</span>
+              <select v-if="selectedOrganization" v-model="selectedEnvironment" :disabled="organizationsLoading || !environmentList.length">
+                <option value="">Select an environment</option>
+                <option v-for="environment in environmentList" :key="environment.name" :value="environment.name">
+                  {{ environment.name }}
+                </option>
+              </select>
+              <span v-else class="workspace-selectors__placeholder">Select organization first</span>
+            </label>
+          </div>
         </div>
         <label class="mode-switcher">
           <span>Mode</span>
@@ -253,28 +282,6 @@ void templateEditor
 
         <template v-else>
           <template v-if="activeView === 'Dashboard'">
-            <BaseCard eyebrow="Workspace context">
-            <div class="context-grid">
-              <label>
-                <span>Organization</span>
-                <select v-model="selectedOrganization">
-                  <option value="">Select an organization</option>
-                  <option v-for="organization in organizationList" :key="organization.id" :value="organization.id">
-                    {{ organization.id }}
-                  </option>
-                </select>
-              </label>
-              <label>
-                <span>Environment</span>
-                <select v-if="selectedOrganization" v-model="selectedEnvironment">
-                  <option value="">Select an environment</option>
-                  <option v-for="environment in environmentList" :key="environment.name" :value="environment.name">
-                    {{ environment.name }}
-                  </option>
-                </select>
-                <span v-else class="select-placeholder">Select an organization first</span>
-              </label>
-            </div>
             <BaseSpinner v-if="organizationsLoading" />
             <BaseErrorState v-else-if="organizationsError" @retry="retryContext">
               <template #title>Workspace context unavailable</template>
@@ -288,7 +295,6 @@ void templateEditor
               <template #title>No Demo data loaded</template>
               <template #hint>The Demo dataset is intentionally deferred until the post-MVP tutorial.</template>
             </BaseEmptyState>
-          </BaseCard>
 
           <BaseCard eyebrow="Identity and role">
             <div class="identity-row">
