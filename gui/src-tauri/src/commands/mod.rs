@@ -55,6 +55,19 @@ pub struct RevisionDetailDto {
     pub data: serde_json::Value,
 }
 
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct TemplateDto {
+    pub name: String,
+    pub data: serde_json::Value,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct TemplateValidationErrorDto {
+    pub code: &'static str,
+    pub message: &'static str,
+    pub field: Option<&'static str>,
+}
+
 pub fn session_dto(session: &SessionState) -> SessionDto {
     SessionDto {
         mode: session.mode,
@@ -574,6 +587,7 @@ fn proxy_dto(value: Proxy, source: AppMode) -> ProxyDto {
 mod tests {
     use super::{
         session_dto, AuthDto, EnvironmentDto, OrganizationDto, ProxyDto, ProxyRevisionDto,
+        TemplateDto,
     };
     use apigee_forge_core::domain::{AppMode, GoogleIdentity, SessionState};
 
@@ -600,6 +614,10 @@ mod tests {
             source: AppMode::Cloud,
             name: "prod".to_owned(),
         })?;
+        let template = serde_json::to_value(TemplateDto {
+            name: "orders".to_owned(),
+            data: serde_json::json!({"metadata": {}, "flow": {}}),
+        })?;
         let proxy = serde_json::to_value(ProxyDto {
             source: AppMode::Cloud,
             name: "orders".to_owned(),
@@ -612,6 +630,8 @@ mod tests {
         assert_eq!(auth["mode"], "desktop");
         assert_eq!(organization["id"], "org-one");
         assert_eq!(environment["name"], "prod");
+        assert_eq!(template["name"], "orders");
+        assert!(template["data"].is_object());
         assert_eq!(proxy["revisions"][0]["number"], 1);
         assert_eq!(auth.as_object().map(|value| value.len()), Some(9));
         let session = serde_json::to_value(session_dto(&SessionState::cloud_authenticated(

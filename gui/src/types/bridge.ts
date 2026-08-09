@@ -60,6 +60,17 @@ export type RevisionDetailDto = {
   data: Record<string, unknown>
 }
 
+export type TemplateDto = {
+  name: string
+  data: Record<string, unknown>
+}
+
+export type TemplateValidationErrorDto = {
+  code: string
+  message: string
+  field: string | null
+}
+
 export type GuiCommandError = {
   code: string
   message: string

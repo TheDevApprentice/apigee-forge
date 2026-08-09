@@ -80,11 +80,11 @@ Templates → New template → Metadata → Flow → Policies → Validate → S
 
 ### M7-00 — Baseline et contrat de l’éditeur
 
-- [ ] Confirmer la branche `feature/m7-template-editor` créée depuis `dev` après clôture M6-Bis.
-- [ ] Définir le DTO bridge de template sérialisable entre Rust et Vue.
-- [ ] Définir les DTO d’erreur de validation avec chemin logique du champ et message utilisateur.
-- [ ] Documenter les invariants qui doivent rester identiques entre UI, `core` et schema JSON.
-- [ ] Ajouter les critères de non-régression M6-Bis : auth, contexte workspace et déconnexion.
+- [x] Confirmer la branche `feature/m7-template-editor` créée depuis `dev` après clôture M6-Bis.
+- [x] Définir le DTO bridge de template sérialisable entre Rust et Vue (`name` + `data` JSON validé par `core`).
+- [x] Définir le DTO d’erreur de validation avec code, message et chemin logique optionnel du champ.
+- [x] Documenter les invariants qui doivent rester identiques entre UI, `core` et schema JSON.
+- [x] Ajouter les critères de non-régression M6-Bis : auth, contexte workspace et déconnexion.
 
 ### M7-01 — Port Tauri de templates
 
