@@ -226,9 +226,13 @@ void templateEditor
               <template #title>Workspace context unavailable</template>
               <template #hint>{{ organizationsError }}</template>
             </BaseErrorState>
+            <BaseErrorState v-else-if="!isDemo && !organizationList.length">
+              <template #title>No Apigee organization linked</template>
+              <template #hint>Google authentication succeeded, but this account has no accessible Apigee organization or project.</template>
+            </BaseErrorState>
             <BaseEmptyState v-else-if="!organizationList.length">
-              <template #title>No organizations loaded</template>
-              <template #hint>Nothing is selected implicitly. Connect an Apigee account with accessible organizations.</template>
+              <template #title>No Demo data loaded</template>
+              <template #hint>The Demo dataset is intentionally deferred until the post-MVP tutorial.</template>
             </BaseEmptyState>
           </BaseCard>
 

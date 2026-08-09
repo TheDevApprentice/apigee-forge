@@ -26,7 +26,7 @@ describe('useAuth', () => {
     await auth.login()
 
     expect(auth.context.value).toBeNull()
-    expect(auth.error.value).toBe('Desktop authentication is unavailable.')
+    expect(auth.error.value).toBe('not configured')
     expect(invoke).toHaveBeenCalledWith('auth_login')
   })
 

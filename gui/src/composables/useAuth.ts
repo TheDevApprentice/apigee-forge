@@ -6,6 +6,14 @@ export type Invoke = <T>(command: string, args?: Record<string, unknown>) => Pro
 
 const defaultInvoke: Invoke = (command, args) => tauriInvoke(command, args)
 
+function errorMessage(error: unknown, fallback: string): string {
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string' && message.length > 0) return message
+  }
+  return fallback
+}
+
 export function useAuth(invoke: Invoke = defaultInvoke) {
   const context = ref<AuthDto | null>(null)
   const loading = ref(false)
@@ -29,8 +37,8 @@ export function useAuth(invoke: Invoke = defaultInvoke) {
     try {
       const restored = await invoke<AuthDto>('auth_restore')
       context.value = restored.authenticated ? restored : null
-    } catch {
-      error.value = 'Saved Google session could not be restored.'
+    } catch (caught) {
+      error.value = errorMessage(caught, 'Saved Google session could not be restored.')
     } finally {
       loading.value = false
     }
@@ -41,8 +49,8 @@ export function useAuth(invoke: Invoke = defaultInvoke) {
     error.value = null
     try {
       context.value = await invoke<AuthDto>('auth_login')
-    } catch {
-      error.value = 'Desktop authentication is unavailable.'
+    } catch (caught) {
+      error.value = errorMessage(caught, 'Desktop authentication is unavailable.')
     } finally {
       loading.value = false
     }
