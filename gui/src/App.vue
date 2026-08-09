@@ -185,12 +185,20 @@ const appInfo = {
   branch: 'feature/m6-bis-gui',
 }
 
+const profileIdentity = computed(() => authContext.value?.identity || (isDemo.value ? 'Demo workspace' : 'Not signed in'))
+const profileInitials = computed(() => {
+  if (isDemo.value) return 'DF'
+  const name = profileIdentity.value.split('@')[0].replace(/[._-]+/g, ' ').trim()
+  const parts = name.split(/\s+/).filter(Boolean)
+  return (parts.length > 1 ? `${parts[0][0]}${parts.at(-1)?.[0]}` : name.slice(0, 2)).toUpperCase() || 'AF'
+})
+
 void templateEditor
 </script>
 
 <template>
   <div class="app-shell" :class="{ 'app-shell--locked': !isAuthenticated }">
-    <aside v-if="isAuthenticated" class="sidebar" aria-label="Primary navigation">
+    <aside class="sidebar" aria-label="Primary navigation">
       <div class="brand-mark" aria-label="Apigee Forge" title="Apigee Forge">AF</div>
       <nav class="sidebar__nav">
         <BaseButton
@@ -206,7 +214,16 @@ void templateEditor
         </BaseButton>
       </nav>
       <div class="sidebar__footer">
-        <span class="connection-dot" :aria-label="isAuthenticated ? 'Connected workspace' : 'Offline workspace'" />
+        <div class="sidebar__profile" tabindex="0" :aria-label="`User profile: ${profileIdentity}`">
+          <div class="sidebar__avatar" aria-hidden="true">{{ profileInitials }}</div>
+          <span class="connection-dot" :class="{ 'connection-dot--connected': isAuthenticated }" />
+          <div class="sidebar__profile-tooltip" role="status">
+            <strong>{{ profileIdentity }}</strong>
+            <span>{{ isAuthenticated ? 'Connected' : 'Not connected' }}</span>
+            <span>{{ isDemo ? 'Demo mode' : 'Live mode' }}</span>
+            <span v-if="selectedOrganization">{{ selectedOrganization }} / {{ selectedEnvironment || 'No environment' }}</span>
+          </div>
+        </div>
       </div>
     </aside>
 

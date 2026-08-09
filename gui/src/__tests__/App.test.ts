@@ -56,7 +56,8 @@ describe('App M6-Bis flow', () => {
     await flushPromises()
 
     expect(wrapper.find('button.primary-action').exists()).toBe(true)
-    expect(wrapper.find('.sidebar').exists()).toBe(false)
+    expect(wrapper.find('.sidebar').exists()).toBe(true)
+    expect(wrapper.find('.connection-dot--connected').exists()).toBe(false)
     expect(wrapper.text()).toContain('Sign in with Google')
   })
 
