@@ -874,7 +874,7 @@ void templateEditor
               </div>
               <div class="template-workspace__actions">
                 <button type="button" @click="closeTemplateEditor">Back to templates</button>
-                <button type="button" class="primary-action" :disabled="!templateValid" @click="continueToReview">Continue to review</button>
+                <button type="button" class="primary-action" :disabled="!metadataValid" @click="nextEditorStep">Continue to flow</button>
               </div>
             </div>
             <nav class="template-steps" aria-label="Template editing steps">
@@ -932,8 +932,8 @@ void templateEditor
                 </li>
               </ol>
             </div>
-            <div class="wizard-navigation"><button type="button" :disabled="editorStep === 1" @click="previousEditorStep">Back</button><button type="button" class="primary-action" :disabled="editorStep === 3 && !templateValid" @click="nextEditorStep">{{ editorStep === 2 ? 'Continue to policies' : 'Continue to summary' }}</button></div>
             </template>
+            <div class="wizard-navigation"><button type="button" :disabled="editorStep === 1" @click="previousEditorStep">Back</button><button type="button" class="primary-action" :disabled="editorStep === 3 && !templateValid" @click="nextEditorStep">{{ editorStep === 2 ? 'Continue to policies' : 'Continue to summary' }}</button></div>
           </BaseCard>
           <BaseCard v-if="currentTemplate && editorStep === 4" eyebrow="4 · Ready to save">
             <div v-if="templateValid && !currentTemplateValidationErrors.length" class="wizard-ready-state"><div class="wizard-ready-state__icon">✓</div><h2>Congratulations, your template is ready.</h2><p>All details and policies are valid. Review the summary before saving this template locally.</p><button type="button" class="primary-action" @click="continueToReview">Continue to review</button></div>
