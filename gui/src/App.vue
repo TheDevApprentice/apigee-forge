@@ -369,37 +369,45 @@ function updatePolicyField(index: number, field: string, value: unknown) {
   updatePolicies(policies)
 }
 
+function metadataPayload(draft: TemplateMetadataDraft): Record<string, unknown> {
+  const metadata: Record<string, unknown> = {
+    name: draft.name,
+    owner: draft.owner,
+    naming_convention: draft.naming_convention,
+  }
+  if (draft.description?.trim()) metadata.description = draft.description
+  if (draft.target_environment) metadata.target_environment = draft.target_environment
+  return metadata
+}
+
 function updateMetadata(field: 'name' | 'description' | 'owner' | 'target_environment', value: string) {
   const current = templateEditor.current.value
   if (!current) return
-  const metadata = { ...metadataDraft.value, [field]: value }
-  templateEditor.updateDraft({ ...current, data: { ...current.data, metadata } })
+  const draft = { ...metadataDraft.value, [field]: value }
+  templateEditor.updateDraft({ ...current, data: { ...current.data, metadata: metadataPayload(draft) } })
 }
 
 function updatePrefix(value: string) {
   const current = templateEditor.current.value
   if (!current) return
-  templateEditor.updateDraft({
-    ...current,
-    data: { ...current.data, metadata: { ...metadataDraft.value, naming_convention: { ...metadataDraft.value.naming_convention, prefix: value } } },
-  })
+  const draft = { ...metadataDraft.value, naming_convention: { ...metadataDraft.value.naming_convention, prefix: value } }
+  templateEditor.updateDraft({ ...current, data: { ...current.data, metadata: metadataPayload(draft) } })
 }
 
 function updateNamingCase(value: string) {
   const current = templateEditor.current.value
   if (!current) return
-  templateEditor.updateDraft({
-    ...current,
-    data: { ...current.data, metadata: { ...metadataDraft.value, naming_convention: { ...metadataDraft.value.naming_convention, case: value } } },
-  })
+  const draft = { ...metadataDraft.value, naming_convention: { ...metadataDraft.value.naming_convention, case: value } }
+  templateEditor.updateDraft({ ...current, data: { ...current.data, metadata: metadataPayload(draft) } })
 }
 
 function normalizeCurrentTemplate() {
   const current = templateEditor.current.value
   if (!current) return
   const flow = current.data.flow as Record<string, any> | undefined
+  const metadata = metadataPayload(metadataDraft.value)
   const normalizeStage = (stage: Record<string, any> | undefined) => ({ request: Array.isArray(stage?.request) ? stage.request : [], response: Array.isArray(stage?.response) ? stage.response : [] })
-  templateEditor.updateDraft({ ...current, data: { ...current.data, flow: { ...flow, pre_flow: normalizeStage(flow?.pre_flow), post_flow: normalizeStage(flow?.post_flow), conditional_flows: Array.isArray(flow?.conditional_flows) ? flow.conditional_flows.map((item) => ({ ...item, ...normalizeStage(item) })) : [] } } })
+  templateEditor.updateDraft({ ...current, data: { ...current.data, metadata, flow: { ...flow, pre_flow: normalizeStage(flow?.pre_flow), post_flow: normalizeStage(flow?.post_flow), conditional_flows: Array.isArray(flow?.conditional_flows) ? flow.conditional_flows.map((item) => ({ ...item, ...normalizeStage(item) })) : [] } } })
 }
 
 async function saveTemplate() {
