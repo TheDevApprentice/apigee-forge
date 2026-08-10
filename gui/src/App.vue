@@ -216,6 +216,12 @@ const flowValidationErrors = computed<PolicyValidationError[]>(() => {
       errors.push({ field: `flow.${stage}`, message: 'Request and response policy lists are required.' })
     }
   }
+  const conditionalFlows = Array.isArray(flow?.conditional_flows) ? flow.conditional_flows : []
+  conditionalFlows.forEach((conditionalFlow, index) => {
+    if (!String(conditionalFlow.condition || '').trim()) {
+      errors.push({ field: `Conditional Flow ${index + 1} / condition`, message: 'A condition is required.' })
+    }
+  })
   return errors
 })
 
