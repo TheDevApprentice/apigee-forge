@@ -727,6 +727,68 @@ void templateEditor
           </BaseCard>
         </template>
 
+
+
+        <template v-else-if="activeView === 'Deployments'">
+          <BaseCard eyebrow="Deployments">
+            <BaseEmptyState>
+              <template #title>No deployment selected</template>
+              <template #hint>Select a proxy from the Dashboard to inspect its revisions.</template>
+            </BaseEmptyState>
+          </BaseCard>
+        </template>
+
+        <template v-else-if="activeView === 'Settings'">
+          <BaseCard eyebrow="Application">
+            <div class="settings-grid">
+              <div class="settings-item"><span>Version</span><strong>{{ appInfo.version }}</strong></div>
+              <div class="settings-item"><span>Build</span><strong>{{ appInfo.build }}</strong></div>
+              <div class="settings-item"><span>Technology</span><strong>{{ appInfo.stack }}</strong></div>
+              <div class="settings-item"><span>Source branch</span><strong>{{ appInfo.branch }}</strong></div>
+            </div>
+          </BaseCard>
+          <BaseCard eyebrow="User profile">
+            <div class="settings-profile">
+              <div class="settings-profile__avatar" aria-hidden="true">
+                <img v-if="profilePicture && !profileImageFailed" :src="profilePicture" alt="" @error="profileImageFailed = true" />
+                <span v-else>{{ profileInitials }}</span>
+              </div>
+              <div class="settings-profile__summary">
+                <strong>{{ profileName || profileIdentity }}</strong>
+                <span>{{ profileIdentity }}</span>
+                <span>{{ isAuthenticated ? 'Connected account' : 'Not connected' }}</span>
+              </div>
+              <div class="settings-profile__hover" role="status">
+                <strong>{{ profileName || profileIdentity }}</strong>
+                <span>{{ profileIdentity }}</span>
+                <span>{{ isDemo ? 'Demo mode' : 'Live mode' }}</span>
+                <span>{{ isAuthenticated ? 'Session active' : 'Sign in to connect' }}</span>
+              </div>
+            </div>
+          </BaseCard>
+          <BaseCard eyebrow="Workspace session">
+            <div class="settings-grid">
+              <div class="settings-item"><span>Mode</span><strong>{{ isDemo ? 'Demo' : 'Live' }}</strong></div>
+              <div class="settings-item"><span>Organization</span><strong>{{ selectedOrganization || 'Not selected' }}</strong></div>
+              <div class="settings-item"><span>Environment</span><strong>{{ selectedEnvironment || 'Not selected' }}</strong></div>
+              <div class="settings-item"><span>Identity</span><strong>{{ authContext?.identity || 'Local workspace' }}</strong></div>
+            </div>
+          </BaseCard>
+          <BaseCard eyebrow="Resources">
+            <nav class="resource-links" aria-label="Project resources">
+              <a href="https://github.com/TheDevApprentice/apigee-forge" target="_blank" rel="noreferrer">Project on GitHub</a>
+              <a href="https://cloud.google.com/apigee/docs" target="_blank" rel="noreferrer">Apigee documentation</a>
+              <a href="https://cloud.google.com/apigee/docs/reference/apis/apigee/rest" target="_blank" rel="noreferrer">Apigee Management API</a>
+              <a href="https://cloud.google.com/apigee/support" target="_blank" rel="noreferrer">Apigee support</a>
+            </nav>
+          </BaseCard>
+          <BaseCard eyebrow="Available configuration">
+            <BaseEmptyState>
+              <template #title>No editable preferences yet</template>
+              <template #hint>Authentication, storage and appearance preferences will appear here as they become configurable.</template>
+            </BaseEmptyState>
+          </BaseCard>
+        </template>
         <template v-else>
           <template v-if="activeView === 'Dashboard'">
             <BaseSpinner v-if="organizationsLoading" />
@@ -950,6 +1012,7 @@ void templateEditor
             <button v-for="policyError in policyValidationErrors" :key="`${policyError.field}-${policyError.message}`" type="button">{{ policyError.field }}: {{ policyError.message }}</button>
           </div>
           </TemplateEditorShell>
+          </template>
 
           <template v-if="templateView === 'review'">
             <BaseCard eyebrow="Review and save">
@@ -959,66 +1022,6 @@ void templateEditor
             </BaseCard>
           </template>
           </template>
-        </template>
-        <template v-else-if="activeView === 'Deployments'">
-          <BaseCard eyebrow="Deployments">
-            <BaseEmptyState>
-              <template #title>No deployment selected</template>
-              <template #hint>Select a proxy from the Dashboard to inspect its revisions.</template>
-            </BaseEmptyState>
-          </BaseCard>
-        </template>
-        <template v-else-if="activeView === 'Settings'">
-          <BaseCard eyebrow="Application">
-            <div class="settings-grid">
-              <div class="settings-item"><span>Version</span><strong>{{ appInfo.version }}</strong></div>
-              <div class="settings-item"><span>Build</span><strong>{{ appInfo.build }}</strong></div>
-              <div class="settings-item"><span>Technology</span><strong>{{ appInfo.stack }}</strong></div>
-              <div class="settings-item"><span>Source branch</span><strong>{{ appInfo.branch }}</strong></div>
-            </div>
-          </BaseCard>
-          <BaseCard eyebrow="User profile">
-            <div class="settings-profile">
-              <div class="settings-profile__avatar" aria-hidden="true">
-                <img v-if="profilePicture && !profileImageFailed" :src="profilePicture" alt="" @error="profileImageFailed = true" />
-                <span v-else>{{ profileInitials }}</span>
-              </div>
-              <div class="settings-profile__summary">
-                <strong>{{ profileName || profileIdentity }}</strong>
-                <span>{{ profileIdentity }}</span>
-                <span>{{ isAuthenticated ? 'Connected account' : 'Not connected' }}</span>
-              </div>
-              <div class="settings-profile__hover" role="status">
-                <strong>{{ profileName || profileIdentity }}</strong>
-                <span>{{ profileIdentity }}</span>
-                <span>{{ isDemo ? 'Demo mode' : 'Live mode' }}</span>
-                <span>{{ isAuthenticated ? 'Session active' : 'Sign in to connect' }}</span>
-              </div>
-            </div>
-          </BaseCard>
-          <BaseCard eyebrow="Workspace session">
-            <div class="settings-grid">
-              <div class="settings-item"><span>Mode</span><strong>{{ isDemo ? 'Demo' : 'Live' }}</strong></div>
-              <div class="settings-item"><span>Organization</span><strong>{{ selectedOrganization || 'Not selected' }}</strong></div>
-              <div class="settings-item"><span>Environment</span><strong>{{ selectedEnvironment || 'Not selected' }}</strong></div>
-              <div class="settings-item"><span>Identity</span><strong>{{ authContext?.identity || 'Local workspace' }}</strong></div>
-            </div>
-          </BaseCard>
-          <BaseCard eyebrow="Resources">
-            <nav class="resource-links" aria-label="Project resources">
-              <a href="https://github.com/TheDevApprentice/apigee-forge" target="_blank" rel="noreferrer">Project on GitHub</a>
-              <a href="https://cloud.google.com/apigee/docs" target="_blank" rel="noreferrer">Apigee documentation</a>
-              <a href="https://cloud.google.com/apigee/docs/reference/apis/apigee/rest" target="_blank" rel="noreferrer">Apigee Management API</a>
-              <a href="https://cloud.google.com/apigee/support" target="_blank" rel="noreferrer">Apigee support</a>
-            </nav>
-          </BaseCard>
-          <BaseCard eyebrow="Available configuration">
-            <BaseEmptyState>
-              <template #title>No editable preferences yet</template>
-              <template #hint>Authentication, storage and appearance preferences will appear here as they become configurable.</template>
-            </BaseEmptyState>
-          </BaseCard>
-        </template>
         </template>
         <BaseModal v-if="modal" :open="true" :title="modal.title" :message="modal.message" :confirm-label="modal.confirmLabel" :tone="modal.tone" @close="modal = null" @confirm="modalAction?.()" />
       </main>
