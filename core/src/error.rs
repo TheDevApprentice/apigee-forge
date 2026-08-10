@@ -58,6 +58,8 @@ pub enum AuthError {
     CredentialStore,
     #[error("the OAuth token exchange failed")]
     TokenExchange,
+    #[error("Google did not return a refresh token for offline session persistence")]
+    RefreshTokenUnavailable,
     #[error("the Google identity could not be resolved")]
     IdentityLookup,
 }

@@ -133,6 +133,10 @@ fn auth_error(error: AuthError) -> GuiError {
             "AUTH_TOKEN_EXCHANGE",
             "Google rejected the OAuth token exchange",
         ),
+        AuthError::RefreshTokenUnavailable => (
+            "AUTH_REFRESH_TOKEN_MISSING",
+            "Google did not return a refresh token. Offline session persistence is unavailable; sign in again and accept consent.",
+        ),
         AuthError::IdentityLookup => (
             "AUTH_IDENTITY_LOOKUP",
             "Google sign-in succeeded but identity lookup failed",

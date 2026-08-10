@@ -284,18 +284,16 @@ impl OAuthDesktopAuthProvider {
                 }
                 AuthError::TokenExchange
             })?;
-        let refresh_token = token.refresh_token().map(|token| token.secret().to_owned());
+        let refresh_token = token
+            .refresh_token()
+            .map(|token| token.secret().to_owned())
+            .ok_or(AuthError::RefreshTokenUnavailable)?;
         if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
-            eprintln!(
-                "OAuth interactive login: refresh token returned={}",
-                refresh_token.is_some()
-            );
+            eprintln!("OAuth interactive login: refresh token returned=true");
         }
-        if let Some(refresh_token) = refresh_token {
-            self.refresh_tokens.save(&refresh_token)?;
-            if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
-                eprintln!("OAuth interactive login: refresh token saved to credential store");
-            }
+        self.refresh_tokens.save(&refresh_token)?;
+        if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
+            eprintln!("OAuth interactive login: refresh token saved to credential store");
         }
 
         let access_token = access_token_from_response(&token)?;
