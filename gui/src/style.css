@@ -1141,6 +1141,77 @@ button:focus-visible {
   border-color: #dfb2b2;
 }
 
+.template-editor-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.template-editor-shell__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px;
+  background: var(--card-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+}
+
+.template-editor-shell__header h2 {
+  margin: 6px 0 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.template-editor-shell__header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.template-editor-shell__back {
+  padding: 8px 11px;
+  color: var(--text-secondary);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.template-editor-shell__content {
+  display: grid;
+  gap: 14px;
+}
+
+.template-editor-shell__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 0 0;
+}
+
+.template-editor-shell__actions button {
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.template-editor-shell__actions button:hover:not(:disabled),
+.template-editor-shell__back:hover {
+  color: var(--accent-active);
+  border-color: var(--accent-active);
+}
+
+.template-editor-shell__actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .template-catalogue__intro,
 .editor-section__intro {
   margin: -4px 0 16px;
@@ -1806,6 +1877,7 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .template-editor-shell__header,
   .template-workspace-header,
   .template-toolbar,
   .policy-editor__toolbar,

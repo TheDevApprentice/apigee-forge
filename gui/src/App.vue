@@ -15,6 +15,7 @@ import BaseEmptyState from './components/base/BaseEmptyState.vue'
 import BaseModal from './components/base/BaseModal.vue'
 import BaseErrorState from './components/base/BaseErrorState.vue'
 import BaseSpinner from './components/base/BaseSpinner.vue'
+import TemplateEditorShell from './components/template/TemplateEditorShell.vue'
 
 type NavigationItem = {
   label: string
@@ -885,23 +886,8 @@ void templateEditor
           </BaseCard>
           </template>
           <template v-if="templateView === 'editor'">
-          <BaseCard v-if="currentTemplate && editorStep === 1" eyebrow="Template workspace">
-            <div class="template-workspace-header">
-              <div>
-                <span class="template-workspace__eyebrow">Editing template</span>
-                <h2>{{ metadataDraft.name || 'New template' }}</h2>
-                <p>Complete the details, configure the flow, then save your template.</p>
-              </div>
-              <div class="template-workspace__actions">
-                <button type="button" @click="closeTemplateEditor">Back to templates</button>
-              </div>
-            </div>
-            <nav class="template-steps" aria-label="Template editing steps">
-              <span class="template-step" :class="{ 'template-step--active': editorStep === 1, 'template-step--complete': editorStep > 1 }"><b>1</b> Details</span>
-              <span class="template-step" :class="{ 'template-step--active': editorStep === 2, 'template-step--complete': editorStep > 2 }"><b>2</b> Flow</span>
-              <span class="template-step" :class="{ 'template-step--active': editorStep === 3, 'template-step--complete': editorStep > 3 }"><b>3</b> Policies</span>
-              <span class="template-step" :class="{ 'template-step--active': editorStep === 4 }"><b>4</b> Save</span>
-            </nav>
+          <TemplateEditorShell :title="metadataDraft.name" :step="editorStep" :next-label="editorStep === 1 ? 'Continue to flow' : editorStep === 2 ? 'Continue to policies' : 'Continue to summary'" :next-disabled="editorStep === 1 ? !metadataValid : editorStep === 2 ? flowValidationErrors.length > 0 : !templateValid" :show-next="editorStep !== 4" @back="editorStep === 1 ? closeTemplateEditor() : previousEditorStep()" @next="editorStep === 4 ? continueToReview() : nextEditorStep()">
+            <BaseCard v-if="currentTemplate && editorStep === 1" eyebrow="1 · Details">
             <div class="metadata-form">
               <label for="template-name"><span>Name</span><input id="template-name" :value="metadataDraft.name" :aria-invalid="Boolean(metadataErrors.name)" aria-describedby="template-name-error" @input="updateMetadata('name', ($event.target as HTMLInputElement).value)" /><small id="template-name-error" v-if="metadataErrors.name">{{ metadataErrors.name }}</small></label>
               <label for="template-description"><span>Description</span><textarea id="template-description" :value="metadataDraft.description" rows="2" @input="updateMetadata('description', ($event.target as HTMLTextAreaElement).value)" /></label>
@@ -910,7 +896,6 @@ void templateEditor
               <label for="template-prefix"><span>Name prefix</span><input id="template-prefix" :value="metadataDraft.naming_convention.prefix" :aria-invalid="Boolean(metadataErrors.prefix)" aria-describedby="template-prefix-error" @input="updatePrefix(($event.target as HTMLInputElement).value)" /><small id="template-prefix-error" v-if="metadataErrors.prefix">{{ metadataErrors.prefix }}</small></label>
               <label for="template-name-case"><span>Name case</span><select id="template-name-case" :value="metadataDraft.naming_convention.case" @change="updateNamingCase(($event.target as HTMLSelectElement).value)"><option value="kebab-case">kebab-case</option><option value="snake_case">snake_case</option><option value="camelCase">camelCase</option></select></label>
             </div>
-            <div class="wizard-navigation"><button type="button" :disabled="!metadataValid" @click="nextEditorStep">Continue to flow</button></div>
           </BaseCard>
           <BaseCard v-if="currentTemplate && (editorStep === 2 || editorStep === 3)" :eyebrow="editorStep === 2 ? '2 · Flow' : '3 · Policies'">
             <template v-if="editorStep === 2">
@@ -953,25 +938,26 @@ void templateEditor
               </ol>
             </div>
             </template>
-            <div class="wizard-navigation"><button type="button" :disabled="editorStep === 1" @click="previousEditorStep">Back</button><button type="button" class="primary-action" :disabled="editorStep === 3 && !templateValid" @click="nextEditorStep">{{ editorStep === 2 ? 'Continue to policies' : 'Continue to summary' }}</button></div>
           </BaseCard>
           <BaseCard v-if="currentTemplate && editorStep === 4" eyebrow="4 · Ready to save">
             <div v-if="templateValid && !currentTemplateValidationErrors.length" class="wizard-ready-state"><div class="wizard-ready-state__icon">✓</div><h2>Congratulations, your template is ready.</h2><p>All details and policies are valid. Review the summary before saving this template locally.</p><button type="button" class="primary-action" @click="continueToReview">Continue to review</button></div>
             <div v-else class="wizard-error-state" role="alert"><div class="wizard-error-state__icon">!</div><h2>Something needs your attention.</h2><p>Fix the validation errors below before continuing to review.</p></div>
-            <div class="wizard-navigation"><button type="button" @click="previousEditorStep">Back to policies</button><button v-if="templateValid && !currentTemplateValidationErrors.length" type="button" class="primary-action" @click="continueToReview">Continue to review</button></div>
+            <div class="wizard-navigation"><button type="button" @click="previousEditorStep">Back to policies</button></div>
           </BaseCard>
           <div v-if="currentTemplateValidationErrors.length || policyValidationErrors.length" class="template-validation-errors" role="alert" aria-live="assertive">
             <strong>Template validation</strong>
             <button v-for="validationError in currentTemplateValidationErrors" :key="`${validationError.code}-${validationError.field}`" type="button">{{ validationError.field || 'Template' }}: {{ validationError.message }}</button>
             <button v-for="policyError in policyValidationErrors" :key="`${policyError.field}-${policyError.message}`" type="button">{{ policyError.field }}: {{ policyError.message }}</button>
           </div>
-          </template>
+          </TemplateEditorShell>
+
           <template v-if="templateView === 'review'">
             <BaseCard eyebrow="Review and save">
               <div class="review-header"><div><h2>Ready to save</h2><p>Check the template summary before writing it to local storage.</p></div><BaseChip :label="currentTemplateDirty ? 'Unsaved changes' : 'Saved'" /></div>
               <div class="review-grid"><div><span>Name</span><strong>{{ metadataDraft.name || 'Missing' }}</strong></div><div><span>Owner</span><strong>{{ metadataDraft.owner || 'Missing' }}</strong></div><div><span>Target</span><strong>{{ metadataDraft.target_environment || 'None' }}</strong></div><div><span>Policies</span><strong>{{ totalPolicyCount }}</strong></div></div>
               <div class="review-actions"><button type="button" @click="templateView = 'editor'">Back to editor</button><button type="button" class="primary-action" :disabled="!templateValid || !currentTemplateDirty || currentTemplateStatus === 'saving'" @click="saveTemplate">{{ currentTemplateStatus === 'saving' ? 'Saving…' : 'Save & finish' }}</button></div>
             </BaseCard>
+          </template>
           </template>
         </template>
         <template v-else-if="activeView === 'Deployments'">
