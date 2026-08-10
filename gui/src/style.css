@@ -1301,10 +1301,59 @@ button:focus-visible {
   color: var(--accent-text);
 }
 
-.template-step--active b {
+.template-step--active b,
+.template-step--complete b {
+  color: var(--accent-text);
   background: var(--accent-bg);
   border-color: var(--accent-active);
 }
+
+.template-step--complete {
+  color: var(--accent-text);
+}
+
+.wizard-navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.wizard-navigation button {
+  padding: 8px 12px;
+  color: var(--text-secondary);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.wizard-ready-state,
+.wizard-error-state {
+  padding: 28px 18px;
+  text-align: center;
+}
+
+.wizard-ready-state__icon,
+.wizard-error-state__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 14px;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 20px;
+}
+
+.wizard-ready-state__icon { color: var(--accent-text); background: var(--accent-bg); }
+.wizard-error-state__icon { color: #a44747; background: #f8e7e7; }
+
+.wizard-ready-state h2,
+.wizard-error-state h2 { margin: 0; font-size: 18px; font-weight: 500; }
+
+.wizard-ready-state p,
+.wizard-error-state p { margin: 8px auto 18px; max-width: 520px; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
 
 .template-toolbar {
   display: flex;

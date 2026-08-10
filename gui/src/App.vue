@@ -50,6 +50,7 @@ const templatesLoading = ref(false)
 const templatesError = ref<string | null>(null)
 const templateDeletePending = ref<string | null>(null)
 const templateView = ref<'catalogue' | 'editor' | 'review'>('catalogue')
+const editorStep = ref<1 | 2 | 3 | 4>(1)
 const currentTemplate = templateEditor.current
 const currentTemplateDirty = templateEditor.dirty
 const currentTemplateStatus = templateEditor.status
@@ -401,7 +402,10 @@ async function saveTemplate() {
 }
 
 async function selectTemplate(name: string) {
-  if (await templateEditor.load(name)) templateView.value = 'editor'
+  if (await templateEditor.load(name)) {
+    editorStep.value = 1
+    templateView.value = 'editor'
+  }
 }
 
 async function closeTemplateEditor() {
@@ -416,11 +420,21 @@ async function closeTemplateEditor() {
   templateView.value = 'catalogue'
 }
 
-async function continueToReview() {
+async function nextEditorStep() {
   normalizeCurrentTemplate()
-  if (!templateValid.value || !templateEditor.current.value) return
-  const valid = await templateEditor.validate()
-  if (valid) templateView.value = 'review'
+  const valid = editorStep.value === 1 ? metadataValid.value : editorStep.value === 2 ? flowValidationErrors.value.length === 0 : templateValid.value
+  if (!valid) return
+  if (editorStep.value < 4) editorStep.value = (editorStep.value + 1) as 1 | 2 | 3 | 4
+  if (editorStep.value === 4 && !(await templateEditor.validate())) return
+}
+
+async function continueToReview() {
+  await nextEditorStep()
+  if (editorStep.value === 4 && templateValid.value) templateView.value = 'review'
+}
+
+function previousEditorStep() {
+  if (editorStep.value > 1) editorStep.value = (editorStep.value - 1) as 1 | 2 | 3 | 4
 }
 async function newTemplate() {
   activeView.value = 'Templates'
@@ -428,11 +442,13 @@ async function newTemplate() {
   if (templateEditor.dirty.value) {
     await askConfirmation('Start a new template?', 'Your unsaved changes will be discarded.', () => {
       templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: { request: [], response: [] }, post_flow: { request: [], response: [] } } })
+      editorStep.value = 1
       templateView.value = 'editor'
     })
     return
   }
   templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: { request: [], response: [] }, post_flow: { request: [], response: [] } } })
+  editorStep.value = 1
   templateView.value = 'editor'
 }
 
@@ -849,7 +865,7 @@ void templateEditor
           </BaseCard>
           </template>
           <template v-if="templateView === 'editor'">
-          <BaseCard v-if="currentTemplate" eyebrow="Template workspace">
+          <BaseCard v-if="currentTemplate && editorStep === 1" eyebrow="Template workspace">
             <div class="template-workspace-header">
               <div>
                 <span class="template-workspace__eyebrow">Editing template</span>
@@ -862,10 +878,10 @@ void templateEditor
               </div>
             </div>
             <nav class="template-steps" aria-label="Template editing steps">
-              <span class="template-step template-step--active"><b>1</b> Details</span>
-              <span class="template-step"><b>2</b> Flow</span>
-              <span class="template-step"><b>3</b> Policies</span>
-              <span class="template-step"><b>4</b> Save</span>
+              <span class="template-step" :class="{ 'template-step--active': editorStep === 1, 'template-step--complete': editorStep > 1 }"><b>1</b> Details</span>
+              <span class="template-step" :class="{ 'template-step--active': editorStep === 2, 'template-step--complete': editorStep > 2 }"><b>2</b> Flow</span>
+              <span class="template-step" :class="{ 'template-step--active': editorStep === 3, 'template-step--complete': editorStep > 3 }"><b>3</b> Policies</span>
+              <span class="template-step" :class="{ 'template-step--active': editorStep === 4 }"><b>4</b> Save</span>
             </nav>
             <div class="metadata-form">
               <label for="template-name"><span>Name</span><input id="template-name" :value="metadataDraft.name" :aria-invalid="Boolean(metadataErrors.name)" aria-describedby="template-name-error" @input="updateMetadata('name', ($event.target as HTMLInputElement).value)" /><small id="template-name-error" v-if="metadataErrors.name">{{ metadataErrors.name }}</small></label>
@@ -876,8 +892,9 @@ void templateEditor
               <label for="template-name-case"><span>Name case</span><select id="template-name-case" :value="metadataDraft.naming_convention.case" @change="updateNamingCase(($event.target as HTMLSelectElement).value)"><option value="kebab-case">kebab-case</option><option value="snake_case">snake_case</option><option value="camelCase">camelCase</option></select></label>
             </div>
           </BaseCard>
-          <BaseCard v-if="currentTemplate" eyebrow="2 · Flow and policies">
-            <p class="editor-section__intro">Choose where a policy runs, then add and configure it in the selected request or response lane.</p>
+          <BaseCard v-if="currentTemplate && (editorStep === 2 || editorStep === 3)" :eyebrow="editorStep === 2 ? '2 · Flow' : '3 · Policies'">
+            <template v-if="editorStep === 2">
+            <p class="editor-section__intro">Choose the flow stage where policies will run.</p>
             <div class="flow-canvas" aria-label="Template flow stages">
               <button type="button" class="flow-stage" :class="{ 'flow-stage--selected': selectedFlow === 'pre_flow' }" @click="selectedFlow = 'pre_flow'"><strong>PreFlow</strong><span>{{ policyCount(flowDraft.pre_flow) }} policies</span></button>
               <div v-for="(flow, index) in flowDraft.conditional_flows" :key="`conditional-${index}`" class="flow-stage flow-stage--conditional" :class="{ 'flow-stage--selected': selectedFlow === `conditional_${index}` }">
@@ -894,6 +911,9 @@ void templateEditor
               <span>Request: {{ selectedStage.request?.length || 0 }} policies</span>
               <span>Response: {{ selectedStage.response?.length || 0 }} policies</span>
             </div>
+            </template>
+            <template v-else>
+            <p class="editor-section__intro">Add policies to the selected request or response lane.</p>
             <div class="policy-editor">
               <div class="policy-editor__toolbar">
                 <div class="policy-lanes"><button type="button" :class="{ 'policy-lane--active': selectedLane === 'request' }" @click="selectedLane = 'request'">Request ({{ selectedStage.request?.length || 0 }})</button><button type="button" :class="{ 'policy-lane--active': selectedLane === 'response' }" @click="selectedLane = 'response'">Response ({{ selectedStage.response?.length || 0 }})</button></div>
@@ -912,7 +932,12 @@ void templateEditor
                 </li>
               </ol>
             </div>
-            <div class="flow-canvas__continue"><button type="button" class="primary-action" :disabled="!templateValid" @click="continueToReview">Continue to review</button></div>
+            <div class="wizard-navigation"><button type="button" :disabled="editorStep === 1" @click="previousEditorStep">Back</button><button type="button" class="primary-action" :disabled="editorStep === 3 && !templateValid" @click="nextEditorStep">{{ editorStep === 2 ? 'Continue to policies' : 'Continue to summary' }}</button></div>
+            </template>
+          </BaseCard>
+          <BaseCard v-if="currentTemplate && editorStep === 4" eyebrow="4 · Ready to save">
+            <div v-if="templateValid && !currentTemplateValidationErrors.length" class="wizard-ready-state"><div class="wizard-ready-state__icon">✓</div><h2>Congratulations, your template is ready.</h2><p>All details and policies are valid. Review the summary before saving this template locally.</p><button type="button" class="primary-action" @click="continueToReview">Continue to review</button></div>
+            <div v-else class="wizard-error-state" role="alert"><div class="wizard-error-state__icon">!</div><h2>Something needs your attention.</h2><p>Fix the validation errors below before continuing to review.</p></div>
           </BaseCard>
           <div v-if="currentTemplateValidationErrors.length || policyValidationErrors.length" class="template-validation-errors" role="alert" aria-live="assertive">
             <strong>Template validation</strong>
