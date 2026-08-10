@@ -216,12 +216,14 @@ const flowValidationErrors = computed<PolicyValidationError[]>(() => {
       errors.push({ field: `flow.${stage}`, message: 'Request and response policy lists are required.' })
     }
   }
-  const conditionalFlows = Array.isArray(flow?.conditional_flows) ? flow.conditional_flows : []
-  conditionalFlows.forEach((conditionalFlow, index) => {
-    if (!String(conditionalFlow.condition || '').trim()) {
-      errors.push({ field: `Conditional Flow ${index + 1} / condition`, message: 'A condition is required.' })
-    }
-  })
+  if (!Array.isArray(flow?.conditional_flows)) {
+    errors.push({ field: 'flow.conditional_flows', message: 'Conditional flows must be a list.' })
+  } else {
+    flow.conditional_flows.forEach((conditional: Record<string, any>, index: number) => {
+      if (!Object.prototype.hasOwnProperty.call(conditional, 'condition')) errors.push({ field: `flow.conditional_flows.${index}.condition`, message: 'Conditional flow condition is required.' })
+      if (!Array.isArray(conditional.request) || !Array.isArray(conditional.response)) errors.push({ field: `flow.conditional_flows.${index}`, message: 'Request and response policy lists are required.' })
+    })
+  }
   return errors
 })
 
@@ -447,13 +449,13 @@ async function newTemplate() {
   resetContentScroll()
   if (templateEditor.dirty.value) {
     await askConfirmation('Start a new template?', 'Your unsaved changes will be discarded.', () => {
-      templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: { request: [], response: [] }, post_flow: { request: [], response: [] } } })
+      templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: { request: [], response: [] }, conditional_flows: [], post_flow: { request: [], response: [] } } })
       editorStep.value = 1
       templateView.value = 'editor'
     })
     return
   }
-  templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: { request: [], response: [] }, post_flow: { request: [], response: [] } } })
+  templateEditor.startNew({ metadata: { name: '', owner: '', naming_convention: { prefix: '', case: 'kebab-case' } }, flow: { pre_flow: { request: [], response: [] }, conditional_flows: [], post_flow: { request: [], response: [] } } })
   editorStep.value = 1
   templateView.value = 'editor'
 }
@@ -880,7 +882,6 @@ void templateEditor
               </div>
               <div class="template-workspace__actions">
                 <button type="button" @click="closeTemplateEditor">Back to templates</button>
-                <button type="button" class="primary-action" :disabled="!metadataValid" @click="nextEditorStep">Continue to flow</button>
               </div>
             </div>
             <nav class="template-steps" aria-label="Template editing steps">
@@ -897,6 +898,7 @@ void templateEditor
               <label for="template-prefix"><span>Name prefix</span><input id="template-prefix" :value="metadataDraft.naming_convention.prefix" :aria-invalid="Boolean(metadataErrors.prefix)" aria-describedby="template-prefix-error" @input="updatePrefix(($event.target as HTMLInputElement).value)" /><small id="template-prefix-error" v-if="metadataErrors.prefix">{{ metadataErrors.prefix }}</small></label>
               <label for="template-name-case"><span>Name case</span><select id="template-name-case" :value="metadataDraft.naming_convention.case" @change="updateNamingCase(($event.target as HTMLSelectElement).value)"><option value="kebab-case">kebab-case</option><option value="snake_case">snake_case</option><option value="camelCase">camelCase</option></select></label>
             </div>
+            <div class="wizard-navigation"><button type="button" :disabled="!metadataValid" @click="nextEditorStep">Continue to flow</button></div>
           </BaseCard>
           <BaseCard v-if="currentTemplate && (editorStep === 2 || editorStep === 3)" :eyebrow="editorStep === 2 ? '2 · Flow' : '3 · Policies'">
             <template v-if="editorStep === 2">
@@ -944,6 +946,7 @@ void templateEditor
           <BaseCard v-if="currentTemplate && editorStep === 4" eyebrow="4 · Ready to save">
             <div v-if="templateValid && !currentTemplateValidationErrors.length" class="wizard-ready-state"><div class="wizard-ready-state__icon">✓</div><h2>Congratulations, your template is ready.</h2><p>All details and policies are valid. Review the summary before saving this template locally.</p><button type="button" class="primary-action" @click="continueToReview">Continue to review</button></div>
             <div v-else class="wizard-error-state" role="alert"><div class="wizard-error-state__icon">!</div><h2>Something needs your attention.</h2><p>Fix the validation errors below before continuing to review.</p></div>
+            <div class="wizard-navigation"><button type="button" @click="previousEditorStep">Back to policies</button><button v-if="templateValid && !currentTemplateValidationErrors.length" type="button" class="primary-action" @click="continueToReview">Continue to review</button></div>
           </BaseCard>
           <div v-if="currentTemplateValidationErrors.length || policyValidationErrors.length" class="template-validation-errors" role="alert" aria-live="assertive">
             <strong>Template validation</strong>

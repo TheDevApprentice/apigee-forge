@@ -39,6 +39,7 @@ export function useTemplateEditor(invoke: Invoke = defaultInvoke) {
     saved.value = null
     status.value = 'idle'
     error.value = null
+    validationErrors.value = []
   }
 
   function updateDraft(template: TemplateDto) {
