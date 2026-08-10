@@ -247,9 +247,8 @@ impl OAuthDesktopAuthProvider {
         let redirect_address = listener.local_addr().map_err(|_| AuthError::Callback)?;
         let redirect_url = format!("http://{}", redirect_address);
         let client = self.oauth_client(redirect_url)?;
-        let has_refresh_token = self.refresh_tokens.load()?.is_some();
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
-        let mut authorization_request = client
+        let authorization_request = client
             .authorize_url(CsrfToken::new_random)
             .add_extra_param("access_type", "offline")
             .add_scope(Scope::new("openid".to_owned()))
@@ -259,9 +258,7 @@ impl OAuthDesktopAuthProvider {
                 "https://www.googleapis.com/auth/cloud-platform".to_owned(),
             ))
             .set_pkce_challenge(pkce_challenge);
-        if !has_refresh_token {
-            authorization_request = authorization_request.add_extra_param("prompt", "consent");
-        }
+        let authorization_request = authorization_request.add_extra_param("prompt", "consent");
         let (authorization_url, csrf_token) = authorization_request.url();
 
         self.browser
@@ -284,8 +281,17 @@ impl OAuthDesktopAuthProvider {
                 AuthError::TokenExchange
             })?;
         let refresh_token = token.refresh_token().map(|token| token.secret().to_owned());
+        if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
+            eprintln!(
+                "OAuth interactive login: refresh token returned={}",
+                refresh_token.is_some()
+            );
+        }
         if let Some(refresh_token) = refresh_token {
             self.refresh_tokens.save(&refresh_token)?;
+            if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
+                eprintln!("OAuth interactive login: refresh token saved to credential store");
+            }
         }
 
         let access_token = access_token_from_response(&token)?;
@@ -430,10 +436,20 @@ fn parse_callback_target(target: &str) -> Result<(String, String), AuthError> {
 
 impl OAuthDesktopAuthProvider {
     pub async fn restore_session(&self) -> Result<Option<AuthContext>, AuthError> {
-        let Some(refresh_token) = self.refresh_tokens.load()? else {
+        let refresh_token = self.refresh_tokens.load()?;
+        if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
+            eprintln!(
+                "OAuth restore: refresh token found={}",
+                refresh_token.is_some()
+            );
+        }
+        let Some(refresh_token) = refresh_token else {
             return Ok(None);
         };
         let (access_token, replacement) = self.refresh_access_token(refresh_token).await?;
+        if env::var_os("APIGEE_FORGE_DEBUG_OAUTH").is_some() {
+            eprintln!("OAuth restore: refresh succeeded");
+        }
         if let Some(replacement) = replacement {
             self.refresh_tokens.save(&replacement)?;
         }
