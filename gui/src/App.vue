@@ -412,9 +412,13 @@ function normalizeCurrentTemplate() {
 
 async function saveTemplate() {
   normalizeCurrentTemplate()
-  if (!templateValid.value) return
-  await templateEditor.save()
-  if (templateEditor.current.value?.name) void loadTemplates()
+  if (!templateValid.value) return false
+  const saved = await templateEditor.save()
+  if (!saved) return false
+  await loadTemplates()
+  editorStep.value = 1
+  templateView.value = 'catalogue'
+  return true
 }
 
 async function selectTemplate(name: string) {
@@ -966,7 +970,7 @@ void templateEditor
             <BaseCard eyebrow="Review and save">
               <div class="review-header"><div><h2>Ready to save</h2><p>Check the template summary before writing it to local storage.</p></div><BaseChip :label="currentTemplateDirty ? 'Unsaved changes' : 'Saved'" /></div>
               <div class="review-grid"><div><span>Name</span><strong>{{ metadataDraft.name || 'Missing' }}</strong></div><div><span>Owner</span><strong>{{ metadataDraft.owner || 'Missing' }}</strong></div><div><span>Target</span><strong>{{ metadataDraft.target_environment || 'None' }}</strong></div><div><span>Policies</span><strong>{{ totalPolicyCount }}</strong></div></div>
-              <div class="review-actions"><button type="button" @click="templateView = 'editor'">Back to editor</button><button type="button" class="primary-action" :disabled="!templateValid || !currentTemplateDirty || currentTemplateStatus === 'saving'" @click="saveTemplate">{{ currentTemplateStatus === 'saving' ? 'Saving…' : 'Save template' }}</button></div>
+              <div class="review-actions"><button type="button" @click="templateView = 'editor'">Back to editor</button><button type="button" class="primary-action" :disabled="!templateValid || !currentTemplateDirty || currentTemplateStatus === 'saving'" @click="saveTemplate">{{ currentTemplateStatus === 'saving' ? 'Saving…' : 'Save & finish' }}</button></div>
             </BaseCard>
           </template>
         </template>
