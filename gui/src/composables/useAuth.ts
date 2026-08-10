@@ -1,6 +1,6 @@
 import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 import { ref } from 'vue'
-import type { AuthDto } from '../types/bridge'
+import type { AuthDto, AuthStorageDto } from '../types/bridge'
 
 export type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>
 
@@ -37,6 +37,16 @@ export function useAuth(invoke: Invoke = defaultInvoke) {
     try {
       const restored = await invoke<AuthDto>('auth_restore')
       context.value = restored.authenticated ? restored : null
+      if (!restored.authenticated) {
+        try {
+          const storage = await invoke<AuthStorageDto>('auth_storage_status')
+          if (!storage.refresh_token_stored) {
+            error.value = 'Google session is not persisted. Sign in again to create a refresh session.'
+          }
+        } catch (caught) {
+          error.value = errorMessage(caught, 'Google credential storage is unavailable.')
+        }
+      }
     } catch (caught) {
       error.value = errorMessage(caught, 'Saved Google session could not be restored.')
     } finally {

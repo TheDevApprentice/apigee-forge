@@ -11,6 +11,10 @@ export type SessionDto = {
   error: string | null
 }
 
+export type AuthStorageDto = {
+  refresh_token_stored: boolean
+}
+
 export type AuthDto = {
   authenticated: boolean
   mode: 'desktop' | 'headless' | null

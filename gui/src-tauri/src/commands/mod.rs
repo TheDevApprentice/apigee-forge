@@ -19,6 +19,11 @@ use tauri::State;
 use crate::{GuiError, GuiState};
 
 #[derive(Debug, Clone, serde::Serialize)]
+pub struct AuthStorageDto {
+    pub refresh_token_stored: bool,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct AuthDto {
     pub authenticated: bool,
     pub mode: Option<String>,
@@ -179,7 +184,7 @@ fn template_validation_error(
         ),
         apigee_forge_core::error::TemplateError::InvalidContent => (
             "TEMPLATE_INVALID_CONTENT",
-            "Template content is invalid",
+            "Template structure or policy parameters are invalid. Check flow lists and required policy fields.",
             None,
         ),
         apigee_forge_core::error::TemplateError::Serialization => (
@@ -239,7 +244,7 @@ fn template_error(error: apigee_forge_core::error::TemplateError) -> GuiError {
         },
         apigee_forge_core::error::TemplateError::InvalidContent => GuiError {
             code: "TEMPLATE_INVALID_CONTENT",
-            message: "Template content is invalid",
+            message: "Template structure or policy parameters are invalid. Check flow lists and required policy fields.",
         },
     }
 }
@@ -546,6 +551,22 @@ pub async fn auth_restore(state: State<'_, GuiState>) -> Result<AuthDto, GuiErro
     *context_lock(&state)? = Some(context);
     *session_lock(&state)? = SessionState::cloud_authenticated(identity);
     Ok(dto)
+}
+
+#[tauri::command]
+pub fn auth_storage_status(state: State<'_, GuiState>) -> Result<AuthStorageDto, GuiError> {
+    let stored = state
+        .auth_provider
+        .as_ref()
+        .ok_or(GuiError {
+            code: "AUTH_CONFIGURATION",
+            message: "OAuth desktop configuration is unavailable",
+        })?
+        .refresh_token_stored()
+        .map_err(auth_error)?;
+    Ok(AuthStorageDto {
+        refresh_token_stored: stored,
+    })
 }
 
 #[tauri::command]

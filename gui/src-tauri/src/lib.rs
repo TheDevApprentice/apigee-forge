@@ -33,6 +33,7 @@ pub trait GuiAuthProvider: Send + Sync {
     async fn restore_session(&self) -> Result<Option<AuthContext>, AuthError>;
     async fn authenticate(&self) -> Result<AuthContext, AuthError>;
     fn logout(&self) -> Result<(), AuthError>;
+    fn refresh_token_stored(&self) -> Result<bool, AuthError>;
 }
 
 struct DesktopGuiAuthProvider {
@@ -50,6 +51,10 @@ impl GuiAuthProvider for DesktopGuiAuthProvider {
     }
     fn logout(&self) -> Result<(), AuthError> {
         self.provider.logout()
+    }
+
+    fn refresh_token_stored(&self) -> Result<bool, AuthError> {
+        self.provider.refresh_token_stored()
     }
 }
 
@@ -197,6 +202,7 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::session_status,
             commands::auth_restore,
             commands::auth_status,
+            commands::auth_storage_status,
             commands::auth_login,
             commands::auth_logout,
             commands::list_organizations,

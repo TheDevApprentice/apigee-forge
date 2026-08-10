@@ -175,6 +175,10 @@ impl OAuthDesktopAuthProvider {
         }
     }
 
+    pub fn refresh_token_stored(&self) -> Result<bool, AuthError> {
+        Ok(self.refresh_tokens.load()?.is_some())
+    }
+
     pub fn logout(&self) -> Result<(), AuthError> {
         self.refresh_tokens.delete()?;
         self.access_token
