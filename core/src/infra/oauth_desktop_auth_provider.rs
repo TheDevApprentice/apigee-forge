@@ -247,17 +247,22 @@ impl OAuthDesktopAuthProvider {
         let redirect_address = listener.local_addr().map_err(|_| AuthError::Callback)?;
         let redirect_url = format!("http://{}", redirect_address);
         let client = self.oauth_client(redirect_url)?;
+        let has_refresh_token = self.refresh_tokens.load()?.is_some();
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
-        let (authorization_url, csrf_token) = client
+        let mut authorization_request = client
             .authorize_url(CsrfToken::new_random)
+            .add_extra_param("access_type", "offline")
             .add_scope(Scope::new("openid".to_owned()))
             .add_scope(Scope::new("email".to_owned()))
             .add_scope(Scope::new("profile".to_owned()))
             .add_scope(Scope::new(
                 "https://www.googleapis.com/auth/cloud-platform".to_owned(),
             ))
-            .set_pkce_challenge(pkce_challenge)
-            .url();
+            .set_pkce_challenge(pkce_challenge);
+        if !has_refresh_token {
+            authorization_request = authorization_request.add_extra_param("prompt", "consent");
+        }
+        let (authorization_url, csrf_token) = authorization_request.url();
 
         self.browser
             .open(authorization_url.as_str())
