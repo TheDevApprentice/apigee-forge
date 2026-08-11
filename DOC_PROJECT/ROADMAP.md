@@ -13,7 +13,7 @@ Séquence recommandée : chaque jalon doit être fonctionnel et testable avant d
 - [x] **M5 — Intégration CI/CD de référence** : exemple de pipeline GitHub Actions utilisant le CLI en mode non-interactif, pour valider le cas d'usage self-service en pipeline. La validation Apigee réelle reste différée au checkpoint M4-11.
 - [x] **M6 — Squelette GUI Tauri** : écran de connexion OAuth, vue liste orgs/environnements/proxies (lecture seule pour commencer), validé sans compte Apigee réel avec des doubles Tauri.
 - [x] **M6-Bis — Stabilisation Demo/Live du GUI** : mode réel Live par défaut, mode Demo explicite avec stockage SQLCipher, connexion Google réelle, dashboard partagé et tests de stabilité avant M7. Le dataset/tutoriel Demo complet est reporté post-MVP.
-- [ ] **M7 — Éditeur visuel de template** : formulaires guidés pour les policies MVP, représentation visuelle du flux PreFlow/Flow/PostFlow, sauvegarde compatible avec le format lu par le CLI.
+- [x] **M7 — Éditeur visuel de template** : formulaires guidés pour les policies MVP, représentation visuelle du flux PreFlow/Flow/PostFlow, sauvegarde compatible avec le format lu par le CLI.
 - [ ] **M8 — Déploiement et suivi depuis le GUI** : génération + déploiement + suivi de statut en temps réel.
 - [ ] **M9 — Polish design** : mise en cohérence visuelle (thème clair, accent teal, diagramme de flux soigné), tokens exacts dans DESIGN.md.
 - [ ] **M10 — Packaging et documentation** : mise en place du build/release CLI seul + installeur GUI+CLI (voir PACKAGING.md), README, captures d'écran, préparation du projet pour présentation en portfolio (et publication open source si souhaité à ce stade).
