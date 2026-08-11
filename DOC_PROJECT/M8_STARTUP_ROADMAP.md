@@ -217,31 +217,33 @@ feat(gui): prepare proxy creation preview
 
 ### M8-02 — Génération locale du bundle
 
-- [ ] Exposer la génération via un use case/port adapté au composition root GUI, sans appeler Apigee.
-- [ ] Utiliser des répertoires temporaires contrôlés et nettoyer les artefacts en cas d’échec.
-- [ ] Retourner un résultat non sensible : proxy, nombre de fichiers et identifiant de job, sans chemin absolu local.
-- [ ] Afficher la progression et l’erreur de génération dans le GUI.
-- [ ] Tester template invalide, spec invalide, échec de rendu, échec d’écriture et succès nominal.
+- [x] Exposer la génération via un use case/port adapté au composition root GUI, sans appeler Apigee.
+- [x] Utiliser des répertoires temporaires contrôlés et nettoyer les artefacts en cas d’échec.
+- [x] Retourner un résultat non sensible : proxy, nombre de fichiers et identifiant de job, sans chemin absolu local.
+- [x] Afficher la progression et l’erreur de génération dans le GUI.
+- [x] Tester template invalide, spec invalide, échec de rendu, échec d’écriture et succès nominal.
 
-Commit prévu :
+M8-02 et M8-03 sont intégrés dans un même flux afin que le bundle généré soit conservé temporairement côté Rust et transmis à l’upload par un `job_id`, sans exposer de chemin local ni renvoyer inutilement le ZIP au frontend.
+
+Commit prévu avec M8-03 :
 
 ```text
-feat(gui): generate proxy bundle locally
+feat(gui): generate and upload proxy bundle
 ```
 
 ### M8-03 — Upload et création du proxy/révision
 
-- [ ] Exposer `ImportProxyBundleUseCase` via une commande Tauri dédiée.
-- [ ] Valider organisation et nom de proxy côté Rust avant l’appel gateway.
-- [ ] Présenter l’upload comme une opération de création de proxy ou de nouvelle révision, jamais comme un déploiement.
-- [ ] Retourner un `CreatedProxyRevisionDto` avec `deployed: false` sans exposer de réponse HTTP brute.
-- [ ] Rafraîchir le catalogue des proxies après création et rendre la révision sélectionnable pour un déploiement ultérieur.
-- [ ] Couvrir succès, authentification absente, accès refusé, timeout, erreur gateway et mode Demo.
+- [x] Exposer `ImportProxyBundleUseCase` via une commande Tauri dédiée.
+- [x] Valider organisation et nom de proxy côté Rust avant l’appel gateway.
+- [x] Présenter l’upload comme une opération de création de proxy ou de nouvelle révision, jamais comme un déploiement.
+- [x] Retourner un `CreatedProxyRevisionDto` avec `deployed: false` sans exposer de réponse HTTP brute.
+- [x] Rafraîchir le catalogue des proxies après création et rendre la révision sélectionnable pour un déploiement ultérieur.
+- [x] Couvrir succès, authentification absente, accès refusé, timeout, erreur gateway et mode Demo.
 
-Commit prévu :
+Commit partagé avec M8-02 :
 
 ```text
-feat(gui): upload bundle and create proxy revision
+feat(gui): generate and upload proxy bundle
 ```
 
 ### M8-04 — Sélection et review d’une révision à déployer

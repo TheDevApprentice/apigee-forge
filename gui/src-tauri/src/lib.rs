@@ -1,6 +1,7 @@
 mod commands;
 
 use std::{
+    collections::HashMap,
     env,
     sync::{Arc, Mutex},
 };
@@ -14,8 +15,8 @@ use apigee_forge_core::{
         ReqwestApigeeGateway, SqlCipherLocalStateStore,
     },
     ports::{
-        ApigeeDeploymentGateway, ApigeeGateway, ApigeeRevisionGateway, AuthProvider,
-        LocalStateStore, TemplateRepository,
+        ApigeeDeploymentGateway, ApigeeGateway, ApigeeProxyBundleGateway, ApigeeRevisionGateway,
+        AuthProvider, LocalStateStore, TemplateRepository,
     },
     use_cases::SessionStatePersistence,
 };
@@ -62,6 +63,8 @@ pub struct GuiState {
     pub auth_provider: Option<Arc<dyn GuiAuthProvider>>,
     pub gateway: Mutex<Option<Arc<dyn ApigeeGateway>>>,
     pub cloud_gateway: Option<Arc<dyn ApigeeGateway>>,
+    pub bundle_gateway: Mutex<Option<Arc<dyn ApigeeProxyBundleGateway>>>,
+    pub cloud_bundle_gateway: Option<Arc<dyn ApigeeProxyBundleGateway>>,
     pub deployment_gateway: Mutex<Option<Arc<dyn ApigeeDeploymentGateway>>>,
     pub cloud_deployment_gateway: Option<Arc<dyn ApigeeDeploymentGateway>>,
     pub revision_gateway: Mutex<Option<Arc<dyn ApigeeRevisionGateway>>>,
@@ -71,6 +74,7 @@ pub struct GuiState {
     pub session: Mutex<SessionState>,
     pub local_store: Mutex<Option<Arc<dyn LocalStateStore>>>,
     pub template_repository: Mutex<Option<Arc<dyn TemplateRepository>>>,
+    pub bundle_jobs: Mutex<HashMap<String, Vec<u8>>>,
 }
 
 impl Default for GuiState {
@@ -79,6 +83,8 @@ impl Default for GuiState {
             auth_provider: None,
             gateway: Mutex::new(None),
             cloud_gateway: None,
+            bundle_gateway: Mutex::new(None),
+            cloud_bundle_gateway: None,
             deployment_gateway: Mutex::new(None),
             cloud_deployment_gateway: None,
             revision_gateway: Mutex::new(None),
@@ -88,6 +94,7 @@ impl Default for GuiState {
             session: Mutex::new(SessionState::cloud()),
             local_store: Mutex::new(None),
             template_repository: Mutex::new(None),
+            bundle_jobs: Mutex::new(HashMap::new()),
         }
     }
 }
@@ -118,7 +125,9 @@ pub fn build_state() -> GuiState {
     let Ok(gateway) = ReqwestApigeeGateway::new(base_url, auth_provider) else {
         return GuiState::default();
     };
-    let cloud_gateway: Arc<dyn ApigeeGateway> = Arc::new(gateway);
+    let gateway = Arc::new(gateway);
+    let cloud_gateway: Arc<dyn ApigeeGateway> = gateway.clone();
+    let cloud_bundle_gateway: Arc<dyn ApigeeProxyBundleGateway> = gateway.clone();
     let cloud_deployment_gateway: Arc<dyn ApigeeDeploymentGateway> = Arc::new(
         ReqwestApigeeGateway::new(
             Url::parse("https://apigee.googleapis.com/v1/")
@@ -142,6 +151,8 @@ pub fn build_state() -> GuiState {
         auth_provider: Some(Arc::new(DesktopGuiAuthProvider { provider })),
         gateway: Mutex::new(Some(cloud_gateway.clone())),
         cloud_gateway: Some(cloud_gateway),
+        bundle_gateway: Mutex::new(Some(cloud_bundle_gateway.clone())),
+        cloud_bundle_gateway: Some(cloud_bundle_gateway),
         deployment_gateway: Mutex::new(Some(cloud_deployment_gateway.clone())),
         cloud_deployment_gateway: Some(cloud_deployment_gateway),
         revision_gateway: Mutex::new(Some(cloud_revision_gateway.clone())),
@@ -151,6 +162,7 @@ pub fn build_state() -> GuiState {
         session: Mutex::new(SessionState::cloud()),
         local_store: Mutex::new(None),
         template_repository: Mutex::new(None),
+        bundle_jobs: Mutex::new(HashMap::new()),
     }
 }
 
@@ -210,6 +222,8 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::get_revision_detail,
             commands::list_environments,
             commands::list_proxies,
+            commands::generate_proxy_bundle,
+            commands::upload_proxy_bundle,
             commands::list_templates,
             commands::get_template,
             commands::create_template,

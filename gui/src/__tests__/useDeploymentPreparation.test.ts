@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { useProxyCreationPreparation, deriveProxyName } from '../composables/useDeploymentPreparation'
+import type { Invoke } from '../composables/useAuth'
 import type { TemplateDto } from '../types/bridge'
 
 const template: TemplateDto = {
@@ -44,6 +45,33 @@ describe('useProxyCreationPreparation', () => {
       policy_count: 1,
     })
     expect(preparation.jobInput()?.proxy_name).toBe('api-orders')
+  })
+
+  it('generates locally and uploads the generated job without deploying it', async () => {
+    const invoke = vi.fn(async (command: string) => {
+      if (command === 'generate_proxy_bundle') return { job_id: 'gui-job-1', proxy_name: 'api-orders', rendered_file_count: 9, state: 'Ready' }
+      if (command === 'upload_proxy_bundle') return { source: 'demo', organization: 'demo-org', proxy_name: 'api-orders', revision: 2, deployed: false }
+      throw new Error(`Unexpected command ${command}`)
+    }) as unknown as Invoke
+    const preparation = useProxyCreationPreparation(invoke)
+    preparation.selectTemplate(template)
+    preparation.setOpenApiSource({ display_name: 'orders.yaml', content: openApi })
+    preparation.setContext('demo-org', 'demo')
+
+    expect(await preparation.generate()).toBe(true)
+    expect(preparation.generation.value?.job_id).toBe('gui-job-1')
+    expect(await preparation.upload()).toBe(true)
+    expect(preparation.createdRevision.value).toMatchObject({ revision: 2, deployed: false })
+    expect(invoke).toHaveBeenCalledWith('generate_proxy_bundle', {
+      template: template.data,
+      openapi_source: openApi,
+      proxy_name: 'api-orders',
+    })
+    expect(invoke).toHaveBeenCalledWith('upload_proxy_bundle', {
+      organization: 'demo-org',
+      proxy_name: 'api-orders',
+      job_id: 'gui-job-1',
+    })
   })
 
   it('rejects incomplete input and distinguishes the logical target from Apigee environment', () => {

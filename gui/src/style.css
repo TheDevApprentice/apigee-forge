@@ -1380,6 +1380,14 @@ button:focus-visible {
   font-size: 11px;
 }
 
+.deployment-preparation__created {
+  padding: 12px;
+  color: #176b57;
+  background: #edf9f4;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
 .deployment-preparation__errors {
   display: grid;
   gap: 5px;

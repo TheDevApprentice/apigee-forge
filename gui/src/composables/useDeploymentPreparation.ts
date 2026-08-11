@@ -1,8 +1,13 @@
+import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 import { computed, ref } from 'vue'
-import type { ProxyCreationJobInputDto, ProxyCreationPreviewDto, OpenApiSourceDto, TemplateDto } from '../types/bridge'
+import type { Invoke } from './useAuth'
+import type { CreatedProxyRevisionDto, BundleGenerationResultDto, ProxyCreationJobInputDto, ProxyCreationPreviewDto, OpenApiSourceDto, TemplateDto } from '../types/bridge'
 
 export type ProxyCreationPreparationField = 'template' | 'spec' | 'organization' | 'environment' | 'proxy'
 export type ProxyCreationPreparationErrors = Partial<Record<ProxyCreationPreparationField, string>>
+export type ProxyCreationStatus = 'idle' | 'generating' | 'ready' | 'uploading' | 'created' | 'error'
+
+const defaultInvoke: Invoke = (command, args) => tauriInvoke(command, args)
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -82,12 +87,16 @@ function validateTemplate(template: TemplateDto | null): string | undefined {
   return undefined
 }
 
-export function useProxyCreationPreparation() {
+export function useProxyCreationPreparation(invoke: Invoke = defaultInvoke) {
   const selectedTemplate = ref<TemplateDto | null>(null)
   const openApiSource = ref<OpenApiSourceDto>({ display_name: '', content: '' })
   const organization = ref('')
   const environment = ref('')
   const proxyName = ref('')
+  const status = ref<ProxyCreationStatus>('idle')
+  const generation = ref<BundleGenerationResultDto | null>(null)
+  const createdRevision = ref<CreatedProxyRevisionDto | null>(null)
+  const error = ref<string | null>(null)
 
   const errors = computed<ProxyCreationPreparationErrors>(() => {
     const next: ProxyCreationPreparationErrors = {}
@@ -129,6 +138,8 @@ export function useProxyCreationPreparation() {
 
   function setOpenApiSource(source: Partial<OpenApiSourceDto>) {
     openApiSource.value = { ...openApiSource.value, ...source }
+    generation.value = null
+    createdRevision.value = null
   }
 
   function setContext(nextOrganization: string, nextEnvironment: string) {
@@ -138,6 +149,53 @@ export function useProxyCreationPreparation() {
 
   function setProxyName(value: string) {
     proxyName.value = value
+    generation.value = null
+    createdRevision.value = null
+  }
+
+  async function generate() {
+    const current = selectedTemplate.value
+    const input = jobInput()
+    if (!current || !input) {
+      status.value = 'error'
+      error.value = 'Complete the proxy creation fields before generating.'
+      return false
+    }
+    status.value = 'generating'
+    error.value = null
+    createdRevision.value = null
+    try {
+      generation.value = await invoke<BundleGenerationResultDto>('generate_proxy_bundle', {
+        template: current.data,
+        openapi_source: input.openapi_source.content,
+        proxy_name: input.proxy_name,
+      })
+      status.value = 'ready'
+      return true
+    } catch {
+      status.value = 'error'
+      error.value = 'The proxy bundle could not be generated.'
+      return false
+    }
+  }
+
+  async function upload() {
+    if (!generation.value || !organization.value.trim() || !proxyName.value.trim()) return false
+    status.value = 'uploading'
+    error.value = null
+    try {
+      createdRevision.value = await invoke<CreatedProxyRevisionDto>('upload_proxy_bundle', {
+        organization: organization.value.trim(),
+        proxy_name: proxyName.value.trim(),
+        job_id: generation.value.job_id,
+      })
+      status.value = 'created'
+      return true
+    } catch {
+      status.value = 'error'
+      error.value = 'The proxy revision could not be created in Apigee.'
+      return false
+    }
   }
 
   function clear() {
@@ -146,6 +204,10 @@ export function useProxyCreationPreparation() {
     organization.value = ''
     environment.value = ''
     proxyName.value = ''
+    status.value = 'idle'
+    generation.value = null
+    createdRevision.value = null
+    error.value = null
   }
 
   function jobInput(): ProxyCreationJobInputDto | null {
@@ -168,10 +230,16 @@ export function useProxyCreationPreparation() {
     errors,
     ready,
     preview,
+    status,
+    generation,
+    createdRevision,
+    error,
     selectTemplate,
     setOpenApiSource,
     setContext,
     setProxyName,
+    generate,
+    upload,
     clear,
     jobInput,
   }

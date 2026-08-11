@@ -54,6 +54,10 @@ const proxyCreationErrors = proxyCreationPreparation.errors
 const proxyCreationReady = proxyCreationPreparation.ready
 const proxyCreationPreview = proxyCreationPreparation.preview
 const proxyCreationLogicalTarget = proxyCreationPreparation.logicalTargetEnvironment
+const proxyCreationStatus = proxyCreationPreparation.status
+const proxyCreationGeneration = proxyCreationPreparation.generation
+const proxyCreationCreatedRevision = proxyCreationPreparation.createdRevision
+const proxyCreationError = proxyCreationPreparation.error
 const templateEditor = useTemplateEditor()
 const templateList = ref<TemplateDto[]>([])
 const templateSearch = ref('')
@@ -451,6 +455,14 @@ function prepareProxyCreation(name: string) {
   proxyCreationPreparation.setContext(selectedOrganization.value, selectedEnvironment.value)
   activeView.value = 'Proxies'
   resetContentScroll()
+}
+
+async function uploadProxyCreation() {
+  if (await proxyCreationPreparation.upload()) {
+    if (selectedOrganization.value && selectedEnvironment.value) {
+      await proxies.load(selectedOrganization.value, selectedEnvironment.value)
+    }
+  }
 }
 
 function cancelProxyCreationPreparation() {
@@ -886,9 +898,15 @@ void templateEditor
               :ready="proxyCreationReady"
               :preview="proxyCreationPreview"
               :logical-target-environment="proxyCreationLogicalTarget"
+              :status="proxyCreationStatus"
+              :generation="proxyCreationGeneration"
+              :created-revision="proxyCreationCreatedRevision"
+              :error="proxyCreationError"
               @update-open-api-display-name="proxyCreationPreparation.setOpenApiSource({ display_name: $event })"
               @update-open-api-content="proxyCreationPreparation.setOpenApiSource({ content: $event })"
               @update-proxy-name="proxyCreationPreparation.setProxyName($event)"
+              @generate="proxyCreationPreparation.generate()"
+              @upload="uploadProxyCreation"
               @cancel="cancelProxyCreationPreparation"
             />
           </BaseCard>

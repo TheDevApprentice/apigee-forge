@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import BaseChip from './base/BaseChip.vue'
-import type { OpenApiSourceDto, ProxyCreationPreviewDto } from '../types/bridge'
+import type { BundleGenerationResultDto, CreatedProxyRevisionDto, OpenApiSourceDto, ProxyCreationPreviewDto } from '../types/bridge'
 import type { ProxyCreationPreparationErrors } from '../composables/useDeploymentPreparation'
 
 defineProps<{
@@ -10,12 +10,18 @@ defineProps<{
   ready: boolean
   preview: ProxyCreationPreviewDto | null
   logicalTargetEnvironment: string | null
+  status: string
+  generation: BundleGenerationResultDto | null
+  createdRevision: CreatedProxyRevisionDto | null
+  error: string | null
 }>()
 
 defineEmits<{
   updateOpenApiDisplayName: [value: string]
   updateOpenApiContent: [value: string]
   updateProxyName: [value: string]
+  generate: []
+  upload: []
   cancel: []
 }>()
 </script>
@@ -63,10 +69,23 @@ defineEmits<{
       <strong>Proxy creation cannot continue</strong>
       <span v-for="(message, field) in errors" :key="field">{{ message }}</span>
     </div>
+    <div v-if="error" class="deployment-preparation__errors" role="alert" aria-live="assertive">
+      <strong>Proxy creation failed</strong>
+      <span>{{ error }}</span>
+    </div>
+    <div v-if="createdRevision" class="deployment-preparation__created" role="status" aria-live="polite">
+      Proxy <strong>{{ createdRevision.proxy_name }}</strong> revision <strong>{{ createdRevision.revision }}</strong> was created and is <strong>Not deployed</strong>.
+    </div>
     <div class="review-actions">
       <button type="button" @click="$emit('cancel')">Back to templates</button>
-      <button type="button" class="primary-action" disabled>Continue to bundle generation</button>
+      <button type="button" class="primary-action" :disabled="!ready || status === 'generating' || status === 'uploading'" @click="$emit('generate')">
+        {{ status === 'generating' ? 'Generating…' : generation ? 'Regenerate bundle' : 'Generate bundle' }}
+      </button>
+      <button v-if="generation && !createdRevision" type="button" :disabled="status === 'uploading'" @click="$emit('upload')">
+        {{ status === 'uploading' ? 'Uploading…' : 'Upload and create proxy' }}
+      </button>
     </div>
-    <p class="deployment-preparation__next-step">Bundle generation will be connected in M8-02. This screen does not write files or call Apigee.</p>
+    <p v-if="generation" class="deployment-preparation__next-step">Bundle ready: {{ generation.rendered_file_count }} rendered files. Upload is a separate Apigee mutation and does not deploy the revision.</p>
+    <p v-else class="deployment-preparation__next-step">Generation is local. This step does not call Apigee until you explicitly upload the bundle.</p>
   </div>
 </template>

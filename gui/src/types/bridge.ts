@@ -102,3 +102,18 @@ export type ProxyCreationPreviewDto = {
   logical_target_matches: boolean | null
   policy_count: number
 }
+
+export type BundleGenerationResultDto = {
+  job_id: string
+  proxy_name: string
+  rendered_file_count: number
+  state: 'Ready'
+}
+
+export type CreatedProxyRevisionDto = {
+  source: AppMode
+  organization: string
+  proxy_name: string
+  revision: number
+  deployed: false
+}

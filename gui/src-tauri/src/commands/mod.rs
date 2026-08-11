@@ -1,17 +1,24 @@
-use std::sync::{Arc, MutexGuard};
+use std::{
+    fs,
+    sync::{Arc, MutexGuard},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use apigee_forge_core::use_cases::{APP_MODE_KEY, SESSION_STATE_KEY};
 use apigee_forge_core::{
     domain::{
-        AppMode, AuthContext, AuthMode, Environment, Organization, Proxy, SessionState,
-        SessionStatus, Template,
+        AppMode, AuthContext, AuthMode, Environment, Organization, Proxy, ProxyName, RenderInput,
+        RenderMethod, RenderRoute, SessionState, SessionStatus, TargetUrl, Template,
     },
-    error::{AuthError, GatewayError},
-    ports::ApigeeGateway,
+    error::{AuthError, GatewayError, GenerateProxyBundleError, RenderInputError},
+    infra::{FilesystemBundleWriter, TeraBundleRenderer, ZipBundleArchiver},
+    openapi::{parse_openapi, HttpMethod, OpenApiError},
+    ports::{ApigeeGateway, ApigeeProxyBundleGateway},
     use_cases::{
-        CreateTemplateUseCase, DeleteTemplateUseCase, GetApigeeRolesUseCase,
-        GetDeploymentStatusUseCase, GetTemplateUseCase, ListEnvironmentsUseCase,
-        ListOrganizationsUseCase, ListProxiesUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
+        CreateTemplateUseCase, DeleteTemplateUseCase, GenerateProxyBundleUseCase,
+        GetApigeeRolesUseCase, GetDeploymentStatusUseCase, GetTemplateUseCase,
+        ImportProxyBundleUseCase, ListEnvironmentsUseCase, ListOrganizationsUseCase,
+        ListProxiesUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
     },
 };
 use tauri::State;
@@ -117,6 +124,23 @@ pub struct ProxyRevisionDto {
     pub number: u32,
     pub deployed: bool,
     pub status: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct CreatedProxyRevisionDto {
+    pub source: AppMode,
+    pub organization: String,
+    pub proxy_name: String,
+    pub revision: u32,
+    pub deployed: bool,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct BundleGenerationResultDto {
+    pub job_id: String,
+    pub proxy_name: String,
+    pub rendered_file_count: usize,
+    pub state: &'static str,
 }
 
 fn auth_error(error: AuthError) -> GuiError {
@@ -503,6 +527,17 @@ pub fn set_app_mode(state: State<'_, GuiState>, mode: AppMode) -> Result<Session
         code: "STATE_ERROR",
         message: "application state is unavailable",
     })? = Some(gateway);
+    let bundle_gateway = match mode {
+        AppMode::Demo => state.demo_gateway.clone() as Arc<dyn ApigeeProxyBundleGateway>,
+        AppMode::Cloud => state.cloud_bundle_gateway.clone().ok_or(GuiError {
+            code: "MODE_UNAVAILABLE",
+            message: "Live mode is unavailable",
+        })?,
+    };
+    *state.bundle_gateway.lock().map_err(|_| GuiError {
+        code: "STATE_ERROR",
+        message: "application state is unavailable",
+    })? = Some(bundle_gateway);
     Ok(session_dto(&next))
 }
 
@@ -611,6 +646,21 @@ pub fn auth_logout(state: State<'_, GuiState>) -> Result<(), GuiError> {
     Ok(())
 }
 
+fn bundle_gateway(state: &GuiState) -> Result<Arc<dyn ApigeeProxyBundleGateway>, GuiError> {
+    state
+        .bundle_gateway
+        .lock()
+        .map_err(|_| GuiError {
+            code: "STATE_ERROR",
+            message: "application state is unavailable",
+        })?
+        .clone()
+        .ok_or(GuiError {
+            code: "GATEWAY_CONFIGURATION",
+            message: "Apigee gateway configuration is unavailable",
+        })
+}
+
 fn gateway(state: &GuiState) -> Result<Arc<dyn ApigeeGateway>, GuiError> {
     state
         .gateway
@@ -715,6 +765,198 @@ pub async fn list_environments(
         .collect())
 }
 
+const MAX_PROXY_BUNDLE_BYTES: usize = 50 * 1024 * 1024;
+
+fn openapi_error(_: OpenApiError) -> GuiError {
+    GuiError {
+        code: "OPENAPI_INVALID",
+        message: "The OpenAPI document could not be parsed",
+    }
+}
+
+fn render_input_error(_: RenderInputError) -> GuiError {
+    GuiError {
+        code: "RENDER_INPUT_INVALID",
+        message: "The proxy name or OpenAPI target is invalid",
+    }
+}
+
+fn generate_bundle_error(_: GenerateProxyBundleError) -> GuiError {
+    GuiError {
+        code: "BUNDLE_GENERATION_FAILED",
+        message: "The proxy bundle could not be generated",
+    }
+}
+
+fn render_method(method: HttpMethod) -> RenderMethod {
+    match method {
+        HttpMethod::Get => RenderMethod::Get,
+        HttpMethod::Put => RenderMethod::Put,
+        HttpMethod::Post => RenderMethod::Post,
+        HttpMethod::Delete => RenderMethod::Delete,
+        HttpMethod::Options => RenderMethod::Options,
+        HttpMethod::Head => RenderMethod::Head,
+        HttpMethod::Patch => RenderMethod::Patch,
+        HttpMethod::Trace => RenderMethod::Trace,
+    }
+}
+
+fn generation_job_id() -> Result<String, GuiError> {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| GuiError {
+            code: "BUNDLE_GENERATION_FAILED",
+            message: "The proxy bundle could not be generated",
+        })?
+        .as_nanos();
+    Ok(format!("gui-{}-{nanos}", std::process::id()))
+}
+
+#[tauri::command]
+pub async fn generate_proxy_bundle(
+    state: State<'_, GuiState>,
+    template: serde_json::Value,
+    openapi_source: String,
+    proxy_name: String,
+) -> Result<BundleGenerationResultDto, GuiError> {
+    if proxy_name.trim().is_empty() {
+        return Err(GuiError {
+            code: "RENDER_INPUT_INVALID",
+            message: "A proxy name is required",
+        });
+    }
+    let template = Template::from_json_value(template).map_err(|_| GuiError {
+        code: "TEMPLATE_INVALID",
+        message: "The selected template is invalid",
+    })?;
+    let parsed = parse_openapi(&openapi_source).map_err(openapi_error)?;
+    let target_url = TargetUrl::try_new(parsed.primary_server().map_err(openapi_error)?.to_owned())
+        .map_err(render_input_error)?;
+    let routes = parsed
+        .routes
+        .into_iter()
+        .map(|route| RenderRoute {
+            path: route.path,
+            method: render_method(route.method),
+            security_requirements: route.security_requirements,
+        })
+        .collect();
+    let input = RenderInput::new(
+        ProxyName::try_new(proxy_name.clone()).map_err(render_input_error)?,
+        target_url,
+        routes,
+    );
+    let job_id = generation_job_id()?;
+    let root = std::env::temp_dir().join(&job_id);
+    let output_directory = root.join("bundle");
+    let archive_path = root.join("proxy.zip");
+    fs::create_dir_all(&root).map_err(|_| GuiError {
+        code: "BUNDLE_GENERATION_FAILED",
+        message: "The proxy bundle could not be generated",
+    })?;
+    let use_case = GenerateProxyBundleUseCase::new(
+        Arc::new(TeraBundleRenderer::new().map_err(|_| GuiError {
+            code: "BUNDLE_GENERATION_FAILED",
+            message: "The proxy bundle could not be generated",
+        })?),
+        Arc::new(FilesystemBundleWriter::new()),
+        Arc::new(ZipBundleArchiver::new()),
+    );
+    let generated = use_case
+        .execute(&input, &template, &output_directory, &archive_path)
+        .await
+        .map_err(generate_bundle_error);
+    let result = match generated {
+        Ok(result) => {
+            let bytes = fs::read(&result.archive_path).map_err(|_| GuiError {
+                code: "BUNDLE_GENERATION_FAILED",
+                message: "The generated proxy bundle could not be read",
+            });
+            bytes.map(|bytes| (result, bytes))
+        }
+        Err(error) => Err(error),
+    };
+    let _ = fs::remove_dir_all(&root);
+    let (result, bytes) = result?;
+    state
+        .bundle_jobs
+        .lock()
+        .map_err(|_| GuiError {
+            code: "STATE_ERROR",
+            message: "application state is unavailable",
+        })?
+        .insert(job_id.clone(), bytes);
+    Ok(BundleGenerationResultDto {
+        job_id,
+        proxy_name: result.proxy_name,
+        rendered_file_count: result.rendered_file_count,
+        state: "Ready",
+    })
+}
+
+fn validate_bundle_upload(
+    organization: &str,
+    proxy_name: &str,
+    bundle: &[u8],
+) -> Result<(), GuiError> {
+    if organization.trim().is_empty() || proxy_name.trim().is_empty() {
+        return Err(GuiError {
+            code: "CONTEXT_REQUIRED",
+            message: "organization and proxy name are required",
+        });
+    }
+    if bundle.is_empty() || bundle.len() > MAX_PROXY_BUNDLE_BYTES {
+        return Err(GuiError {
+            code: "BUNDLE_INVALID",
+            message: "proxy bundle is empty or exceeds the maximum allowed size",
+        });
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn upload_proxy_bundle(
+    state: State<'_, GuiState>,
+    organization: String,
+    proxy_name: String,
+    job_id: String,
+) -> Result<CreatedProxyRevisionDto, GuiError> {
+    let bundle = state
+        .bundle_jobs
+        .lock()
+        .map_err(|_| GuiError {
+            code: "STATE_ERROR",
+            message: "application state is unavailable",
+        })?
+        .get(&job_id)
+        .cloned()
+        .ok_or(GuiError {
+            code: "BUNDLE_NOT_FOUND",
+            message: "The generated proxy bundle is no longer available",
+        })?;
+    validate_bundle_upload(&organization, &proxy_name, &bundle)?;
+    let revision = ImportProxyBundleUseCase::new(bundle_gateway(&state)?)
+        .execute(&organization, &proxy_name, bundle)
+        .await
+        .map_err(gateway_error)?;
+    state
+        .bundle_jobs
+        .lock()
+        .map_err(|_| GuiError {
+            code: "STATE_ERROR",
+            message: "application state is unavailable",
+        })?
+        .remove(&job_id);
+    let source = session_lock(&state)?.mode;
+    Ok(CreatedProxyRevisionDto {
+        source,
+        organization,
+        proxy_name,
+        revision: revision.number,
+        deployed: false,
+    })
+}
+
 #[tauri::command]
 pub async fn list_proxies(
     state: State<'_, GuiState>,
@@ -808,8 +1050,8 @@ mod tests {
 
     use super::{
         create_template_from, delete_template_from, get_template_from, list_templates_from,
-        session_dto, update_template_from, AuthDto, EnvironmentDto, OrganizationDto, ProxyDto,
-        ProxyRevisionDto, TemplateDto,
+        session_dto, update_template_from, AuthDto, CreatedProxyRevisionDto, EnvironmentDto,
+        OrganizationDto, ProxyDto, ProxyRevisionDto, TemplateDto,
     };
     use apigee_forge_core::domain::{AppMode, GoogleIdentity, SessionState};
 
@@ -924,12 +1166,20 @@ mod tests {
                 status: "NotDeployed".to_owned(),
             }],
         })?;
+        let created_revision = serde_json::to_value(CreatedProxyRevisionDto {
+            source: AppMode::Demo,
+            organization: "demo-org".to_owned(),
+            proxy_name: "orders".to_owned(),
+            revision: 2,
+            deployed: false,
+        })?;
         assert_eq!(auth["mode"], "desktop");
         assert_eq!(organization["id"], "org-one");
         assert_eq!(environment["name"], "prod");
         assert_eq!(template["name"], "orders");
         assert!(template["data"].is_object());
         assert_eq!(proxy["revisions"][0]["number"], 1);
+        assert_eq!(created_revision["deployed"], false);
         assert_eq!(auth.as_object().map(|value| value.len()), Some(9));
         let session = serde_json::to_value(session_dto(&SessionState::cloud_authenticated(
             GoogleIdentity::new("user@example.com"),
