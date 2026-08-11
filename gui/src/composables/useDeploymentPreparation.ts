@@ -13,6 +13,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function commandErrorMessage(caught: unknown, fallback: string): string {
+  if (isRecord(caught) && typeof caught.message === 'string' && caught.message.trim()) return caught.message
+  if (typeof caught === 'string') {
+    try {
+      const parsed = JSON.parse(caught) as unknown
+      if (isRecord(parsed) && typeof parsed.message === 'string' && parsed.message.trim()) return parsed.message
+    } catch {
+      if (caught.trim()) return caught
+    }
+  }
+  return fallback
+}
+
 function cloneTemplate(template: TemplateDto | null): TemplateDto | null {
   return template ? JSON.parse(JSON.stringify(template)) as TemplateDto : null
 }
@@ -167,14 +180,14 @@ export function useProxyCreationPreparation(invoke: Invoke = defaultInvoke) {
     try {
       generation.value = await invoke<BundleGenerationResultDto>('generate_proxy_bundle', {
         template: current.data,
-        openapi_source: input.openapi_source.content,
-        proxy_name: input.proxy_name,
+        openapiSource: input.openapi_source.content,
+        proxyName: input.proxy_name,
       })
       status.value = 'ready'
       return true
-    } catch {
+    } catch (caught) {
       status.value = 'error'
-      error.value = 'The proxy bundle could not be generated.'
+      error.value = commandErrorMessage(caught, 'The proxy bundle could not be generated.')
       return false
     }
   }
@@ -186,14 +199,14 @@ export function useProxyCreationPreparation(invoke: Invoke = defaultInvoke) {
     try {
       createdRevision.value = await invoke<CreatedProxyRevisionDto>('upload_proxy_bundle', {
         organization: organization.value.trim(),
-        proxy_name: proxyName.value.trim(),
-        job_id: generation.value.job_id,
+        proxyName: proxyName.value.trim(),
+        jobId: generation.value.job_id,
       })
       status.value = 'created'
       return true
-    } catch {
+    } catch (caught) {
       status.value = 'error'
-      error.value = 'The proxy revision could not be created in Apigee.'
+      error.value = commandErrorMessage(caught, 'The proxy revision could not be created in Apigee.')
       return false
     }
   }

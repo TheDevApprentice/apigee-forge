@@ -781,10 +781,24 @@ fn render_input_error(_: RenderInputError) -> GuiError {
     }
 }
 
-fn generate_bundle_error(_: GenerateProxyBundleError) -> GuiError {
-    GuiError {
-        code: "BUNDLE_GENERATION_FAILED",
-        message: "The proxy bundle could not be generated",
+fn generate_bundle_error(error: GenerateProxyBundleError) -> GuiError {
+    match error {
+        GenerateProxyBundleError::Template(_) => GuiError {
+            code: "TEMPLATE_INVALID",
+            message: "The selected template is invalid for bundle generation",
+        },
+        GenerateProxyBundleError::Render(_) => GuiError {
+            code: "BUNDLE_RENDER_FAILED",
+            message: "The proxy policies could not be rendered",
+        },
+        GenerateProxyBundleError::Write(_) => GuiError {
+            code: "BUNDLE_WRITE_FAILED",
+            message: "The generated proxy files could not be written locally",
+        },
+        GenerateProxyBundleError::Archive(_) => GuiError {
+            code: "BUNDLE_ARCHIVE_FAILED",
+            message: "The generated proxy bundle could not be archived locally",
+        },
     }
 }
 

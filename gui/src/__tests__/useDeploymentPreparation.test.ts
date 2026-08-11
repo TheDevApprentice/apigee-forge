@@ -64,14 +64,25 @@ describe('useProxyCreationPreparation', () => {
     expect(preparation.createdRevision.value).toMatchObject({ revision: 2, deployed: false })
     expect(invoke).toHaveBeenCalledWith('generate_proxy_bundle', {
       template: template.data,
-      openapi_source: openApi,
-      proxy_name: 'api-orders',
+      openapiSource: openApi,
+      proxyName: 'api-orders',
     })
     expect(invoke).toHaveBeenCalledWith('upload_proxy_bundle', {
       organization: 'demo-org',
-      proxy_name: 'api-orders',
-      job_id: 'gui-job-1',
+      proxyName: 'api-orders',
+      jobId: 'gui-job-1',
     })
+  })
+
+  it('shows the safe Rust error when local generation fails', async () => {
+    const invoke = vi.fn().mockRejectedValue({ code: 'TEMPLATE_INVALID', message: 'The selected template is invalid for bundle generation' }) as unknown as Invoke
+    const preparation = useProxyCreationPreparation(invoke)
+    preparation.selectTemplate(template)
+    preparation.setOpenApiSource({ display_name: 'orders.yaml', content: openApi })
+    preparation.setContext('demo-org', 'demo')
+
+    expect(await preparation.generate()).toBe(false)
+    expect(preparation.error.value).toBe('The selected template is invalid for bundle generation')
   })
 
   it('rejects incomplete input and distinguishes the logical target from Apigee environment', () => {
