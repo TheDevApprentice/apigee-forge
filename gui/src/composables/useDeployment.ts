@@ -13,6 +13,8 @@ export type DeploymentTarget = {
 export type DeploymentExecutionStatus = 'idle' | 'deploying' | 'polling' | 'succeeded' | 'failed' | 'stopped' | 'timeout' | 'error'
 
 const defaultInvoke: Invoke = (command, args) => tauriInvoke(command, args)
+const DEFAULT_POLL_INTERVAL_MS = 2000
+const DEFAULT_POLL_TIMEOUT_MS = 5 * 60 * 1000
 
 function errorMessage(caught: unknown, fallback: string): string {
   if (typeof caught === 'object' && caught !== null && 'message' in caught) {
@@ -73,7 +75,7 @@ export function useDeployment(invoke: Invoke = defaultInvoke) {
     }
   }
 
-  async function startPolling(target: DeploymentTarget, intervalMs = 1000, timeoutMs = 30000) {
+  async function startPolling(target: DeploymentTarget, intervalMs = DEFAULT_POLL_INTERVAL_MS, timeoutMs = DEFAULT_POLL_TIMEOUT_MS) {
     stopTimer()
     runToken += 1
     const token = runToken
@@ -134,7 +136,16 @@ export function useDeployment(invoke: Invoke = defaultInvoke) {
     return deploy(target, false)
   }
 
+  function reset() {
+    runToken += 1
+    stopTimer()
+    result.value = null
+    status.value = 'idle'
+    error.value = null
+    lastUpdated.value = null
+  }
+
   if (getCurrentInstance()) onBeforeUnmount(stopPolling)
 
-  return { result, status, error, lastUpdated, deploy, startPolling, stopPolling, retry }
+  return { result, status, error, lastUpdated, deploy, startPolling, stopPolling, retry, reset }
 }

@@ -74,6 +74,7 @@ const templatesLoading = ref(false)
 const templatesError = ref<string | null>(null)
 const templateDeletePending = ref<string | null>(null)
 const templateView = ref<'catalogue' | 'editor' | 'review'>('catalogue')
+const proxyCreationMode = ref(false)
 const editorStep = ref<1 | 2 | 3 | 4>(1)
 const currentTemplate = templateEditor.current
 const currentTemplateDirty = templateEditor.dirty
@@ -457,9 +458,15 @@ async function selectTemplate(name: string) {
   }
 }
 
+function selectProxyCreationTemplate(name: string) {
+  const template = templateList.value.find((candidate) => candidate.name === name)
+  if (template) proxyCreationPreparation.selectTemplate(template)
+}
+
 function prepareProxyCreation(name: string) {
   const template = templateList.value.find((candidate) => candidate.name === name)
   if (!template) return
+  proxyCreationMode.value = true
   proxyCreationPreparation.selectTemplate(template)
   proxyCreationPreparation.setContext(selectedOrganization.value, selectedEnvironment.value)
   activeView.value = 'Proxies'
@@ -476,7 +483,8 @@ async function uploadProxyCreation() {
 
 function cancelProxyCreationPreparation() {
   proxyCreationPreparation.clear()
-  activeView.value = 'Templates'
+  proxyCreationMode.value = false
+  activeView.value = 'Proxies'
   resetContentScroll()
 }
 
@@ -548,7 +556,10 @@ function resetContentScroll() {
 }
 
 function openCreateProxy() {
-  activeView.value = 'Templates'
+  proxyCreationMode.value = true
+  proxyCreationPreparation.clear()
+  void loadTemplates()
+  activeView.value = 'Proxies'
   resetContentScroll()
 }
 
@@ -559,6 +570,7 @@ function retryProxies() {
 }
 
 function openProxy(proxy: ProxyDto) {
+  deployment.reset()
   selectedProxy.value = proxy
   selectedRevision.value = null
   deploymentRevision.value = null
@@ -578,6 +590,7 @@ function reviewDeploymentRevision(revision: ProxyRevisionDto) {
     deploymentReviewError.value = 'Only an existing revision that is not deployed can be reviewed here.'
     return
   }
+  deployment.reset()
   deploymentRevision.value = revision.number
   deploymentReviewConfirmed.value = false
   deploymentReviewError.value = null
@@ -845,6 +858,7 @@ void templateEditor
                 Deployment status: <strong>{{ deploymentResult.status }}</strong>
                 <span v-if="deploymentLastUpdated"> · updated {{ deploymentLastUpdated.toLocaleTimeString() }}</span>
               </div>
+              <p v-if="deploymentStatus === 'polling'" class="deployment-preparation__next-step" role="status" aria-live="polite">Apigee is still processing the revision. The GUI will continue polling for up to five minutes.</p>
               <p v-if="deploymentReviewError || deploymentError" class="deployment-preparation__warning" role="alert">{{ deploymentReviewError || deploymentError }}</p>
               <div class="review-actions">
                 <button type="button" @click="activeView = 'Proxies'">Back to proxies</button>
@@ -981,8 +995,10 @@ void templateEditor
           </BaseCard>
         </template>
         <template v-else-if="activeView === 'Proxies'">
-          <BaseCard v-if="proxyCreationTemplate" eyebrow="Proxy creation">
+          <BaseCard v-if="proxyCreationMode" eyebrow="Proxy creation">
             <ProxyCreationPreparation
+              :templates="templateList"
+              :selected-template-name="proxyCreationTemplate?.name || null"
               :open-api-source="proxyCreationOpenApiSource"
               :proxy-name="proxyCreationProxyName"
               :errors="proxyCreationErrors"
@@ -993,6 +1009,7 @@ void templateEditor
               :generation="proxyCreationGeneration"
               :created-revision="proxyCreationCreatedRevision"
               :error="proxyCreationError"
+              @select-template="selectProxyCreationTemplate"
               @update-open-api-display-name="proxyCreationPreparation.setOpenApiSource({ display_name: $event })"
               @update-open-api-content="proxyCreationPreparation.setOpenApiSource({ content: $event })"
               @update-proxy-name="proxyCreationPreparation.setProxyName($event)"

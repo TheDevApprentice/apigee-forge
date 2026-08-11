@@ -1297,6 +1297,28 @@ button:focus-visible {
   font-size: 12px;
 }
 
+.deployment-preparation__template-select {
+  display: grid;
+  max-width: 420px;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.deployment-preparation__template-select select {
+  padding: 9px 10px;
+  color: var(--text-main);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  font: inherit;
+}
+
+.deployment-preparation__template-select select:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: 2px;
+}
+
 .deployment-preparation__form {
   display: grid;
   gap: 12px;
@@ -1319,6 +1341,11 @@ button:focus-visible {
   border-radius: 7px;
   font: inherit;
   resize: vertical;
+}
+
+.deployment-preparation__file-input {
+  padding: 7px !important;
+  font-size: 11px !important;
 }
 
 .deployment-preparation__form input:focus-visible,

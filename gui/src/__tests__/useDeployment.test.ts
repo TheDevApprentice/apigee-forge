@@ -50,7 +50,7 @@ describe('useDeployment', () => {
 
     await deployment.deploy(target)
     expect(deployment.status.value).toBe('polling')
-    await vi.advanceTimersByTimeAsync(1000)
+    await vi.advanceTimersByTimeAsync(2000)
     expect(deployment.status.value).toBe('succeeded')
     expect(invoke).toHaveBeenCalledWith('get_deployment_status', {
       organization: 'demo-org',

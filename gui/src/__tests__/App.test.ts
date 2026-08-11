@@ -79,6 +79,33 @@ describe('App M6-Bis flow', () => {
     expect(wrapper.find('button.primary-action').exists()).toBe(false)
   })
 
+  it('opens Create proxy in Proxies with a template selector', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
+      if (command === 'list_organizations') return [{ id: 'demo-org', project_id: 'demo-project', location: null }]
+      if (command === 'list_environments') return [{ name: 'demo' }]
+      if (command === 'list_templates') return [{
+        name: 'orders',
+        data: {
+          metadata: { name: 'orders', owner: 'platform', naming_convention: { prefix: 'api-', case: 'kebab-case' } },
+          flow: { pre_flow: { request: [], response: [] }, post_flow: { request: [], response: [] } },
+        },
+      }]
+      if (command === 'list_proxies') return []
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await vi.waitFor(() => expect(wrapper.findAll('.dashboard-action-card')).toHaveLength(2))
+    await wrapper.findAll('.dashboard-action-card')[1].trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('select[aria-label="Select proxy template"]').exists()).toBe(true))
+
+    await wrapper.find('select[aria-label="Select proxy template"]').setValue('orders')
+    expect(wrapper.text()).toContain('Prepare proxy creation')
+    expect(wrapper.text()).toContain('api-orders')
+  })
+
   it('prepares a non-mutating proxy creation preview from a saved template', async () => {
     invokeMock.mockImplementation(async (command: string) => {
       if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }

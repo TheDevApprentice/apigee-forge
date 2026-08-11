@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import BaseChip from './base/BaseChip.vue'
-import type { BundleGenerationResultDto, CreatedProxyRevisionDto, OpenApiSourceDto, ProxyCreationPreviewDto } from '../types/bridge'
+import type { BundleGenerationResultDto, CreatedProxyRevisionDto, OpenApiSourceDto, ProxyCreationPreviewDto, TemplateDto } from '../types/bridge'
 import type { ProxyCreationPreparationErrors } from '../composables/useDeploymentPreparation'
 
 defineProps<{
+  templates: TemplateDto[]
+  selectedTemplateName: string | null
   openApiSource: OpenApiSourceDto
   proxyName: string
   errors: ProxyCreationPreparationErrors
@@ -16,7 +19,10 @@ defineProps<{
   error: string | null
 }>()
 
-defineEmits<{
+const fileError = ref<string | null>(null)
+
+const emit = defineEmits<{
+  selectTemplate: [name: string]
   updateOpenApiDisplayName: [value: string]
   updateOpenApiContent: [value: string]
   updateProxyName: [value: string]
@@ -24,10 +30,29 @@ defineEmits<{
   upload: []
   cancel: []
 }>()
+
+async function loadOpenApiFile(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  fileError.value = null
+  try {
+    emit('updateOpenApiDisplayName', file.name)
+    emit('updateOpenApiContent', await file.text())
+  } catch {
+    fileError.value = 'The OpenAPI file could not be read.'
+  }
+}
 </script>
 
 <template>
   <div class="deployment-preparation">
+    <label class="deployment-preparation__template-select">
+      <span>Template source</span>
+      <select :value="selectedTemplateName || ''" aria-label="Select proxy template" @change="$emit('selectTemplate', ($event.target as HTMLSelectElement).value)">
+        <option value="">Select a saved template</option>
+        <option v-for="template in templates" :key="template.name" :value="template.name">{{ template.name }}</option>
+      </select>
+    </label>
     <div class="deployment-preparation__header">
       <div>
         <h2>Prepare proxy creation</h2>
@@ -39,6 +64,8 @@ defineEmits<{
       <label>
         <span>OpenAPI display name</span>
         <input :value="openApiSource.display_name" type="text" placeholder="openapi.yaml" @input="$emit('updateOpenApiDisplayName', ($event.target as HTMLInputElement).value)" />
+        <input class="deployment-preparation__file-input" type="file" accept=".yaml,.yml,.json,text/yaml,application/json" aria-label="Import OpenAPI file" @change="loadOpenApiFile" />
+        <small v-if="fileError" class="deployment-preparation__field-error">{{ fileError }}</small>
         <small v-if="errors.spec" class="deployment-preparation__field-error">{{ errors.spec }}</small>
       </label>
       <label>
