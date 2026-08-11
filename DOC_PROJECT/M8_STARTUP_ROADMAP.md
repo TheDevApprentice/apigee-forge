@@ -1,36 +1,44 @@
 # Apigee Forge — Roadmap de démarrage M8
 
-*Jalon de déploiement et de suivi depuis le GUI. M8 relie l’éditeur de templates M7 au moteur de génération de bundle et aux opérations Apigee déjà portées par `core`, avec une confirmation explicite avant toute mutation distante. Chaque étape doit être vérifiée et commitée avant de passer à la suivante.*
+*Jalon de création de proxies, de déploiement de révisions et de suivi depuis le GUI. M8 relie l’éditeur de templates M7 au moteur de génération de bundle et aux opérations Apigee déjà portées par `core`, avec une confirmation explicite avant chaque mutation distante. Chaque étape doit être vérifiée et commitée avant de passer à la suivante.*
 
 ---
 
 ## 1. Objectif M8
 
-Le GUI doit permettre de sélectionner un template sauvegardé, fournir la spec OpenAPI correspondante, générer un bundle local, l’importer comme nouvelle révision de proxy, demander son déploiement sur un environnement choisi et suivre l’état de ce déploiement sans bloquer l’interface.
+Le GUI doit distinguer deux parcours :
+
+1. **Créer un proxy** à partir d’un template ou d’une autre source : préparer les entrées, générer le bundle, l’uploader dans Apigee et obtenir un proxy ou une nouvelle révision non déployée.
+2. **Déployer un proxy existant** : sélectionner une révision déjà présente dans Apigee, confirmer la cible puis suivre son déploiement.
 
 Parcours cible :
 
 ```text
-Templates → Review & Save → Create proxy
-                              ↓
-                 OpenAPI + template + cible
-                              ↓
-                    Preview de génération
-                              ↓
-                    Générer le bundle local
-                              ↓
-              Importer une nouvelle révision
-                              ↓
-           Confirmer explicitement le déploiement
-                              ↓
-        Déployer → interroger le statut → résultat
+Templates / autre source → Create proxy
+                                  ↓
+                       OpenAPI + template + cible
+                                  ↓
+                       Preview de création
+                                  ↓
+                     Générer le bundle local
+                                  ↓
+                       Confirmer l’upload
+                                  ↓
+                  Importer → proxy / révision créée
+                                  ↓
+                         Statut : Not deployed
+
+Proxies → sélectionner proxy + révision
+       → Review de déploiement
+       → Confirmation explicite
+       → Déployer → interroger le statut → résultat
 ```
 
 M8 doit conserver les contrats existants :
 
 - `core::use_cases::GenerateProxyBundleUseCase` pour la génération locale ;
-- `ImportProxyBundleUseCase` pour l’import d’une nouvelle révision ;
-- `DeployProxyUseCase` pour le déploiement sur un environnement ;
+- `ImportProxyBundleUseCase` pour créer un proxy ou une nouvelle révision à partir d’un bundle uploadé ;
+- `DeployProxyUseCase` uniquement pour déployer une révision déjà présente dans Apigee sur un environnement ;
 - `GetDeploymentStatusUseCase` pour la lecture du statut ;
 - `TemplateRepository` et le format de template validé par `core` ;
 - les modes Live et Demo du GUI ;
@@ -62,7 +70,7 @@ M8 doit conserver les contrats existants :
 - session Live/Demo et sélection d’organisation/environnement ;
 - éditeur M7 capable de produire et sauvegarder un template compatible CLI ;
 - génération et packaging de bundle déjà testés côté Rust et CLI ;
-- écran GUI `Deployments` présent, mais sans parcours de déploiement sélectionné.
+- écrans GUI `Proxies` et `Deployments` présents ; la création de proxy doit être préparée depuis `Proxies`, tandis que `Deployments` reste réservé aux révisions existantes.
 
 ### Gaps à traiter
 
@@ -72,7 +80,8 @@ M8 doit conserver les contrats existants :
 - confirmation explicite avant chaque opération distante mutative ;
 - état frontend du workflow asynchrone et protection contre les doubles soumissions ;
 - polling borné et annulable du statut de déploiement ;
-- interface de review, progression et résultat dans le GUI ;
+- interface de création/upload, progression et résultat dans le GUI ;
+- interface de review et de sélection d’une révision avant déploiement ;
 - tests de use cases/commandes/composable avec doubles Demo et sans réseau ;
 - procédure de validation manuelle Live sans exposer de secrets.
 
@@ -81,10 +90,11 @@ M8 doit conserver les contrats existants :
 ## 3. Décisions d’architecture M8
 
 - La génération du bundle reste une opération locale et ne doit jamais appeler Apigee.
-- L’import et le déploiement sont deux mutations distinctes : le GUI ne doit pas les confondre ni présenter un déploiement comme réussi après un simple import.
+- La création/upload et le déploiement sont deux mutations distinctes : l’upload crée un proxy ou une révision, mais ne la déploie jamais.
+- Le GUI ne doit jamais présenter une révision importée comme déployée ; son état initial est `Not deployed`.
 - La logique métier reste dans `core`; les commandes Tauri valident les DTO, résolvent les dépendances du composition root et délèguent aux use cases.
 - Le GUI utilise les mêmes commandes et DTO en mode Demo et en mode Live ; seul le gateway injecté change.
-- Le déploiement nécessite une confirmation explicite contenant au minimum organisation, environnement, proxy et révision ciblés.
+- L’upload nécessite une confirmation explicite contenant au minimum organisation et nom de proxy ; le déploiement nécessite une seconde confirmation contenant organisation, environnement, proxy et révision ciblés.
 - Le nom du proxy, l’environnement, la révision et les chemins de génération sont validés côté Rust avant tout appel réseau ou écriture.
 - Les fichiers générés sont stockés dans un répertoire de travail temporaire contrôlé ; aucun chemin local sensible ne doit être renvoyé au frontend ou affiché dans une erreur.
 - Le suivi utilise un polling borné, avec intervalle raisonnable, arrêt sur `Succeeded`/`Failed`, annulation lors de la navigation et protection contre les requêtes concurrentes obsolètes.
@@ -99,7 +109,7 @@ Pour le MVP, le GUI utilisera un polling Tauri vers `GetDeploymentStatusUseCase`
 
 ## 4. Étapes atomiques
 
-### M8-00 — Baseline, contrat et scénario de déploiement
+### M8-00 — Baseline, contrat et scénario de création/déploiement
 
 - [x] Vérifier que la branche `feature/m8-gui-deployment` est créée depuis `dev` après l’intégration de M7.
 - [x] Cartographier le parcours cible et les frontières génération/import/déploiement/statut.
@@ -112,13 +122,11 @@ Pour le MVP, le GUI utilisera un polling Tauri vers `GetDeploymentStatusUseCase`
 Les types ci-dessous sont le contrat de frontière Rust ↔ Vue de M8. Ils seront implémentés et testés lors des étapes qui exposent réellement les commandes ; cette étape fixe uniquement leur responsabilité et leurs champs non sensibles.
 
 ```text
-DeploymentJobInputDto
+ProxyCreationJobInputDto
 ├── template_name: String
 ├── openapi_source: OpenApiSourceDto
 ├── organization: String
-├── environment: String
-├── proxy_name: String
-└── override_existing: bool
+└── proxy_name: String
 
 OpenApiSourceDto
 ├── display_name: String
@@ -130,10 +138,11 @@ BundleGenerationResultDto
 ├── rendered_file_count: usize
 └── state: GenerationStateDto
 
-ImportedRevisionDto
+CreatedProxyRevisionDto
 ├── organization: String
 ├── proxy_name: String
-└── revision: u32
+├── revision: u32
+└── deployed: false
 
 DeploymentDto
 ├── id: String
@@ -165,12 +174,13 @@ Règles associées :
 
 1. la session est prête et l’organisation/environnement sont sélectionnés ;
 2. l’utilisateur choisit un template valide, une spec OpenAPI et un nom de proxy ;
-3. la preview affiche la cible et les étapes sans mutation ;
+3. la preview de création affiche la cible et les étapes sans mutation ;
 4. la génération locale réussit et produit un `job_id` ;
-5. l’utilisateur demande l’import, qui retourne une révision ;
-6. la review affiche organisation, environnement, proxy et révision ;
-7. l’utilisateur confirme le déploiement ;
-8. le polling termine sur `Succeeded` et actualise les proxies.
+5. l’utilisateur confirme l’upload, qui crée un proxy ou une nouvelle révision ;
+6. le résultat affiche le proxy et la révision avec le statut `Not deployed` ;
+7. l’utilisateur sélectionne cette révision depuis le catalogue des proxies ;
+8. l’utilisateur confirme séparément le déploiement ;
+9. le polling termine sur `Succeeded` et actualise les proxies.
 
 **Échecs à couvrir**
 
@@ -179,8 +189,8 @@ Règles associées :
 - écriture/rendu local impossible : nettoyage et conservation d’une erreur sans chemin sensible ;
 - import refusé, timeout ou erreur réseau : aucune tentative automatique de déploiement ;
 - révision ou cible invalide : commande refusée côté Rust ;
-- utilisateur annule la confirmation : aucune mutation distante ;
-- double soumission : une seule opération mutative active ;
+- utilisateur annule la confirmation d’upload ou de déploiement : aucune mutation correspondante ;
+- double soumission : une seule opération mutative active par phase ;
 - statut `Failed`, polling annulé ou timeout GUI : état final explicite, sans prétendre que la ressource distante est supprimée.
 
 Commit prévu :
@@ -189,7 +199,7 @@ Commit prévu :
 docs(m8): define GUI deployment roadmap and contracts
 ```
 
-### M8-01 — Préparation et preview du job local
+### M8-01 — Préparation et preview de création du proxy
 
 - [x] Permettre de sélectionner un template validé depuis le catalogue M7.
 - [x] Ajouter la sélection ou la fourniture contrôlée d’une spec OpenAPI.
@@ -202,7 +212,7 @@ La résolution du nom de proxy dans cette preview est indicative et dérivée de
 Commit prévu :
 
 ```text
-feat(gui): prepare deployment job preview
+feat(gui): prepare proxy creation preview
 ```
 
 ### M8-02 — Génération locale du bundle
@@ -219,37 +229,40 @@ Commit prévu :
 feat(gui): generate proxy bundle locally
 ```
 
-### M8-03 — Import de la révision Apigee
+### M8-03 — Upload et création du proxy/révision
 
 - [ ] Exposer `ImportProxyBundleUseCase` via une commande Tauri dédiée.
 - [ ] Valider organisation et nom de proxy côté Rust avant l’appel gateway.
-- [ ] Distinguer clairement l’état `bundle generated` de l’état `revision imported`.
-- [ ] Mapper le résultat vers une `ProxyRevision` DTO sans exposer de réponse HTTP brute.
+- [ ] Présenter l’upload comme une opération de création de proxy ou de nouvelle révision, jamais comme un déploiement.
+- [ ] Retourner un `CreatedProxyRevisionDto` avec `deployed: false` sans exposer de réponse HTTP brute.
+- [ ] Rafraîchir le catalogue des proxies après création et rendre la révision sélectionnable pour un déploiement ultérieur.
 - [ ] Couvrir succès, authentification absente, accès refusé, timeout, erreur gateway et mode Demo.
 
 Commit prévu :
 
 ```text
-feat(gui): import generated proxy revision
+feat(gui): upload bundle and create proxy revision
 ```
 
-### M8-04 — Review et confirmation du déploiement
+### M8-04 — Sélection et review d’une révision à déployer
 
-- [ ] Présenter une étape de review dédiée avant l’appel `deploy`.
-- [ ] Afficher explicitement organisation, environnement, proxy, révision et mode Live/Demo.
-- [ ] Exiger une action de confirmation distincte de la génération et de l’import.
-- [ ] Empêcher double clic, soumission concurrente et déploiement sans révision importée.
+- [ ] Présenter les proxies et leurs révisions existantes dans le catalogue `Proxies`.
+- [ ] Afficher explicitement organisation, environnement, proxy, révision, statut actuel et mode Live/Demo.
+- [ ] Refuser la sélection d’une révision absente d’Apigee ou déjà déployée sans action explicite de remplacement.
+- [ ] Exiger une confirmation distincte de l’upload qui a créé la révision.
+- [ ] Empêcher double clic, soumission concurrente et déploiement sans révision sélectionnée.
 - [ ] Conserver un état local récupérable en cas d’annulation ou d’erreur avant mutation.
 
 Commit prévu :
 
 ```text
-feat(gui): add explicit deployment confirmation
+feat(gui): review proxy revision deployment
 ```
 
-### M8-05 — Déploiement et contrat de résultat
+### M8-05 — Déploiement d’une révision existante et contrat de résultat
 
 - [ ] Exposer `DeployProxyUseCase` via une commande Tauri dédiée.
+- [ ] Accepter uniquement une révision existante retournée par Apigee ou par l’étape d’upload M8-03.
 - [ ] Valider la révision, l’organisation, l’environnement, le proxy et `override_existing` côté Rust.
 - [ ] Conserver `override_existing` explicite et jamais activé implicitement.
 - [ ] Retourner un DTO de déploiement stable avec identifiant, cible, révision et statut.
@@ -316,22 +329,23 @@ M8 sera terminé lorsque :
 
 1. l’utilisateur peut sélectionner un template M7 et une spec OpenAPI sans écrire de JSON ;
 2. le GUI génère un bundle local valide sans appel réseau ;
-3. le GUI peut importer ce bundle comme nouvelle révision Apigee ;
-4. le GUI demande une confirmation explicite avant le déploiement ;
-5. le GUI déploie la révision sur l’organisation et l’environnement affichés ;
-6. le statut est suivi automatiquement avec un polling borné et annulable ;
-7. les statuts de succès, d’échec, de timeout et d’accès refusé sont compréhensibles ;
-8. le parcours fonctionne en mode Demo sans réseau et reste compatible avec le mode Live ;
-9. les tests couvrent les use cases, la frontière Tauri et le parcours Vue ;
-10. aucune sortie, fixture ou erreur ne contient de secret, token, réponse HTTP brute ou chemin local sensible.
+3. le GUI peut uploader ce bundle pour créer un proxy ou une nouvelle révision ;
+4. la révision créée apparaît explicitement comme `Not deployed` ;
+5. le GUI ne permet de déployer qu’une révision existante et sélectionnée ;
+6. le GUI demande une confirmation explicite avant l’upload puis une confirmation distincte avant le déploiement ;
+7. le GUI déploie la révision sur l’organisation et l’environnement affichés ;
+8. le statut est suivi automatiquement avec un polling borné et annulable ;
+9. le parcours fonctionne en mode Demo sans réseau et reste compatible avec le mode Live ;
+10. les tests couvrent les use cases, la frontière Tauri et le parcours Vue ;
+11. aucune sortie, fixture ou erreur ne contient de secret, token, réponse HTTP brute ou chemin local sensible.
 
 ---
 
 ## 6. Premier point recommandé
 
-Le premier travail M8 doit être **M8-00 — Baseline, contrat et scénario de déploiement**.
+Le premier travail M8 doit être **M8-00 — Baseline, contrat et scénario de création/déploiement**.
 
-Les use cases métier existent déjà, mais leur contrat GUI, le cycle de vie des artefacts locaux et la séparation stricte entre import et déploiement doivent être figés avant d’ajouter des commandes Tauri ou une interface mutative. Cette étape évite de construire un parcours frontend qui mélangerait génération locale, import de révision et déploiement distant.
+Les use cases métier existent déjà, mais leur contrat GUI, le cycle de vie des artefacts locaux et la séparation stricte entre création/upload et déploiement doivent être figés avant d’ajouter des commandes Tauri ou une interface mutative. Cette étape évite de construire un parcours frontend qui traiterait un template comme une ressource déployable ou mélangerait la création d’une révision et son déploiement.
 
 ---
 
@@ -345,9 +359,10 @@ Le scénario manuel doit utiliser l’organisation d’évaluation documentée d
 2. sélectionner explicitement organisation et environnement ;
 3. utiliser une spec et un template Hello World sans secret ;
 4. générer le bundle localement ;
-5. importer la révision ;
-6. confirmer le déploiement après vérification de la cible ;
-7. suivre le statut jusqu’à `Succeeded` ou `Failed` ;
+5. confirmer l’upload et créer le proxy ou la révision ;
+6. vérifier que la révision apparaît comme `Not deployed` ;
+7. sélectionner cette révision et confirmer séparément le déploiement ;
+8. suivre le statut jusqu’à `Succeeded` ou `Failed` ;
 8. conserver uniquement un rapport non sensible.
 
 Toute réponse inattendue de l’API doit être traitée comme un échec à analyser, pas comme une raison d’affaiblir la validation, les permissions ou la sécurité.

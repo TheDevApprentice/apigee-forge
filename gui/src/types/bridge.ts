@@ -85,16 +85,14 @@ export type OpenApiSourceDto = {
   content: string
 }
 
-export type DeploymentJobInputDto = {
+export type ProxyCreationJobInputDto = {
   template_name: string
   openapi_source: OpenApiSourceDto
   organization: string
-  environment: string
   proxy_name: string
-  override_existing: boolean
 }
 
-export type DeploymentPreviewDto = {
+export type ProxyCreationPreviewDto = {
   template_name: string
   spec_display_name: string
   organization: string

@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
-import type { DeploymentJobInputDto, DeploymentPreviewDto, OpenApiSourceDto, TemplateDto } from '../types/bridge'
+import type { ProxyCreationJobInputDto, ProxyCreationPreviewDto, OpenApiSourceDto, TemplateDto } from '../types/bridge'
 
-export type DeploymentPreparationField = 'template' | 'spec' | 'organization' | 'environment' | 'proxy'
-export type DeploymentPreparationErrors = Partial<Record<DeploymentPreparationField, string>>
+export type ProxyCreationPreparationField = 'template' | 'spec' | 'organization' | 'environment' | 'proxy'
+export type ProxyCreationPreparationErrors = Partial<Record<ProxyCreationPreparationField, string>>
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -72,7 +72,7 @@ function countPolicies(template: TemplateDto | null): number {
 }
 
 function validateTemplate(template: TemplateDto | null): string | undefined {
-  if (!template) return 'Select a template before preparing a deployment.'
+  if (!template) return 'Select a template before preparing proxy creation.'
   if (!templateName(template)) return 'The selected template must have a name.'
   const metadata = templateMetadata(template)
   if (!metadata || typeof metadata.owner !== 'string' || !metadata.owner.trim()) return 'The selected template is missing a valid owner.'
@@ -82,15 +82,15 @@ function validateTemplate(template: TemplateDto | null): string | undefined {
   return undefined
 }
 
-export function useDeploymentPreparation() {
+export function useProxyCreationPreparation() {
   const selectedTemplate = ref<TemplateDto | null>(null)
   const openApiSource = ref<OpenApiSourceDto>({ display_name: '', content: '' })
   const organization = ref('')
   const environment = ref('')
   const proxyName = ref('')
 
-  const errors = computed<DeploymentPreparationErrors>(() => {
-    const next: DeploymentPreparationErrors = {}
+  const errors = computed<ProxyCreationPreparationErrors>(() => {
+    const next: ProxyCreationPreparationErrors = {}
     const templateError = validateTemplate(selectedTemplate.value)
     if (templateError) next.template = templateError
     if (!openApiSource.value.display_name.trim()) next.spec = 'Provide a name for the OpenAPI specification.'
@@ -106,7 +106,7 @@ export function useDeploymentPreparation() {
     const target = templateMetadata(selectedTemplate.value)?.target_environment
     return typeof target === 'string' && target.trim() ? target.trim() : null
   })
-  const preview = computed<DeploymentPreviewDto | null>(() => {
+  const preview = computed<ProxyCreationPreviewDto | null>(() => {
     if (!selectedTemplate.value) return null
     return {
       template_name: templateName(selectedTemplate.value),
@@ -136,6 +136,10 @@ export function useDeploymentPreparation() {
     environment.value = nextEnvironment
   }
 
+  function setProxyName(value: string) {
+    proxyName.value = value
+  }
+
   function clear() {
     selectedTemplate.value = null
     openApiSource.value = { display_name: '', content: '' }
@@ -144,15 +148,13 @@ export function useDeploymentPreparation() {
     proxyName.value = ''
   }
 
-  function jobInput(): DeploymentJobInputDto | null {
+  function jobInput(): ProxyCreationJobInputDto | null {
     if (!ready.value || !selectedTemplate.value) return null
     return {
       template_name: templateName(selectedTemplate.value),
       openapi_source: { ...openApiSource.value },
       organization: organization.value.trim(),
-      environment: environment.value.trim(),
       proxy_name: proxyName.value.trim(),
-      override_existing: false,
     }
   }
 
@@ -169,6 +171,7 @@ export function useDeploymentPreparation() {
     selectTemplate,
     setOpenApiSource,
     setContext,
+    setProxyName,
     clear,
     jobInput,
   }

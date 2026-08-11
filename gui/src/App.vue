@@ -7,7 +7,7 @@ import { useSession } from './composables/useSession'
 import type { AppMode, ProxyDto, RevisionDetailDto, SessionDto, TemplateDto } from './types/bridge'
 import { useOrganizations } from './composables/useOrganizations'
 import { useProxies } from './composables/useProxies'
-import { useDeploymentPreparation } from './composables/useDeploymentPreparation'
+import { useProxyCreationPreparation } from './composables/useDeploymentPreparation'
 import { useTemplateEditor } from './composables/useTemplateEditor'
 import BaseButton from './components/base/BaseButton.vue'
 import BaseCard from './components/base/BaseCard.vue'
@@ -17,6 +17,7 @@ import BaseModal from './components/base/BaseModal.vue'
 import BaseErrorState from './components/base/BaseErrorState.vue'
 import BaseSpinner from './components/base/BaseSpinner.vue'
 import TemplateEditorShell from './components/template/TemplateEditorShell.vue'
+import ProxyCreationPreparation from './components/ProxyCreationPreparation.vue'
 
 type NavigationItem = {
   label: string
@@ -45,14 +46,14 @@ const appSession = useSession()
 const selectedMode = appSession.selectedMode
 const organizations = useOrganizations()
 const proxies = useProxies()
-const deploymentPreparation = useDeploymentPreparation()
-const deploymentTemplate = deploymentPreparation.selectedTemplate
-const deploymentOpenApiSource = deploymentPreparation.openApiSource
-const deploymentProxyName = deploymentPreparation.proxyName
-const deploymentErrors = deploymentPreparation.errors
-const deploymentReady = deploymentPreparation.ready
-const deploymentPreview = deploymentPreparation.preview
-const deploymentLogicalTarget = deploymentPreparation.logicalTargetEnvironment
+const proxyCreationPreparation = useProxyCreationPreparation()
+const proxyCreationTemplate = proxyCreationPreparation.selectedTemplate
+const proxyCreationOpenApiSource = proxyCreationPreparation.openApiSource
+const proxyCreationProxyName = proxyCreationPreparation.proxyName
+const proxyCreationErrors = proxyCreationPreparation.errors
+const proxyCreationReady = proxyCreationPreparation.ready
+const proxyCreationPreview = proxyCreationPreparation.preview
+const proxyCreationLogicalTarget = proxyCreationPreparation.logicalTargetEnvironment
 const templateEditor = useTemplateEditor()
 const templateList = ref<TemplateDto[]>([])
 const templateSearch = ref('')
@@ -133,14 +134,14 @@ watch(selectedOrganization, (organization) => {
 })
 
 watch(selectedEnvironment, (environment) => {
-  deploymentPreparation.setContext(selectedOrganization.value, environment)
+  proxyCreationPreparation.setContext(selectedOrganization.value, environment)
   if (selectedOrganization.value && environment) {
     void proxies.load(selectedOrganization.value, selectedEnvironment.value)
   }
 })
 
 watch(selectedOrganization, (organization) => {
-  deploymentPreparation.setContext(organization, selectedEnvironment.value)
+  proxyCreationPreparation.setContext(organization, selectedEnvironment.value)
 })
 
 function retryContext() {
@@ -443,17 +444,17 @@ async function selectTemplate(name: string) {
   }
 }
 
-function prepareDeployment(name: string) {
+function prepareProxyCreation(name: string) {
   const template = templateList.value.find((candidate) => candidate.name === name)
   if (!template) return
-  deploymentPreparation.selectTemplate(template)
-  deploymentPreparation.setContext(selectedOrganization.value, selectedEnvironment.value)
-  activeView.value = 'Deployments'
+  proxyCreationPreparation.selectTemplate(template)
+  proxyCreationPreparation.setContext(selectedOrganization.value, selectedEnvironment.value)
+  activeView.value = 'Proxies'
   resetContentScroll()
 }
 
-function cancelDeploymentPreparation() {
-  deploymentPreparation.clear()
+function cancelProxyCreationPreparation() {
+  proxyCreationPreparation.clear()
   activeView.value = 'Templates'
   resetContentScroll()
 }
@@ -526,14 +527,8 @@ function resetContentScroll() {
 }
 
 function openCreateProxy() {
-  activeView.value = 'Proxies'
+  activeView.value = 'Templates'
   resetContentScroll()
-  modal.value = {
-    title: 'Create proxy',
-    message: 'The guided proxy wizard will be available in M8. It will support templates, OpenAPI specifications, bundle upload and an explicit deployment review.',
-    confirmLabel: 'Close',
-  }
-  modalAction.value = () => { modal.value = null }
 }
 
 function retryProxies() {
@@ -759,59 +754,11 @@ void templateEditor
 
 
         <template v-else-if="activeView === 'Deployments'">
-          <BaseCard eyebrow="Deployment preparation">
-            <BaseEmptyState v-if="!deploymentTemplate">
-              <template #title>No deployment prepared</template>
-              <template #hint>Select Prepare deployment from a saved template to create a non-mutating preview.</template>
+          <BaseCard eyebrow="Deploy existing revision">
+            <BaseEmptyState>
+              <template #title>No revision selected</template>
+              <template #hint>Select an existing proxy revision from the Proxies catalogue to review and deploy it.</template>
             </BaseEmptyState>
-            <div v-else class="deployment-preparation">
-              <div class="deployment-preparation__header">
-                <div>
-                  <h2>Prepare a deployment</h2>
-                  <p>Review the local inputs and target before any bundle generation or Apigee mutation.</p>
-                </div>
-                <BaseChip :label="deploymentReady ? 'Ready for next step' : 'Needs attention'" />
-              </div>
-              <div class="deployment-preparation__form">
-                <label>
-                  <span>OpenAPI display name</span>
-                  <input v-model="deploymentOpenApiSource.display_name" type="text" placeholder="openapi.yaml" />
-                  <small v-if="deploymentErrors.spec" class="deployment-preparation__field-error">{{ deploymentErrors.spec }}</small>
-                </label>
-                <label>
-                  <span>OpenAPI document</span>
-                  <textarea v-model="deploymentOpenApiSource.content" rows="8" placeholder="Paste an OpenAPI document for this local preview" />
-                </label>
-                <label>
-                  <span>Proxy name</span>
-                  <input v-model="deploymentProxyName" type="text" />
-                  <small v-if="deploymentErrors.proxy" class="deployment-preparation__field-error">{{ deploymentErrors.proxy }}</small>
-                </label>
-              </div>
-              <div class="deployment-preparation__preview" role="status" aria-live="polite">
-                <div class="deployment-preparation__preview-header"><strong>Deployment preview</strong><span>Non-mutating</span></div>
-                <dl v-if="deploymentPreview">
-                  <div><dt>Template</dt><dd>{{ deploymentPreview.template_name }}</dd></div>
-                  <div><dt>OpenAPI</dt><dd>{{ deploymentPreview.spec_display_name || 'Not provided' }}</dd></div>
-                  <div><dt>Organization</dt><dd>{{ deploymentPreview.organization || 'Not selected' }}</dd></div>
-                  <div><dt>Apigee environment</dt><dd>{{ deploymentPreview.environment || 'Not selected' }}</dd></div>
-                  <div><dt>Proxy</dt><dd>{{ deploymentPreview.proxy_name || 'Not resolved' }}</dd></div>
-                  <div><dt>Policies</dt><dd>{{ deploymentPreview.policy_count }}</dd></div>
-                </dl>
-                <p v-if="deploymentLogicalTarget && deploymentPreview?.logical_target_matches === false" class="deployment-preparation__warning">
-                  Template target “{{ deploymentLogicalTarget }}” is a logical target. It differs from the selected Apigee environment; confirm the mapping explicitly before deployment.
-                </p>
-              </div>
-              <div v-if="Object.keys(deploymentErrors).length" class="deployment-preparation__errors" role="alert" aria-live="assertive">
-                <strong>Preparation cannot continue</strong>
-                <span v-for="(message, field) in deploymentErrors" :key="field">{{ message }}</span>
-              </div>
-              <div class="review-actions">
-                <button type="button" @click="cancelDeploymentPreparation">Back to templates</button>
-                <button type="button" class="primary-action" disabled>Continue to bundle generation</button>
-              </div>
-              <p class="deployment-preparation__next-step">Bundle generation will be connected in M8-02. This screen does not write files or call Apigee.</p>
-            </div>
           </BaseCard>
         </template>
 
@@ -931,7 +878,21 @@ void templateEditor
           </BaseCard>
         </template>
         <template v-else-if="activeView === 'Proxies'">
-          <BaseCard eyebrow="Proxy catalogue">
+          <BaseCard v-if="proxyCreationTemplate" eyebrow="Proxy creation">
+            <ProxyCreationPreparation
+              :open-api-source="proxyCreationOpenApiSource"
+              :proxy-name="proxyCreationProxyName"
+              :errors="proxyCreationErrors"
+              :ready="proxyCreationReady"
+              :preview="proxyCreationPreview"
+              :logical-target-environment="proxyCreationLogicalTarget"
+              @update-open-api-display-name="proxyCreationPreparation.setOpenApiSource({ display_name: $event })"
+              @update-open-api-content="proxyCreationPreparation.setOpenApiSource({ content: $event })"
+              @update-proxy-name="proxyCreationPreparation.setProxyName($event)"
+              @cancel="cancelProxyCreationPreparation"
+            />
+          </BaseCard>
+          <BaseCard v-else eyebrow="Proxy catalogue">
             <div class="proxy-catalogue__header">
               <div><p class="proxy-catalogue__intro">Manage proxies in the selected Apigee organization and environment.</p></div>
               <button type="button" class="primary-action" @click="openCreateProxy">Create proxy</button>
@@ -1020,7 +981,7 @@ void templateEditor
                   <span>{{ templateOwner(template) }}</span>
                 </button>
                 <div class="template-list__actions">
-                  <button type="button" class="template-list__prepare" @click="prepareDeployment(template.name)">Prepare deployment</button>
+                  <button type="button" class="template-list__prepare" @click="prepareProxyCreation(template.name)">Prepare proxy creation</button>
                   <button type="button" class="template-list__delete" :disabled="templateDeletePending === template.name" @click="deleteTemplate(template.name)">Delete</button>
                 </div>
               </li>

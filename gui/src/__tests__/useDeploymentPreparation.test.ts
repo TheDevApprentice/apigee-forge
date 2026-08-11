@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { useDeploymentPreparation, deriveProxyName } from '../composables/useDeploymentPreparation'
+import { useProxyCreationPreparation, deriveProxyName } from '../composables/useDeploymentPreparation'
 import type { TemplateDto } from '../types/bridge'
 
 const template: TemplateDto = {
@@ -21,13 +21,13 @@ const template: TemplateDto = {
 
 const openApi = `openapi: 3.0.0\ninfo:\n  title: Orders\n  version: 1.0.0`
 
-describe('useDeploymentPreparation', () => {
+describe('useProxyCreationPreparation', () => {
   it('derives a proxy name from the template naming convention', () => {
     expect(deriveProxyName(template)).toBe('api-orders')
   })
 
   it('builds a non-mutating preview only when all inputs are valid', () => {
-    const preparation = useDeploymentPreparation()
+    const preparation = useProxyCreationPreparation()
     preparation.selectTemplate(template)
     preparation.setOpenApiSource({ display_name: 'orders.yaml', content: openApi })
     preparation.setContext('apigee-forge', 'eval')
@@ -43,11 +43,11 @@ describe('useDeploymentPreparation', () => {
       logical_target_matches: false,
       policy_count: 1,
     })
-    expect(preparation.jobInput()?.override_existing).toBe(false)
+    expect(preparation.jobInput()?.proxy_name).toBe('api-orders')
   })
 
   it('rejects incomplete input and distinguishes the logical target from Apigee environment', () => {
-    const preparation = useDeploymentPreparation()
+    const preparation = useProxyCreationPreparation()
     preparation.selectTemplate(template)
     preparation.setOpenApiSource({ display_name: 'orders.yaml', content: 'not an OpenAPI document' })
     preparation.setContext('', '')

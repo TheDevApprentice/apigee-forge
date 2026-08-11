@@ -79,7 +79,7 @@ describe('App M6-Bis flow', () => {
     expect(wrapper.find('button.primary-action').exists()).toBe(false)
   })
 
-  it('prepares a non-mutating deployment preview from a saved template', async () => {
+  it('prepares a non-mutating proxy creation preview from a saved template', async () => {
     invokeMock.mockImplementation(async (command: string) => {
       if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
       if (command === 'list_organizations') return [{ id: 'demo-org', project_id: 'demo-project', location: null }]
@@ -103,7 +103,7 @@ describe('App M6-Bis flow', () => {
     await vi.waitFor(() => expect(wrapper.find('.template-list__prepare').exists()).toBe(true))
 
     await wrapper.find('.template-list__prepare').trigger('click')
-    expect(wrapper.text()).toContain('Prepare a deployment')
+    expect(wrapper.text()).toContain('Prepare proxy creation')
     expect(wrapper.text()).toContain('api-orders')
     expect(wrapper.text()).toContain('Provide a name for the OpenAPI specification.')
 
@@ -113,7 +113,7 @@ describe('App M6-Bis flow', () => {
 
     expect(wrapper.text()).toContain('demo-org')
     expect(wrapper.text()).toContain('demo')
-    expect(wrapper.text()).toContain('Ready for next step')
+    expect(wrapper.text()).toContain('Ready to generate')
     expect(invokeMock).not.toHaveBeenCalledWith('generate_proxy_bundle', expect.anything())
     expect(invokeMock).not.toHaveBeenCalledWith('deploy_proxy', expect.anything())
   })
