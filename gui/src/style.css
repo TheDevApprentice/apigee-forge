@@ -1956,6 +1956,32 @@ button:focus-visible {
   outline-offset: 3px;
 }
 
+.revision-row__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.revision-row__actions button {
+  padding: 6px 9px;
+  color: var(--text-secondary);
+  background: var(--page-bg);
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.revision-row__actions button:hover {
+  color: var(--accent-active);
+  border-color: var(--accent-active);
+}
+
+.revision-row__hint {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
 .revision-detail {
   margin-top: 10px;
   padding-top: 10px;

@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 import packageJson from '../package.json'
 import { useAuth } from './composables/useAuth'
 import { useSession } from './composables/useSession'
-import type { AppMode, ProxyDto, RevisionDetailDto, SessionDto, TemplateDto } from './types/bridge'
+import type { AppMode, ProxyDto, ProxyRevisionDto, RevisionDetailDto, SessionDto, TemplateDto } from './types/bridge'
 import { useOrganizations } from './composables/useOrganizations'
 import { useProxies } from './composables/useProxies'
 import { useProxyCreationPreparation } from './composables/useDeploymentPreparation'
@@ -37,6 +37,9 @@ const selectedOrganization = ref('')
 const selectedEnvironment = ref('')
 const selectedProxy = ref<ProxyDto | null>(null)
 const selectedRevision = ref<number | null>(null)
+const deploymentRevision = ref<number | null>(null)
+const deploymentReviewConfirmed = ref(false)
+const deploymentReviewError = ref<string | null>(null)
 const revisionDetail = ref<RevisionDetailDto | null>(null)
 const revisionDetailLoading = ref(false)
 const revisionDetailError = ref<string | null>(null)
@@ -552,8 +555,37 @@ function retryProxies() {
 function openProxy(proxy: ProxyDto) {
   selectedProxy.value = proxy
   selectedRevision.value = null
+  deploymentRevision.value = null
+  deploymentReviewConfirmed.value = false
+  deploymentReviewError.value = null
   revisionDetail.value = null
   activeView.value = 'Proxies'
+}
+
+function reviewDeploymentRevision(revision: ProxyRevisionDto) {
+  if (!selectedProxy.value) return
+  if (revision.status === 'Succeeded') {
+    deploymentReviewError.value = 'This revision is already deployed. Explicit replacement will be handled in M8-05.'
+    return
+  }
+  if (revision.status !== 'NotDeployed') {
+    deploymentReviewError.value = 'Only an existing revision that is not deployed can be reviewed here.'
+    return
+  }
+  deploymentRevision.value = revision.number
+  deploymentReviewConfirmed.value = false
+  deploymentReviewError.value = null
+  activeView.value = 'Deployments'
+  resetContentScroll()
+}
+
+async function confirmDeploymentReview() {
+  if (!selectedProxy.value || !selectedDeploymentRevision.value) return
+  await askConfirmation(
+    'Confirm revision deployment?',
+    `Review target ${selectedOrganization.value} / ${selectedEnvironment.value} for proxy ${selectedProxy.value.name}, revision ${selectedDeploymentRevision.value.number}. No deployment will run until the next implementation step.`,
+    () => { deploymentReviewConfirmed.value = true },
+  )
 }
 
 async function logout() {
@@ -601,6 +633,11 @@ const visibleProxies = computed(() => proxyList.value.filter((proxy) => {
     ? revision.status === 'Succeeded'
     : revision.status === 'NotDeployed')
 }))
+
+const selectedDeploymentRevision = computed<ProxyRevisionDto | null>(() => {
+  if (!selectedProxy.value || deploymentRevision.value === null) return null
+  return selectedProxy.value.revisions.find((revision) => revision.number === deploymentRevision.value) || null
+})
 
 const dashboardMetrics = computed(() => ({
   proxies: proxyList.value.length,
@@ -766,7 +803,32 @@ void templateEditor
 
 
         <template v-else-if="activeView === 'Deployments'">
-          <BaseCard eyebrow="Deploy existing revision">
+          <BaseCard v-if="selectedProxy && selectedDeploymentRevision" eyebrow="Deployment review">
+            <div class="deployment-review">
+              <div class="deployment-preparation__header">
+                <div>
+                  <h2>Review proxy revision</h2>
+                  <p>Confirm the existing revision and target before deployment. This review does not deploy anything yet.</p>
+                </div>
+                <BaseChip :label="deploymentReviewConfirmed ? 'Review confirmed' : 'Confirmation required'" />
+              </div>
+              <dl class="review-grid">
+                <div><span>Mode</span><strong>{{ isDemo ? 'Demo' : 'Live' }}</strong></div>
+                <div><span>Organization</span><strong>{{ selectedOrganization }}</strong></div>
+                <div><span>Environment</span><strong>{{ selectedEnvironment }}</strong></div>
+                <div><span>Proxy</span><strong>{{ selectedProxy.name }}</strong></div>
+                <div><span>Revision</span><strong>{{ selectedDeploymentRevision.number }}</strong></div>
+                <div><span>Current status</span><strong>{{ selectedDeploymentRevision.status }}</strong></div>
+              </dl>
+              <p v-if="deploymentReviewError" class="deployment-preparation__warning" role="alert">{{ deploymentReviewError }}</p>
+              <div class="review-actions">
+                <button type="button" @click="activeView = 'Proxies'">Back to proxies</button>
+                <button v-if="!deploymentReviewConfirmed" type="button" class="primary-action" @click="confirmDeploymentReview">Confirm review</button>
+                <button v-else type="button" class="primary-action" disabled>Deploy revision (M8-05)</button>
+              </div>
+            </div>
+          </BaseCard>
+          <BaseCard v-else eyebrow="Deploy existing revision">
             <BaseEmptyState>
               <template #title>No revision selected</template>
               <template #hint>Select an existing proxy revision from the Proxies catalogue to review and deploy it.</template>
@@ -926,7 +988,7 @@ void templateEditor
             </BaseEmptyState>
             <ul v-else class="proxy-list">
               <li v-for="proxy in visibleProxies" :key="proxy.name">
-                <button type="button" class="proxy-list__button" @click="selectedProxy = proxy">
+                <button type="button" class="proxy-list__button" @click="openProxy(proxy)">
                   <span>{{ proxy.name }}</span>
                   <span class="proxy-list__revision">{{ proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed' }}</span>
                 </button>
@@ -965,6 +1027,11 @@ void templateEditor
                       <div><dt>Proxy</dt><dd>{{ revisionDetail.proxy_name }}</dd></div>
                       <div><dt>API fields</dt><dd>{{ Object.keys(revisionDetail.data).length }}</dd></div>
                     </dl>
+                  </div>
+                  <div class="revision-row__actions">
+                    <button v-if="revision.status === 'NotDeployed'" type="button" @click="reviewDeploymentRevision(revision)">Review deployment</button>
+                    <span v-else-if="revision.status === 'Succeeded'" class="revision-row__hint">Already deployed</span>
+                    <span v-else class="revision-row__hint">{{ revision.status }}</span>
                   </div>
                 </li>
               </ul>

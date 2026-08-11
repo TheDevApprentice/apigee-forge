@@ -248,12 +248,14 @@ feat(gui): generate and upload proxy bundle
 
 ### M8-04 — Sélection et review d’une révision à déployer
 
-- [ ] Présenter les proxies et leurs révisions existantes dans le catalogue `Proxies`.
-- [ ] Afficher explicitement organisation, environnement, proxy, révision, statut actuel et mode Live/Demo.
-- [ ] Refuser la sélection d’une révision absente d’Apigee ou déjà déployée sans action explicite de remplacement.
-- [ ] Exiger une confirmation distincte de l’upload qui a créé la révision.
-- [ ] Empêcher double clic, soumission concurrente et déploiement sans révision sélectionnée.
-- [ ] Conserver un état local récupérable en cas d’annulation ou d’erreur avant mutation.
+- [x] Présenter les proxies et leurs révisions existantes dans le catalogue `Proxies`.
+- [x] Afficher explicitement organisation, environnement, proxy, révision, statut actuel et mode Live/Demo.
+- [x] Refuser la sélection d’une révision absente d’Apigee ou déjà déployée sans action explicite de remplacement.
+- [x] Exiger une confirmation distincte de l’upload qui a créé la révision.
+- [x] Empêcher double clic, soumission concurrente et déploiement sans révision sélectionnée.
+- [x] Conserver un état local récupérable en cas d’annulation ou d’erreur avant mutation.
+
+La confirmation M8-04 prépare l’état de déploiement mais n’appelle volontairement pas encore `DeployProxyUseCase`; la mutation et son résultat appartiennent à M8-05.
 
 Commit prévu :
 
