@@ -299,12 +299,12 @@ feat(gui): deploy and track proxy revision
 
 ### M8-07 — Écran de déploiement et intégration au dashboard
 
-- [ ] Remplacer l’état vide de `Deployments` par le parcours complet de review et d’exécution.
-- [ ] Ajouter résumé de la cible, progression, statut courant, erreurs et résultat final.
-- [ ] Permettre de revenir au template ou aux proxies sans perdre un état utile ni relancer une mutation.
-- [ ] Actualiser la liste des proxies/révisions après import ou déploiement réussi.
-- [ ] Garantir navigation clavier, labels accessibles, annonces `aria-live` et affichage responsive.
-- [ ] Tester le parcours Vue nominal et les branches d’erreur avec `InMemoryApigeeGateway`.
+- [x] Remplacer l’état vide de `Deployments` par le parcours complet de review et d’exécution.
+- [x] Ajouter résumé de la cible, progression, statut courant, erreurs et résultat final.
+- [x] Permettre de revenir au template ou aux proxies sans perdre un état utile ni relancer une mutation.
+- [x] Actualiser la liste des proxies/révisions après import ou déploiement réussi.
+- [x] Garantir navigation clavier, labels accessibles, annonces `aria-live` et affichage responsive.
+- [x] Tester le parcours Vue nominal et les branches d’erreur avec `InMemoryApigeeGateway`.
 
 Commit prévu :
 

@@ -604,6 +604,8 @@ async function executeDeployment() {
   }, false)
   if (selectedOrganization.value && selectedEnvironment.value) {
     await proxies.load(selectedOrganization.value, selectedEnvironment.value)
+    const refreshedProxy = proxyList.value.find((proxy) => proxy.name === selectedProxy.value?.name)
+    if (refreshedProxy) selectedProxy.value = refreshedProxy
   }
 }
 
