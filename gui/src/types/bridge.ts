@@ -117,3 +117,13 @@ export type CreatedProxyRevisionDto = {
   revision: number
   deployed: false
 }
+
+export type DeploymentDto = {
+  source: AppMode
+  id: string
+  organization: string
+  environment: string
+  proxy_name: string
+  revision: number
+  status: 'Pending' | 'InProgress' | 'Succeeded' | 'Failed'
+}

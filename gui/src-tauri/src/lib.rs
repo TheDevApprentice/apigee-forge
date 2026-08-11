@@ -222,6 +222,8 @@ pub fn run() -> Result<(), tauri::Error> {
             commands::get_revision_detail,
             commands::list_environments,
             commands::list_proxies,
+            commands::get_deployment_status,
+            commands::deploy_proxy,
             commands::generate_proxy_bundle,
             commands::upload_proxy_bundle,
             commands::list_templates,

@@ -7,18 +7,18 @@ use std::{
 use apigee_forge_core::use_cases::{APP_MODE_KEY, SESSION_STATE_KEY};
 use apigee_forge_core::{
     domain::{
-        AppMode, AuthContext, AuthMode, Environment, Organization, Proxy, ProxyName, RenderInput,
-        RenderMethod, RenderRoute, SessionState, SessionStatus, TargetUrl, Template,
+        AppMode, AuthContext, AuthMode, Deployment, Environment, Organization, Proxy, ProxyName,
+        RenderInput, RenderMethod, RenderRoute, SessionState, SessionStatus, TargetUrl, Template,
     },
     error::{AuthError, GatewayError, GenerateProxyBundleError, RenderInputError},
     infra::{FilesystemBundleWriter, TeraBundleRenderer, ZipBundleArchiver},
     openapi::{parse_openapi, HttpMethod, OpenApiError},
     ports::{ApigeeGateway, ApigeeProxyBundleGateway},
     use_cases::{
-        CreateTemplateUseCase, DeleteTemplateUseCase, GenerateProxyBundleUseCase,
-        GetApigeeRolesUseCase, GetDeploymentStatusUseCase, GetTemplateUseCase,
-        ImportProxyBundleUseCase, ListEnvironmentsUseCase, ListOrganizationsUseCase,
-        ListProxiesUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
+        CreateTemplateUseCase, DeleteTemplateUseCase, DeployProxyUseCase,
+        GenerateProxyBundleUseCase, GetApigeeRolesUseCase, GetDeploymentStatusUseCase,
+        GetTemplateUseCase, ImportProxyBundleUseCase, ListEnvironmentsUseCase,
+        ListOrganizationsUseCase, ListProxiesUseCase, ListTemplatesUseCase, UpdateTemplateUseCase,
     },
 };
 use tauri::State;
@@ -141,6 +141,29 @@ pub struct BundleGenerationResultDto {
     pub proxy_name: String,
     pub rendered_file_count: usize,
     pub state: &'static str,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct DeploymentDto {
+    pub source: AppMode,
+    pub id: String,
+    pub organization: String,
+    pub environment: String,
+    pub proxy_name: String,
+    pub revision: u32,
+    pub status: String,
+}
+
+fn deployment_dto(deployment: Deployment, source: AppMode, organization: String) -> DeploymentDto {
+    DeploymentDto {
+        source,
+        id: deployment.id,
+        organization,
+        environment: deployment.environment,
+        proxy_name: deployment.proxy_name,
+        revision: deployment.revision,
+        status: format!("{:?}", deployment.status),
+    }
 }
 
 fn auth_error(error: AuthError) -> GuiError {
@@ -661,6 +684,23 @@ fn bundle_gateway(state: &GuiState) -> Result<Arc<dyn ApigeeProxyBundleGateway>,
         })
 }
 
+fn deployment_gateway(
+    state: &GuiState,
+) -> Result<Arc<dyn apigee_forge_core::ports::ApigeeDeploymentGateway>, GuiError> {
+    state
+        .deployment_gateway
+        .lock()
+        .map_err(|_| GuiError {
+            code: "STATE_ERROR",
+            message: "application state is unavailable",
+        })?
+        .clone()
+        .ok_or(GuiError {
+            code: "GATEWAY_CONFIGURATION",
+            message: "Apigee deployment gateway configuration is unavailable",
+        })
+}
+
 fn gateway(state: &GuiState) -> Result<Arc<dyn ApigeeGateway>, GuiError> {
     state
         .gateway
@@ -969,6 +1009,88 @@ pub async fn upload_proxy_bundle(
         revision: revision.number,
         deployed: false,
     })
+}
+
+#[tauri::command]
+pub async fn get_deployment_status(
+    state: State<'_, GuiState>,
+    organization: String,
+    environment: String,
+    proxy_name: String,
+    revision: u32,
+) -> Result<DeploymentDto, GuiError> {
+    let organization = organization.trim().to_owned();
+    let environment = environment.trim().to_owned();
+    let proxy_name = proxy_name.trim().to_owned();
+    if organization.is_empty() || environment.is_empty() || proxy_name.is_empty() || revision == 0 {
+        return Err(GuiError {
+            code: "DEPLOYMENT_INPUT_INVALID",
+            message: "organization, environment, proxy name and revision are required",
+        });
+    }
+    let deployment = GetDeploymentStatusUseCase::new(deployment_gateway(&state)?)
+        .execute(&organization, &environment, &proxy_name, revision)
+        .await
+        .map_err(gateway_error)?;
+    let source = session_lock(&state)?.mode;
+    Ok(deployment_dto(deployment, source, organization))
+}
+
+#[tauri::command]
+pub async fn deploy_proxy(
+    state: State<'_, GuiState>,
+    organization: String,
+    environment: String,
+    proxy_name: String,
+    revision: u32,
+    override_existing: bool,
+) -> Result<DeploymentDto, GuiError> {
+    let organization = organization.trim().to_owned();
+    let environment = environment.trim().to_owned();
+    let proxy_name = proxy_name.trim().to_owned();
+    if organization.is_empty() || environment.is_empty() || proxy_name.is_empty() || revision == 0 {
+        return Err(GuiError {
+            code: "DEPLOYMENT_INPUT_INVALID",
+            message: "organization, environment, proxy name and revision are required",
+        });
+    }
+    let proxies = ListProxiesUseCase::new(gateway(&state)?)
+        .execute(&organization)
+        .await
+        .map_err(gateway_error)?;
+    let proxy = proxies
+        .iter()
+        .find(|proxy| proxy.name == proxy_name)
+        .ok_or(GuiError {
+            code: "REVISION_NOT_FOUND",
+            message: "The selected proxy revision was not found",
+        })?;
+    let selected_revision = proxy
+        .revisions
+        .iter()
+        .find(|candidate| candidate.number == revision)
+        .ok_or(GuiError {
+            code: "REVISION_NOT_FOUND",
+            message: "The selected proxy revision was not found",
+        })?;
+    if selected_revision.deployed && !override_existing {
+        return Err(GuiError {
+            code: "REVISION_ALREADY_DEPLOYED",
+            message: "This revision is already deployed; explicit replacement is required",
+        });
+    }
+    let deployment = DeployProxyUseCase::new(deployment_gateway(&state)?)
+        .execute(
+            &organization,
+            &environment,
+            &proxy_name,
+            revision,
+            override_existing,
+        )
+        .await
+        .map_err(gateway_error)?;
+    let source = session_lock(&state)?.mode;
+    Ok(deployment_dto(deployment, source, organization))
 }
 
 #[tauri::command]

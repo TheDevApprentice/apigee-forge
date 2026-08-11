@@ -7,6 +7,7 @@ import { useSession } from './composables/useSession'
 import type { AppMode, ProxyDto, ProxyRevisionDto, RevisionDetailDto, SessionDto, TemplateDto } from './types/bridge'
 import { useOrganizations } from './composables/useOrganizations'
 import { useProxies } from './composables/useProxies'
+import { useDeployment } from './composables/useDeployment'
 import { useProxyCreationPreparation } from './composables/useDeploymentPreparation'
 import { useTemplateEditor } from './composables/useTemplateEditor'
 import BaseButton from './components/base/BaseButton.vue'
@@ -49,6 +50,7 @@ const appSession = useSession()
 const selectedMode = appSession.selectedMode
 const organizations = useOrganizations()
 const proxies = useProxies()
+const deployment = useDeployment()
 const proxyCreationPreparation = useProxyCreationPreparation()
 const proxyCreationTemplate = proxyCreationPreparation.selectedTemplate
 const proxyCreationOpenApiSource = proxyCreationPreparation.openApiSource
@@ -61,6 +63,10 @@ const proxyCreationStatus = proxyCreationPreparation.status
 const proxyCreationGeneration = proxyCreationPreparation.generation
 const proxyCreationCreatedRevision = proxyCreationPreparation.createdRevision
 const proxyCreationError = proxyCreationPreparation.error
+const deploymentResult = deployment.result
+const deploymentStatus = deployment.status
+const deploymentError = deployment.error
+const deploymentLastUpdated = deployment.lastUpdated
 const templateEditor = useTemplateEditor()
 const templateList = ref<TemplateDto[]>([])
 const templateSearch = ref('')
@@ -583,9 +589,22 @@ async function confirmDeploymentReview() {
   if (!selectedProxy.value || !selectedDeploymentRevision.value) return
   await askConfirmation(
     'Confirm revision deployment?',
-    `Review target ${selectedOrganization.value} / ${selectedEnvironment.value} for proxy ${selectedProxy.value.name}, revision ${selectedDeploymentRevision.value.number}. No deployment will run until the next implementation step.`,
+    `Review target ${selectedOrganization.value} / ${selectedEnvironment.value} for proxy ${selectedProxy.value.name}, revision ${selectedDeploymentRevision.value.number}.`,
     () => { deploymentReviewConfirmed.value = true },
   )
+}
+
+async function executeDeployment() {
+  if (!deploymentReviewConfirmed.value || !selectedProxy.value || !selectedDeploymentRevision.value) return
+  await deployment.deploy({
+    organization: selectedOrganization.value,
+    environment: selectedEnvironment.value,
+    proxyName: selectedProxy.value.name,
+    revision: selectedDeploymentRevision.value.number,
+  }, false)
+  if (selectedOrganization.value && selectedEnvironment.value) {
+    await proxies.load(selectedOrganization.value, selectedEnvironment.value)
+  }
 }
 
 async function logout() {
@@ -808,7 +827,7 @@ void templateEditor
               <div class="deployment-preparation__header">
                 <div>
                   <h2>Review proxy revision</h2>
-                  <p>Confirm the existing revision and target before deployment. This review does not deploy anything yet.</p>
+                  <p>Confirm the existing revision and target before deployment. Deployment starts only after this review is confirmed.</p>
                 </div>
                 <BaseChip :label="deploymentReviewConfirmed ? 'Review confirmed' : 'Confirmation required'" />
               </div>
@@ -818,13 +837,21 @@ void templateEditor
                 <div><span>Environment</span><strong>{{ selectedEnvironment }}</strong></div>
                 <div><span>Proxy</span><strong>{{ selectedProxy.name }}</strong></div>
                 <div><span>Revision</span><strong>{{ selectedDeploymentRevision.number }}</strong></div>
-                <div><span>Current status</span><strong>{{ selectedDeploymentRevision.status }}</strong></div>
+                <div><span>Current status</span><strong>{{ deploymentResult?.status || selectedDeploymentRevision.status }}</strong></div>
               </dl>
-              <p v-if="deploymentReviewError" class="deployment-preparation__warning" role="alert">{{ deploymentReviewError }}</p>
+              <div v-if="deploymentResult" class="deployment-preparation__created" role="status" aria-live="polite">
+                Deployment status: <strong>{{ deploymentResult.status }}</strong>
+                <span v-if="deploymentLastUpdated"> · updated {{ deploymentLastUpdated.toLocaleTimeString() }}</span>
+              </div>
+              <p v-if="deploymentReviewError || deploymentError" class="deployment-preparation__warning" role="alert">{{ deploymentReviewError || deploymentError }}</p>
               <div class="review-actions">
                 <button type="button" @click="activeView = 'Proxies'">Back to proxies</button>
                 <button v-if="!deploymentReviewConfirmed" type="button" class="primary-action" @click="confirmDeploymentReview">Confirm review</button>
-                <button v-else type="button" class="primary-action" disabled>Deploy revision (M8-05)</button>
+                <button v-else type="button" class="primary-action" :disabled="deploymentStatus === 'deploying' || deploymentStatus === 'polling' || deploymentStatus === 'succeeded'" @click="executeDeployment">
+                  {{ deploymentStatus === 'deploying' ? 'Deploying…' : deploymentStatus === 'polling' ? 'Waiting for status…' : deploymentStatus === 'succeeded' ? 'Deployment succeeded' : 'Deploy revision' }}
+                </button>
+                <button v-if="deploymentStatus === 'polling'" type="button" @click="deployment.stopPolling()">Stop polling</button>
+                <button v-else-if="['failed', 'error', 'timeout', 'stopped'].includes(deploymentStatus)" type="button" @click="executeDeployment">Retry deployment</button>
               </div>
             </div>
           </BaseCard>

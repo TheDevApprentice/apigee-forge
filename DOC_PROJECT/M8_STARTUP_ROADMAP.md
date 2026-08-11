@@ -265,32 +265,36 @@ feat(gui): review proxy revision deployment
 
 ### M8-05 — Déploiement d’une révision existante et contrat de résultat
 
-- [ ] Exposer `DeployProxyUseCase` via une commande Tauri dédiée.
-- [ ] Accepter uniquement une révision existante retournée par Apigee ou par l’étape d’upload M8-03.
-- [ ] Valider la révision, l’organisation, l’environnement, le proxy et `override_existing` côté Rust.
-- [ ] Conserver `override_existing` explicite et jamais activé implicitement.
-- [ ] Retourner un DTO de déploiement stable avec identifiant, cible, révision et statut.
-- [ ] Tester le mapping des statuts `Pending`, `InProgress`, `Succeeded` et `Failed`, ainsi que les erreurs sûres.
+- [x] Exposer `DeployProxyUseCase` via une commande Tauri dédiée.
+- [x] Accepter uniquement une révision existante retournée par Apigee ou par l’étape d’upload M8-03.
+- [x] Valider la révision, l’organisation, l’environnement, le proxy et `override_existing` côté Rust.
+- [x] Conserver `override_existing` explicite et jamais activé implicitement.
+- [x] Retourner un DTO de déploiement stable avec identifiant, cible, révision et statut.
+- [x] Tester le mapping des statuts `Pending`, `InProgress`, `Succeeded` et `Failed`, ainsi que les erreurs sûres.
 
-Commit prévu :
+Le déploiement n’est déclenché qu’après la confirmation M8-04. Le GUI transmet `overrideExisting: false` par défaut ; le remplacement explicite d’une révision déjà déployée sera traité ultérieurement.
+
+Commit partagé avec M8-06 :
 
 ```text
-feat(gui): deploy imported proxy revision
+feat(gui): deploy and track proxy revision
 ```
 
 ### M8-06 — Suivi de statut borné et annulable
 
-- [ ] Exposer `GetDeploymentStatusUseCase` avec un DTO de statut stable.
-- [ ] Implémenter le polling dans un composable Vue dédié, sans manipulation directe du DOM.
-- [ ] Arrêter automatiquement le polling sur succès, échec, annulation ou timeout global.
-- [ ] Empêcher qu’une réponse ancienne écrase le statut d’un nouveau job.
-- [ ] Prévoir un bouton d’arrêt/retry contrôlé et une indication claire de la dernière mise à jour.
-- [ ] Tester transitions, timeout, erreur transitoire, annulation et changement de vue.
+- [x] Exposer `GetDeploymentStatusUseCase` avec un DTO de statut stable.
+- [x] Implémenter le polling dans un composable Vue dédié, sans manipulation directe du DOM.
+- [x] Arrêter automatiquement le polling sur succès, échec, annulation ou timeout global.
+- [x] Empêcher qu’une réponse ancienne écrase le statut d’un nouveau job.
+- [x] Prévoir un bouton d’arrêt/retry contrôlé et une indication claire de la dernière mise à jour.
+- [x] Tester transitions, timeout, erreur transitoire, annulation et changement de vue.
 
-Commit prévu :
+Le polling est borné à 30 secondes par tentative, utilise un délai minimal de 250 ms et invalide les réponses d’une exécution précédente lors d’un arrêt ou d’un retry.
+
+Commit partagé avec M8-05 :
 
 ```text
-feat(gui): track deployment status with bounded polling
+feat(gui): deploy and track proxy revision
 ```
 
 ### M8-07 — Écran de déploiement et intégration au dashboard
