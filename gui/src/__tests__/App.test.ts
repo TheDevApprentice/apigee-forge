@@ -79,6 +79,45 @@ describe('App M6-Bis flow', () => {
     expect(wrapper.find('button.primary-action').exists()).toBe(false)
   })
 
+  it('prepares a non-mutating deployment preview from a saved template', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
+      if (command === 'list_organizations') return [{ id: 'demo-org', project_id: 'demo-project', location: null }]
+      if (command === 'list_environments') return [{ name: 'demo' }]
+      if (command === 'list_templates') return [{
+        name: 'orders',
+        data: {
+          metadata: { name: 'orders', owner: 'platform', naming_convention: { prefix: 'api-', case: 'kebab-case' } },
+          flow: { pre_flow: { request: [], response: [] }, post_flow: { request: [], response: [] } },
+        },
+      }]
+      if (command === 'list_proxies') return []
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.find('button[aria-label="Templates"]').trigger('click')
+    await flushPromises()
+    await vi.waitFor(() => expect(invokeMock).toHaveBeenCalledWith('list_templates'))
+    await vi.waitFor(() => expect(wrapper.find('.template-list__prepare').exists()).toBe(true))
+
+    await wrapper.find('.template-list__prepare').trigger('click')
+    expect(wrapper.text()).toContain('Prepare a deployment')
+    expect(wrapper.text()).toContain('api-orders')
+    expect(wrapper.text()).toContain('Provide a name for the OpenAPI specification.')
+
+    await wrapper.find('input[placeholder="openapi.yaml"]').setValue('orders.yaml')
+    await wrapper.find('textarea[placeholder*="OpenAPI document"]').setValue('openapi: 3.0.0\ninfo:\n  title: Orders')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('demo-org')
+    expect(wrapper.text()).toContain('demo')
+    expect(wrapper.text()).toContain('Ready for next step')
+    expect(invokeMock).not.toHaveBeenCalledWith('generate_proxy_bundle', expect.anything())
+    expect(invokeMock).not.toHaveBeenCalledWith('deploy_proxy', expect.anything())
+  })
+
   it('loads context and proxies only after explicit selections', async () => {
     invokeMock.mockImplementation(async (command: string) => {
       if (command === 'auth_status') return { authenticated: false }

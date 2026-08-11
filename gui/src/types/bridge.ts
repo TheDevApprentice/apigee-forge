@@ -79,3 +79,28 @@ export type GuiCommandError = {
   code: string
   message: string
 }
+
+export type OpenApiSourceDto = {
+  display_name: string
+  content: string
+}
+
+export type DeploymentJobInputDto = {
+  template_name: string
+  openapi_source: OpenApiSourceDto
+  organization: string
+  environment: string
+  proxy_name: string
+  override_existing: boolean
+}
+
+export type DeploymentPreviewDto = {
+  template_name: string
+  spec_display_name: string
+  organization: string
+  environment: string
+  proxy_name: string
+  logical_target_environment: string | null
+  logical_target_matches: boolean | null
+  policy_count: number
+}

@@ -191,11 +191,13 @@ docs(m8): define GUI deployment roadmap and contracts
 
 ### M8-01 — Préparation et preview du job local
 
-- [ ] Permettre de sélectionner un template validé depuis le catalogue M7.
-- [ ] Ajouter la sélection ou la fourniture contrôlée d’une spec OpenAPI.
-- [ ] Résoudre organisation, environnement, nom de proxy et convention de nommage sans dupliquer la logique métier.
-- [ ] Afficher une preview non mutative : template, spec, proxy cible, environnement et étapes à venir.
-- [ ] Refuser la poursuite si le template, la spec ou la cible sont invalides.
+- [x] Permettre de sélectionner un template validé depuis le catalogue M7.
+- [x] Ajouter la sélection ou la fourniture contrôlée d’une spec OpenAPI.
+- [x] Résoudre organisation, environnement, nom de proxy et convention de nommage sans dupliquer la logique métier.
+- [x] Afficher une preview non mutative : template, spec, proxy cible, environnement et étapes à venir.
+- [x] Refuser la poursuite si le template, la spec ou la cible sont invalides.
+
+La résolution du nom de proxy dans cette preview est indicative et dérivée des métadonnées du template. Elle ne déclenche aucune mutation et ne remplace pas la validation métier côté Rust qui sera appliquée avant génération/import.
 
 Commit prévu :
 
