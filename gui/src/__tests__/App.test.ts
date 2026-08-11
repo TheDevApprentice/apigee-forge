@@ -145,6 +145,66 @@ describe('App M6-Bis flow', () => {
     expect(invokeMock).not.toHaveBeenCalledWith('deploy_proxy', expect.anything())
   })
 
+  it('completes the Demo creation-to-deployment journey', async () => {
+    let proxyListCalls = 0
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
+      if (command === 'list_organizations') return [{ id: 'demo-org', project_id: 'demo-project', location: null }]
+      if (command === 'list_environments') return [{ name: 'demo' }]
+      if (command === 'list_templates') return [{
+        name: 'orders',
+        data: {
+          metadata: { name: 'orders', owner: 'platform', naming_convention: { prefix: 'api-', case: 'kebab-case' } },
+          flow: { pre_flow: { request: [], response: [] }, post_flow: { request: [], response: [] } },
+        },
+      }]
+      if (command === 'list_proxies') {
+        proxyListCalls += 1
+        return [{ name: 'api-orders', revisions: [{ number: 2, deployed: proxyListCalls > 2, status: proxyListCalls > 2 ? 'Succeeded' : 'NotDeployed' }] }]
+      }
+      if (command === 'generate_proxy_bundle') return { job_id: 'demo-job', proxy_name: 'api-orders', rendered_file_count: 7, state: 'Ready' }
+      if (command === 'upload_proxy_bundle') return { source: 'demo', organization: 'demo-org', proxy_name: 'api-orders', revision: 2, deployed: false }
+      if (command === 'deploy_proxy') return { source: 'demo', id: 'demo-deployment', organization: 'demo-org', environment: 'demo', proxy_name: 'api-orders', revision: 2, status: 'Pending' }
+      if (command === 'get_deployment_status') return { source: 'demo', id: 'demo-deployment', organization: 'demo-org', environment: 'demo', proxy_name: 'api-orders', revision: 2, status: 'Succeeded' }
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.findAll('.dashboard-action-card')[1].trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('select[aria-label="Select proxy template"]').exists()).toBe(true))
+    await wrapper.find('select[aria-label="Select proxy template"]').setValue('orders')
+    await wrapper.findAll('.workspace-selectors select')[0].setValue('demo-org')
+    await vi.waitFor(() => expect(wrapper.find('.workspace-selectors select option[value="demo"]').exists()).toBe(true))
+    await wrapper.findAll('.workspace-selectors select')[1].setValue('demo')
+    await flushPromises()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Organizationdemo-org'))
+    await wrapper.find('input[placeholder="openapi.yaml"]').setValue('orders.yaml')
+    await wrapper.find('textarea[placeholder*="OpenAPI document"]').setValue('openapi: 3.0.0\nservers:\n  - url: https://api.example.test')
+    await flushPromises()
+
+    await wrapper.find('button.primary-action').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Upload and create proxy'))
+    await wrapper.findAll('button').find((button) => button.text() === 'Upload and create proxy')?.trigger('click')
+    await vi.waitFor(() => expect(proxyListCalls).toBeGreaterThan(1))
+
+    await wrapper.findAll('button').find((button) => button.text() === 'Back to templates')?.trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('.proxy-list__button').exists()).toBe(true))
+    await wrapper.find('.proxy-list__button').trigger('click')
+    await wrapper.find('.revision-row__actions button').trigger('click')
+    await wrapper.find('button.primary-action').trigger('click')
+    document.querySelector<HTMLButtonElement>('.base-modal__actions button:last-child')?.click()
+    await flushPromises()
+    await wrapper.findAll('button').find((button) => button.text() === 'Deploy revision')?.trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Deployment succeeded'))
+    expect(invokeMock).toHaveBeenCalledWith('get_deployment_status', {
+      organization: 'demo-org',
+      environment: 'demo',
+      proxyName: 'api-orders',
+      revision: 2,
+    })
+  })
+
   it('reviews an existing not-deployed revision before any deploy command', async () => {
     invokeMock.mockImplementation(async (command: string) => {
       if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }

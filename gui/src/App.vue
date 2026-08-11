@@ -558,6 +558,7 @@ function resetContentScroll() {
 function openCreateProxy() {
   proxyCreationMode.value = true
   proxyCreationPreparation.clear()
+  proxyCreationPreparation.setContext(selectedOrganization.value, selectedEnvironment.value)
   void loadTemplates()
   activeView.value = 'Proxies'
   resetContentScroll()

@@ -314,14 +314,22 @@ feat(gui): integrate deployment workflow into dashboard
 
 ### M8-08 — Tests de parcours, sécurité et checkpoint de sortie
 
-- [ ] Tester le parcours complet Demo : template → preview → génération → import → déploiement → statut final.
-- [ ] Tester l’absence de réseau pour toutes les opérations Demo et locales.
-- [ ] Ajouter les tests Rust des commandes et des use cases avec doubles, sans credential réel.
-- [ ] Ajouter les tests frontend du composable et du parcours UI, y compris les doubles soumissions et annulations.
-- [ ] Vérifier `cargo test --workspace`, `cargo clippy --workspace --all-targets --all-features` et les tests/build frontend.
-- [ ] Vérifier que les erreurs et fixtures ne contiennent ni secret ni chemin local sensible.
+- [x] Tester le parcours complet Demo : template → preview → génération → import → déploiement → statut final.
+- [x] Tester l’absence de réseau pour toutes les opérations Demo et locales.
+- [x] Ajouter les tests Rust des commandes et des use cases avec doubles, sans credential réel.
+- [x] Ajouter les tests frontend du composable et du parcours UI, y compris les doubles soumissions et annulations.
+- [x] Vérifier `cargo test --workspace`, `cargo clippy --workspace --all-targets --all-features` et les tests/build frontend.
+- [x] Vérifier que les erreurs et fixtures ne contiennent ni secret ni chemin local sensible.
 - [ ] Exécuter séparément la validation Live Hello World documentée, uniquement avec l’environnement de test prévu.
 - [ ] Mettre à jour `ROADMAP.md`, documenter les reports éventuels et préparer l’intégration de M8 dans `dev`.
+
+### Résultats et reports du checkpoint
+
+- Le parcours Demo complet est couvert par le test frontend avec des doubles Tauri : aucune requête réseau réelle n’est effectuée.
+- `cargo test --workspace`, `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`, les tests frontend et le build Vite passent.
+- Le scan `cargo audit` échoue sur des vulnérabilités transitives déjà présentes dans la pile Tauri verrouillée (`quick-xml`, `time`, `glib`, `rand`) ; aucune mise à jour forcée de dépendance ou désactivation de contrôle n’est appliquée dans ce checkpoint.
+- La validation Live Hello World reste une action manuelle à exécuter avec l’environnement d’évaluation prévu et sans credential dans le dépôt.
+- La mise à jour de `ROADMAP.md` et l’intégration dans `dev` restent reportées jusqu’à la validation Live et à la décision de traitement des advisories transitives.
 
 Commit prévu :
 
