@@ -617,6 +617,8 @@ mod tests {
         Mock, MockServer, ResponseTemplate,
     };
 
+    use crate::ports::ApigeeRevisionGateway;
+
     use crate::{
         domain::{AuthContext, GoogleIdentity, ProjectId},
         error::AuthError,
@@ -775,6 +777,81 @@ mod tests {
         assert_eq!(proxies[0].name, "orders");
         assert_eq!(proxies[0].revisions.len(), 2);
         assert_eq!(proxies[0].revisions[1].number, 2);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn gets_revision_detail_from_apigee() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/organizations/org-one/apis/orders/revisions/2"))
+            .and(header("authorization", "Bearer test-token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "name": "organizations/org-one/apis/orders/revisions/2",
+                "apiProxy": "orders",
+                "revision": "2"
+            })))
+            .mount(&server)
+            .await;
+
+        let detail = gateway(&server, None, "/v1/")
+            .await?
+            .get_revision("org-one", "orders", 2)
+            .await?;
+        assert_eq!(detail["apiProxy"], "orders");
+        assert_eq!(detail["revision"], "2");
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn maps_revision_detail_http_and_payload_errors() -> Result<(), Box<dyn Error>> {
+        for (status, expected) in [(403, "Forbidden"), (404, "NotFound")] {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/v1/organizations/org-one/apis/orders/revisions/2"))
+                .respond_with(ResponseTemplate::new(status).set_body_string("sensitive body"))
+                .mount(&server)
+                .await;
+            let error = gateway(&server, None, "/v1/")
+                .await?
+                .get_revision("org-one", "orders", 2)
+                .await
+                .err()
+                .map(|value| format!("{value:?}"));
+            assert_eq!(error.as_deref(), Some(expected));
+        }
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/organizations/org-one/apis/orders/revisions/2"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("not-json"))
+            .mount(&server)
+            .await;
+        let error = gateway(&server, None, "/v1/")
+            .await?
+            .get_revision("org-one", "orders", 2)
+            .await
+            .err()
+            .map(|value| format!("{value:?}"));
+        assert_eq!(error.as_deref(), Some("InvalidResponse"));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn maps_revision_detail_timeout() -> Result<(), Box<dyn Error>> {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/v1/organizations/org-one/apis/orders/revisions/2"))
+            .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_millis(100)))
+            .mount(&server)
+            .await;
+        let error = gateway_with_settings(&server, Duration::from_millis(10), 0)
+            .await?
+            .get_revision("org-one", "orders", 2)
+            .await
+            .err()
+            .map(|value| format!("{value:?}"));
+        assert_eq!(error.as_deref(), Some("Timeout"));
         Ok(())
     }
 

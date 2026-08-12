@@ -634,12 +634,8 @@ async function logout() {
   activeView.value = 'Dashboard'
 }
 
-async function toggleRevision(revision: number) {
-  if (!selectedProxy.value || selectedRevision.value === revision) {
-    selectedRevision.value = null
-    revisionDetail.value = null
-    return
-  }
+async function loadRevisionDetail(revision: number) {
+  if (!selectedProxy.value) return
   selectedRevision.value = revision
   revisionDetail.value = null
   revisionDetailError.value = null
@@ -647,19 +643,29 @@ async function toggleRevision(revision: number) {
   try {
     revisionDetail.value = await invoke<RevisionDetailDto>('get_revision_detail', {
       organization: selectedOrganization.value,
-      proxy_name: selectedProxy.value.name,
+      proxyName: selectedProxy.value.name,
       revision,
     })
   } catch (caught) {
     const message = typeof caught === 'object' && caught !== null && 'message' in caught
       ? (caught as { message?: unknown }).message
-      : null
+      : typeof caught === 'string' ? caught : null
     revisionDetailError.value = typeof message === 'string' && message.length > 0
       ? message
-      : 'Revision details could not be loaded.'
+      : 'Revision details could not be loaded. Check the selected proxy, revision and permissions, then retry.'
   } finally {
     revisionDetailLoading.value = false
   }
+}
+
+async function toggleRevision(revision: number) {
+  if (!selectedProxy.value || selectedRevision.value === revision) {
+    selectedRevision.value = null
+    revisionDetail.value = null
+    revisionDetailError.value = null
+    return
+  }
+  await loadRevisionDetail(revision)
 }
 
 const visibleProxies = computed(() => proxyList.value.filter((proxy) => {
@@ -1065,7 +1071,7 @@ void templateEditor
                   </button>
                   <div v-if="selectedRevision === revision.number" class="revision-detail">
                     <BaseSpinner v-if="revisionDetailLoading" />
-                    <BaseErrorState v-else-if="revisionDetailError">
+                    <BaseErrorState v-else-if="revisionDetailError" @retry="loadRevisionDetail(revision.number)">
                       <template #title>Revision unavailable</template>
                       <template #hint>{{ revisionDetailError }}</template>
                     </BaseErrorState>

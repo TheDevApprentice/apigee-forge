@@ -343,11 +343,13 @@ test(m8): validate GUI deployment workflow
 
 #### M8-09-01 — Détails de révision et erreurs récupérables
 
-- [ ] Vérifier le mapping exact de l’endpoint Apigee de détail de révision avec la documentation officielle.
-- [ ] Distinguer `404`, `403`, timeout, réponse invalide et erreur transitoire.
-- [ ] Afficher une erreur sûre et actionnable dans le GUI.
-- [ ] Ajouter un retry contrôlé sans perdre le proxy, la révision ni le contexte courant.
-- [ ] Ajouter un test WireMock pour le succès et chaque catégorie d’erreur.
+- [x] Vérifier le mapping exact de l’endpoint Apigee de détail de révision avec la documentation officielle.
+- [x] Distinguer `404`, `403`, timeout, réponse invalide et erreur transitoire.
+- [x] Afficher une erreur sûre et actionnable dans le GUI.
+- [x] Ajouter un retry contrôlé sans perdre le proxy, la révision ni le contexte courant.
+- [x] Ajouter un test WireMock pour le succès et chaque catégorie d’erreur.
+
+Le mapping validé est `GET /v1/organizations/{org}/apis/{proxy}/revisions/{revision}`. Le GUI utilise désormais `proxyName` à la frontière Tauri et conserve l’état de sélection lors d’un retry.
 
 #### M8-09-02 — Workflow `New proxy` / `New revision`
 
