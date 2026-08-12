@@ -337,6 +337,56 @@ Commit prévu :
 test(m8): validate GUI deployment workflow
 ```
 
+### M8-09 — Stabilisation UX, révisions, drafts et authentification
+
+*Étape ajoutée après les premiers tests Live/Demo du workflow M8. Elle traite les écarts constatés en utilisation réelle sans mélanger les responsabilités de création de proxy, de création de révision et de déploiement.*
+
+#### M8-09-01 — Détails de révision et erreurs récupérables
+
+- [ ] Vérifier le mapping exact de l’endpoint Apigee de détail de révision avec la documentation officielle.
+- [ ] Distinguer `404`, `403`, timeout, réponse invalide et erreur transitoire.
+- [ ] Afficher une erreur sûre et actionnable dans le GUI.
+- [ ] Ajouter un retry contrôlé sans perdre le proxy, la révision ni le contexte courant.
+- [ ] Ajouter un test WireMock pour le succès et chaque catégorie d’erreur.
+
+#### M8-09-02 — Workflow `New proxy` / `New revision`
+
+- [ ] Depuis Dashboard et Proxies, ouvrir `New proxy` dans l’éditeur de proxy, sans détour obligatoire par le catalogue Templates.
+- [ ] Permettre de choisir explicitement entre création d’un nouveau proxy et création d’une nouvelle révision.
+- [ ] Pour une révision, sélectionner le proxy cible et afficher sa dernière révision connue.
+- [ ] Permettre d’utiliser un template existant, un nouveau template ou une source issue d’une révision selon un contrat documenté.
+- [ ] Ne jamais présenter un template comme une ressource directement déployable.
+
+#### M8-09-03 — Garde de navigation et confirmations UX
+
+- [ ] Centraliser les confirmations modales avant changement d’opération ou abandon d’un état modifié.
+- [ ] Protéger les drafts et jobs en cours lors des navigations Dashboard, Templates, Proxies et Deployments.
+- [ ] Empêcher les doubles soumissions et afficher une progression jusqu’à un état terminal.
+- [ ] Vérifier la navigation clavier, le focus modal et les annonces `aria-live` sur chaque transition.
+
+#### M8-09-04 — Drafts templates et proxy creation
+
+- [ ] Ajouter l’auto-save local d’un draft de template et d’un draft de création de proxy.
+- [ ] Ajouter un bouton `Save draft` explicite en complément de l’auto-save.
+- [ ] Restaurer les drafts au redémarrage et permettre leur suppression.
+- [ ] Séparer strictement drafts, templates publiés et proxies/révisions Apigee.
+- [ ] Ne jamais placer de credential, token ou bundle sensible dans les drafts.
+
+#### M8-09-05 — Mode d’authentification Service Account local
+
+- [ ] Ajouter dans Settings le choix entre OAuth2 personnel et Service Account local.
+- [ ] Sélectionner un fichier de configuration local sans copier son contenu dans l’application.
+- [ ] Conserver les secrets dans le trousseau OS ou le mécanisme Google prévu, jamais dans SQLCipher, les drafts ou les logs.
+- [ ] Afficher clairement l’identité et le mode actif ; ne jamais appeler automatiquement ce mode `admin`.
+- [ ] Tester l’absence de credential, le credential invalide, l’accès refusé et la déconnexion.
+- [ ] Mettre à jour `ARCHITECTURE.md` et `SECURITY.md` avant d’intégrer ce mode au GUI.
+
+Commit prévu par sous-étape :
+
+```text
+docs(m8): add post-checkpoint UX and lifecycle roadmap
+```
+
 ---
 
 ## 5. Critères d’acceptation M8
