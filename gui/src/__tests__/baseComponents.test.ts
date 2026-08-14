@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import BaseButton from '../components/base/BaseButton.vue'
 import BaseChip from '../components/base/BaseChip.vue'
@@ -32,6 +32,8 @@ describe('base components', () => {
 
     expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-describedby')).toBe('modal-message')
     expect(document.querySelector('.base-modal__confirm')).not.toBeNull()
+    await flushPromises()
+    expect(document.activeElement).toBe(document.querySelector('.base-modal__confirm'))
     await wrapper.unmount()
   })
 })

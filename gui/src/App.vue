@@ -338,6 +338,19 @@ function policyLabel(policy: Record<string, any>): string {
   return policyTypes.find(([value]) => value === String(policy.type))?.[1] || String(policy.type || 'Policy')
 }
 
+function policyIconPath(policy: Record<string, any>): string {
+  const icons: Record<string, string> = {
+    security_api_key: 'M8 7V5a4 4 0 0 1 8 0v2M6 7h12v12H6z',
+    security_oauth2: 'M12 3a5 5 0 0 0-5 5v2a5 5 0 0 0 10 0V8a5 5 0 0 0-5-5zM9 19h6',
+    security_jwt: 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z',
+    quota: 'M4 12h16M12 4v16M7 7l10 10M17 7L7 17',
+    spike_arrest: 'M4 17l4-5 3 3 5-8 4 5',
+    cors: 'M6 7h12M6 12h12M6 17h12',
+    transform: 'M5 8h14M5 16h14M8 5l-3 3 3 3M16 13l3 3-3 3',
+  }
+  return icons[String(policy.type)] || 'M12 5v14M5 12h14'
+}
+
 function policyText(policy: Record<string, any>, field: string): string {
   const value = policy[field]
   return typeof value === 'string' ? value : ''
@@ -1160,7 +1173,7 @@ void templateEditor
               </div>
               <ol class="policy-list">
                 <li v-for="(policy, index) in selectedPolicies" :key="`${policy.type}-${index}`" class="policy-item">
-                  <div class="policy-item__header"><strong>{{ policyLabel(policy) }}</strong><div><button type="button" :aria-label="`Move policy ${index + 1} up`" :disabled="index === 0" @click="movePolicy(index, -1)">↑</button><button type="button" :aria-label="`Move policy ${index + 1} down`" :disabled="index === selectedPolicies.length - 1" @click="movePolicy(index, 1)">↓</button><button type="button" :aria-label="`Remove policy ${index + 1}`" @click="removePolicy(index)">Remove</button></div></div>
+                  <div class="policy-item__header"><span class="policy-item__identity"><svg class="policy-item__icon" viewBox="0 0 24 24" aria-hidden="true"><path :d="policyIconPath(policy)" /></svg><strong>{{ policyLabel(policy) }}</strong></span><div><button type="button" :aria-label="`Move policy ${index + 1} up`" :disabled="index === 0" @click="movePolicy(index, -1)">↑</button><button type="button" :aria-label="`Move policy ${index + 1} down`" :disabled="index === selectedPolicies.length - 1" @click="movePolicy(index, 1)">↓</button><button type="button" :aria-label="`Remove policy ${index + 1}`" @click="removePolicy(index)">Remove</button></div></div>
                   <div v-if="policy.type === 'security_api_key'" class="policy-fields"><label>Location<select :value="policy.key_location" @change="updatePolicyField(index, 'key_location', ($event.target as HTMLSelectElement).value)"><option value="header">Header</option><option value="query_param">Query param</option></select></label><label>Parameter<input :value="policy.key_param_name" @input="updatePolicyField(index, 'key_param_name', ($event.target as HTMLInputElement).value)" /></label></div>
                   <div v-else-if="policy.type === 'security_oauth2'" class="policy-fields"><label>Scopes<input :value="policyStringList(policy, 'scopes')" @input="updatePolicyField(index, 'scopes', ($event.target as HTMLInputElement).value.split(',').map((value) => value.trim()).filter(Boolean))" /></label></div>
                   <div v-else-if="policy.type === 'security_jwt'" class="policy-fields"><label>Algorithm<select :value="policy.algorithm" @change="updatePolicyField(index, 'algorithm', ($event.target as HTMLSelectElement).value)"><option>RS256</option><option>HS256</option></select></label><label>Issuer<input :value="policy.issuer" @input="updatePolicyField(index, 'issuer', ($event.target as HTMLInputElement).value)" /></label><label>Audience<input :value="policy.audience" @input="updatePolicyField(index, 'audience', ($event.target as HTMLInputElement).value)" /></label><label>JWKS URL<input :value="policy.jwks_url" @input="updatePolicyField(index, 'jwks_url', ($event.target as HTMLInputElement).value)" /></label></div>

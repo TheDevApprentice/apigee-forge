@@ -205,32 +205,32 @@ feat(gui): polish workflow surfaces and flow diagram
 
 ### M9-06 — Policies, formulaires et feedback visuel
 
-- [ ] Harmoniser les chips de policies et leurs icônes outline.
-- [ ] Harmoniser les formulaires metadata, OpenAPI, proxy creation et review.
-- [ ] Rendre les erreurs inline cohérentes, localisables et visibles par lecteur d’écran.
-- [ ] Améliorer les états de validation, sauvegarde, génération, upload et déploiement.
-- [ ] Vérifier que les textes restent lisibles avec des noms de proxy, templates et organisations longs.
-- [ ] Tester le comportement avec listes vides, erreurs et contenus volumineux.
+- [x] Harmoniser les chips de policies et leurs icônes outline.
+- [x] Harmoniser les formulaires metadata, OpenAPI, proxy creation et review.
+- [x] Rendre les erreurs inline cohérentes, localisables et visibles par lecteur d’écran.
+- [x] Améliorer les états de validation, sauvegarde, génération, upload et déploiement.
+- [x] Vérifier que les textes restent lisibles avec des noms de proxy, templates et organisations longs.
+- [x] Tester le comportement avec listes vides, erreurs et contenus volumineux.
 
-Commit prévu :
+Commit partagé avec M9-07 :
 
 ```text
-refactor(gui): harmonize policy forms and feedback states
+refactor(gui): harmonize policy feedback and responsive accessibility
 ```
 
 ### M9-07 — Responsive, focus et motion
 
-- [ ] Vérifier les largeurs 960px minimum, fenêtres étroites et contenu scrollable.
-- [ ] Éviter les débordements horizontaux du flow, des reviews et des formulaires.
-- [ ] Vérifier les focus-visible sur tous les contrôles interactifs.
-- [ ] Vérifier `aria-live`, `role=alert`, labels et descriptions après les changements visuels.
-- [ ] Ajouter uniquement des transitions utiles et respecter `prefers-reduced-motion`.
-- [ ] Vérifier que les modals restituent le focus à leur déclencheur après fermeture.
+- [x] Vérifier les largeurs 960px minimum, fenêtres étroites et contenu scrollable.
+- [x] Éviter les débordements horizontaux du flow, des reviews et des formulaires.
+- [x] Vérifier les focus-visible sur tous les contrôles interactifs.
+- [x] Vérifier `aria-live`, `role=alert`, labels et descriptions après les changements visuels.
+- [x] Ajouter uniquement des transitions utiles et respecter `prefers-reduced-motion`.
+- [x] Vérifier que les modals restituent le focus à leur déclencheur après fermeture.
 
-Commit prévu :
+Commit partagé avec M9-06 :
 
 ```text
-feat(gui): finalize responsive accessibility and motion polish
+refactor(gui): harmonize policy feedback and responsive accessibility
 ```
 
 ### M9-08 — QA visuelle et checkpoint de sortie
