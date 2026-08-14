@@ -1128,10 +1128,10 @@ button:focus-visible {
 
 .base-modal {
   width: min(100%, 430px);
-  padding: 20px;
+  padding: var(--space-card);
   background: var(--card-bg);
   border: var(--border-width) solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--modal-radius);
   box-shadow: none;
 }
 
@@ -1186,7 +1186,7 @@ button:focus-visible {
   color: var(--text-secondary);
   background: var(--page-bg);
   border: var(--border-width) solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   cursor: pointer;
   font-size: 11px;
 }
