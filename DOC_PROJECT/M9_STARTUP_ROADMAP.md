@@ -174,33 +174,33 @@ feat(gui): polish navigation and workspace chrome
 
 ### M9-04 — Dashboard, Templates, Proxies et Deployments
 
-- [ ] Harmoniser la grille, les métriques, les cartes d’action et les empty states du Dashboard.
-- [ ] Harmoniser le catalogue Templates, l’éditeur, les drafts et les actions de sauvegarde sans modifier leur logique.
-- [ ] Harmoniser le catalogue Proxies, les lignes de révisions, les badges de statut et le parcours de création.
-- [ ] Harmoniser la review Deployment, la progression, le polling, le succès, l’échec, le retry et l’arrêt.
-- [ ] Vérifier que chaque action destructive ou mutative conserve sa confirmation modale.
-- [ ] Tester qu’un polish CSS ne réintroduit pas de double soumission ou de perte d’état.
+- [x] Harmoniser la grille, les métriques, les cartes d’action et les empty states du Dashboard.
+- [x] Harmoniser le catalogue Templates, l’éditeur, les drafts et les actions de sauvegarde sans modifier leur logique.
+- [x] Harmoniser le catalogue Proxies, les lignes de révisions, les badges de statut et le parcours de création.
+- [x] Harmoniser la review Deployment, la progression, le polling, le succès, l’échec, le retry et l’arrêt.
+- [x] Vérifier que chaque action destructive ou mutative conserve sa confirmation modale.
+- [x] Tester qu’un polish CSS ne réintroduit pas de double soumission ou de perte d’état.
 
-Commit prévu :
+Commit partagé avec M9-05 :
 
 ```text
-feat(gui): polish application workflow surfaces
+feat(gui): polish workflow surfaces and flow diagram
 ```
 
 ### M9-05 — Diagramme de flow signature
 
-- [ ] Extraire ou stabiliser un composant de diagramme de flow piloté par les données existantes.
-- [ ] Représenter clairement `PreFlow → Conditional Flow(s) → PostFlow`.
-- [ ] Utiliser les cartes blanches, bordures `#E2E5E3`, rayon 8px et connecteurs `#C4C9C6` prévus par `DESIGN.md`.
-- [ ] Afficher les policies sous forme de tags teal avec `#E1F5EE` + `#085041`.
-- [ ] Distinguer request/response sans dépendre uniquement de la couleur.
-- [ ] Prévoir une disposition responsive et une alternative clavier aux interactions visuelles.
-- [ ] Respecter `prefers-reduced-motion` si une transition de diagramme est ajoutée.
+- [x] Extraire ou stabiliser un composant de diagramme de flow piloté par les données existantes.
+- [x] Représenter clairement `PreFlow → Conditional Flow(s) → PostFlow`.
+- [x] Utiliser les cartes blanches, bordures `#E2E5E3`, rayon 8px et connecteurs `#C4C9C6` prévus par `DESIGN.md`.
+- [x] Afficher les policies sous forme de tags teal avec `#E1F5EE` + `#085041`.
+- [x] Distinguer request/response sans dépendre uniquement de la couleur.
+- [x] Prévoir une disposition responsive et une alternative clavier aux interactions visuelles.
+- [x] Respecter `prefers-reduced-motion` si une transition de diagramme est ajoutée.
 
-Commit prévu :
+Commit partagé avec M9-04 :
 
 ```text
-feat(gui): refine proxy flow diagram
+feat(gui): polish workflow surfaces and flow diagram
 ```
 
 ### M9-06 — Policies, formulaires et feedback visuel

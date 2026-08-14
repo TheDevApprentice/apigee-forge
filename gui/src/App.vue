@@ -19,6 +19,7 @@ import BaseErrorState from './components/base/BaseErrorState.vue'
 import BaseSpinner from './components/base/BaseSpinner.vue'
 import TemplateEditorShell from './components/template/TemplateEditorShell.vue'
 import ProxyCreationPreparation from './components/ProxyCreationPreparation.vue'
+import FlowDiagram from './components/FlowDiagram.vue'
 
 type NavigationItem = {
   label: string
@@ -851,7 +852,7 @@ void templateEditor
                   <h2>Review proxy revision</h2>
                   <p>Confirm the existing revision and target before deployment. Deployment starts only after this review is confirmed.</p>
                 </div>
-                <BaseChip :label="deploymentReviewConfirmed ? 'Review confirmed' : 'Confirmation required'" />
+                <BaseChip :label="deploymentReviewConfirmed ? 'Review confirmed' : 'Confirmation required'" :tone="deploymentReviewConfirmed ? 'success' : 'warning'" />
               </div>
               <dl class="review-grid">
                 <div><span>Mode</span><strong>{{ isDemo ? 'Demo' : 'Live' }}</strong></div>
@@ -1055,7 +1056,7 @@ void templateEditor
                   <h2>{{ selectedProxy.name }}</h2>
                   <p>{{ selectedProxy.source === 'cloud' ? 'Live Apigee proxy' : 'Demo proxy' }}</p>
                 </div>
-                <BaseChip :label="selectedProxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" />
+                <BaseChip :label="selectedProxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="selectedProxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" />
               </div>
               <dl class="proxy-metadata">
                 <div><dt>Organization</dt><dd>{{ selectedOrganization }}</dd></div>
@@ -1067,7 +1068,7 @@ void templateEditor
                 <li v-for="revision in selectedProxy.revisions" :key="revision.number">
                   <button type="button" class="revision-row__button" @click="toggleRevision(revision.number)">
                     <span>Revision {{ revision.number }}</span>
-                    <BaseChip :label="revision.status === 'Succeeded' ? 'Deployed' : revision.status === 'NotDeployed' ? 'Not deployed' : revision.status" />
+                    <BaseChip :label="revision.status === 'Succeeded' ? 'Deployed' : revision.status === 'NotDeployed' ? 'Not deployed' : revision.status" :tone="revision.status === 'Succeeded' ? 'success' : revision.status === 'NotDeployed' ? 'neutral' : 'warning'" />
                   </button>
                   <div v-if="selectedRevision === revision.number" class="revision-detail">
                     <BaseSpinner v-if="revisionDetailLoading" />
@@ -1141,22 +1142,14 @@ void templateEditor
           <BaseCard v-if="currentTemplate && (editorStep === 2 || editorStep === 3)" :eyebrow="editorStep === 2 ? '2 · Flow' : '3 · Policies'">
             <template v-if="editorStep === 2">
             <p class="editor-section__intro">Choose the flow stage where policies will run.</p>
-            <div class="flow-canvas" aria-label="Template flow stages">
-              <button type="button" class="flow-stage" :class="{ 'flow-stage--selected': selectedFlow === 'pre_flow' }" @click="selectedFlow = 'pre_flow'"><strong>PreFlow</strong><span>{{ policyCount(flowDraft.pre_flow) }} policies</span></button>
-              <div v-for="(flow, index) in flowDraft.conditional_flows" :key="`conditional-${index}`" class="flow-stage flow-stage--conditional" :class="{ 'flow-stage--selected': selectedFlow === `conditional_${index}` }">
-                <button type="button" class="flow-stage__main" @click="selectedFlow = `conditional_${index}`"><strong>Conditional Flow {{ index + 1 }}</strong><span>{{ policyCount(flow) }} policies</span></button>
-                <input :value="flow.condition || ''" placeholder="Condition" aria-label="Conditional flow condition" @input="updateConditionalCondition(index, ($event.target as HTMLInputElement).value)" />
-                <button type="button" class="flow-stage__remove" @click="removeConditionalFlow(index)">Remove</button>
-              </div>
-              <button type="button" class="flow-stage" :class="{ 'flow-stage--selected': selectedFlow === 'post_flow' }" @click="selectedFlow = 'post_flow'"><strong>PostFlow</strong><span>{{ policyCount(flowDraft.post_flow) }} policies</span></button>
-            </div>
-            <div class="flow-canvas__actions"><button type="button" @click="addConditionalFlow">Add conditional flow</button></div>
-            <div class="flow-stage-detail">
-              <span>Selected stage</span>
-              <strong>{{ selectedFlow === 'pre_flow' ? 'PreFlow' : selectedFlow === 'post_flow' ? 'PostFlow' : `Conditional Flow ${Number(selectedFlow.split('_')[1]) + 1}` }}</strong>
-              <span>Request: {{ selectedStage.request?.length || 0 }} policies</span>
-              <span>Response: {{ selectedStage.response?.length || 0 }} policies</span>
-            </div>
+            <FlowDiagram
+              :flow="flowDraft"
+              :selected-flow="selectedFlow"
+              @select-stage="selectedFlow = $event"
+              @update-condition="updateConditionalCondition"
+              @remove-condition="removeConditionalFlow"
+              @add-condition="addConditionalFlow"
+            />
             </template>
             <template v-else>
             <p class="editor-section__intro">Add policies to the selected request or response lane.</p>
@@ -1195,7 +1188,7 @@ void templateEditor
 
           <template v-if="templateView === 'review'">
             <BaseCard eyebrow="Review and save">
-              <div class="review-header"><div><h2>Ready to save</h2><p>Check the template summary before writing it to local storage.</p></div><BaseChip :label="currentTemplateDirty ? 'Unsaved changes' : 'Saved'" /></div>
+              <div class="review-header"><div><h2>Ready to save</h2><p>Check the template summary before writing it to local storage.</p></div><BaseChip :label="currentTemplateDirty ? 'Unsaved changes' : 'Saved'" :tone="currentTemplateDirty ? 'warning' : 'success'" /></div>
               <div class="review-grid"><div><span>Name</span><strong>{{ metadataDraft.name || 'Missing' }}</strong></div><div><span>Owner</span><strong>{{ metadataDraft.owner || 'Missing' }}</strong></div><div><span>Target</span><strong>{{ metadataDraft.target_environment || 'None' }}</strong></div><div><span>Policies</span><strong>{{ totalPolicyCount }}</strong></div></div>
               <div class="review-actions"><button type="button" @click="templateView = 'editor'">Back to editor</button><button type="button" class="primary-action" :disabled="!templateValid || !currentTemplateDirty || currentTemplateStatus === 'saving'" @click="saveTemplate">{{ currentTemplateStatus === 'saving' ? 'Saving…' : 'Save & finish' }}</button></div>
             </BaseCard>
