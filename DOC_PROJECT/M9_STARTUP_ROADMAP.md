@@ -95,11 +95,29 @@ QA visuelle et checkpoint M9
 
 ### M9-00 — Baseline visuelle et inventaire des écarts
 
-- [ ] Vérifier que `feature/m9-design-polish` est créée depuis `dev` après intégration de M8.
-- [ ] Capturer les vues de référence Dashboard, Templates, Proxies, Deployments et Settings en mode Live/Demo.
-- [ ] Inventorier couleurs, rayons, bordures, ombres, espacements, tailles et graisses actuellement divergents.
-- [ ] Identifier les composants et sélecteurs CSS à migrer vers les tokens sans modifier leur comportement.
-- [ ] Définir une checklist de validation visuelle et une largeur de fenêtre de référence.
+- [x] Vérifier que `feature/m9-design-polish` est créée depuis `dev` après intégration de M8.
+- [ ] Capturer les vues de référence Dashboard, Templates, Proxies, Deployments et Settings en mode Live/Demo ; captures manuelles restantes à faire pendant la validation visuelle.
+- [x] Inventorier couleurs, rayons, bordures, ombres, espacements, tailles et graisses actuellement divergents.
+- [x] Identifier les composants et sélecteurs CSS à migrer vers les tokens sans modifier leur comportement.
+- [x] Définir une checklist de validation visuelle et une largeur de fenêtre de référence.
+
+#### Baseline M9 enregistrée
+
+- **Branche** : `feature/m9-design-polish`, créée depuis le commit M8 intégré dans `dev`.
+- **Fenêtre de référence** : 1200 × 760 px, correspondant à `tauri.conf.json` ; vérifier également une largeur étroite jusqu’à la largeur minimale de 960 px.
+- **Vues à comparer** : Dashboard connecté, Templates catalogue/éditeur/review, Proxies catalogue/détails/création, Deployments review/succès/erreur, Settings, en modes Demo et Live lorsque le contexte est disponible.
+- **Écarts CSS relevés** : ombres présentes sur plusieurs surfaces, rayons `7px`, `9px`, `10px` et `14px`, couleurs d’erreur/succès/warning codées en dur, quelques tailles et graisses hors des tokens documentés.
+- **Sélecteurs prioritaires** : `BaseCard`, `BaseButton`, `BaseChip`, `BaseModal`, états empty/error/loading, `workspace-selectors`, `review-grid`, `deployment-preparation`, `proxy-detail`, `proxy-revisions`, `flow-canvas`.
+
+#### Checklist de comparaison visuelle
+
+- [ ] Aucun dark mode ou style de surface non prévu par `DESIGN.md`.
+- [ ] Les surfaces principales utilisent `#FAFAF9`, `#F1F3F2`, `#FFFFFF` et `#E2E5E3` selon leur rôle.
+- [ ] Les textes sur `#E1F5EE` utilisent `#085041`.
+- [ ] Les actions actives utilisent `#0F6E56` sans dépendre uniquement de la couleur.
+- [ ] Les cartes principales n’ont pas d’ombre décorative.
+- [ ] Les focus, erreurs, loading states et statuts restent lisibles et accessibles.
+- [ ] Les écrans restent utilisables à 960 px et sans débordement horizontal.
 
 Commit prévu :
 
@@ -109,12 +127,14 @@ docs(m9): define visual baseline and polish checklist
 
 ### M9-01 — Tokens exacts et fondations CSS
 
-- [ ] Aligner les tokens `:root` exactement sur `DESIGN.md`.
-- [ ] Ajouter les tokens manquants uniquement après validation documentaire : spacing, border width, radius, focus, states.
-- [ ] Remplacer les couleurs codées en dur par les tokens lorsqu’elles correspondent à un rôle existant.
-- [ ] Supprimer les ombres et rayons non conformes des surfaces principales.
-- [ ] Harmoniser la typographie sur les graisses 400/500 uniquement.
-- [ ] Tester que le thème clair reste le seul thème disponible.
+- [x] Aligner les tokens `:root` exactement sur `DESIGN.md`.
+- [x] Ajouter les tokens manquants uniquement après validation documentaire : spacing, border width, radius, focus, states.
+- [x] Remplacer les couleurs codées en dur par les tokens lorsqu’elles correspondent à un rôle existant.
+- [x] Supprimer les ombres et rayons non conformes des surfaces principales.
+- [x] Harmoniser la typographie sur les graisses 400/500 uniquement.
+- [x] Tester que le thème clair reste le seul thème disponible.
+
+Les captures visuelles comparatives restent à réaliser manuellement sur les vues de référence ; les fondations CSS sont alignées et couvertes par le build/tests frontend.
 
 Commit prévu :
 

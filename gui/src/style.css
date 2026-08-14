@@ -1,6 +1,6 @@
 :root {
-  color: #1c2420;
-  background: #fafaf9;
+  color: var(--text-main);
+  background: var(--page-bg);
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,7 +15,25 @@
   --accent-text: #085041;
   --accent-active: #0f6e56;
   --connector: #c4c9c6;
+  --border-width: 0.5px;
   --card-radius: 8px;
+  --chip-radius: 20px;
+  --tag-radius: 4px;
+  --control-radius: 7px;
+  --modal-radius: 8px;
+  --space-card: 10px;
+  --space-content: 18px;
+  --space-chip: 6px;
+  --focus-ring: 2px solid var(--accent-active);
+  --text-on-solid: #ffffff;
+  --success-solid: #4f9f72;
+  --success-bg: #edf9f4;
+  --success-text: #176b57;
+  --warning-bg: #fff8e7;
+  --warning-text: #8a6726;
+  --danger-bg: #f8e7e7;
+  --danger-text: #a44747;
+  --danger-border: #dfb2b2;
 }
 
 * {
@@ -70,7 +88,7 @@ button:focus-visible {
   min-height: 100vh;
   padding: 14px 0;
   background: var(--sidebar-bg);
-  border-right: 0.5px solid var(--border);
+  border-right: var(--border-width) solid var(--border);
 }
 
 .brand-mark {
@@ -81,7 +99,7 @@ button:focus-visible {
   margin-bottom: 24px;
   color: var(--accent-text);
   background: var(--accent-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 8px;
   font-size: 10px;
   font-weight: 500;
@@ -122,7 +140,7 @@ button:focus-visible {
   place-items: center;
   color: var(--accent-text);
   background: var(--accent-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 50%;
   font-size: 10px;
   font-weight: 500;
@@ -150,7 +168,7 @@ button:focus-visible {
 }
 
 .connection-dot--connected {
-  background: #4f9f72;
+  background: var(--success-solid);
 }
 
 .sidebar__profile-tooltip {
@@ -164,9 +182,9 @@ button:focus-visible {
   padding: 16px;
   color: var(--text-secondary);
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgb(28 36 32 / 12%);
+  box-shadow: none;
   font-size: 11px;
   opacity: 0;
   pointer-events: none;
@@ -179,7 +197,7 @@ button:focus-visible {
   align-items: center;
   gap: 10px;
   padding-bottom: 8px;
-  border-bottom: 0.5px solid var(--border);
+  border-bottom: var(--border-width) solid var(--border);
 }
 
 .profile-tooltip__avatar {
@@ -220,7 +238,7 @@ button:focus-visible {
 }
 
 .profile-tooltip__dot--connected {
-  background: #4f9f72;
+  background: var(--success-solid);
 }
 
 .sidebar__profile-tooltip strong {
@@ -239,7 +257,7 @@ button:focus-visible {
   padding: 8px 10px;
   color: var(--text-main);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   cursor: pointer;
   font-size: 11px;
@@ -267,7 +285,7 @@ button:focus-visible {
   place-items: center;
   color: var(--text-muted);
   background: transparent;
-  border: 0.5px solid transparent;
+  border: var(--border-width) solid transparent;
   border-radius: 8px;
   cursor: pointer;
   transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
@@ -308,7 +326,7 @@ button:focus-visible {
   gap: 24px;
   padding: 0 24px;
   background: var(--card-bg);
-  border-bottom: 0.5px solid var(--border);
+  border-bottom: var(--border-width) solid var(--border);
 }
 
 .topbar__eyebrow,
@@ -347,7 +365,7 @@ button:focus-visible {
   padding: 6px 26px 6px 9px;
   color: var(--text-secondary);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   font-size: 12px;
 }
@@ -389,7 +407,7 @@ button:focus-visible {
   padding: 6px 9px;
   color: var(--accent-text);
   background: var(--accent-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 20px;
   font-size: 11px;
 }
@@ -449,7 +467,7 @@ button:focus-visible {
 .base-card {
   padding: 16px;
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--card-radius);
 }
 
@@ -563,7 +581,7 @@ button:focus-visible {
   padding: 20px;
   color: var(--text-secondary);
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--card-radius);
   text-align: center;
 }
@@ -590,7 +608,7 @@ button:focus-visible {
   padding: 7px 12px;
   color: var(--accent-text);
   background: var(--accent-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 20px;
   cursor: pointer;
 }
@@ -633,9 +651,9 @@ button:focus-visible {
 .primary-action {
   min-width: 168px;
   padding: 10px 14px;
-  color: #ffffff;
+  color: var(--text-on-solid);
   background: var(--accent-active);
-  border: 0.5px solid var(--accent-active);
+  border: var(--border-width) solid var(--accent-active);
   border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
@@ -678,7 +696,7 @@ button:focus-visible {
   padding: 9px 10px;
   color: var(--text-muted);
   background: var(--sidebar-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 8px;
   font-size: 13px;
 }
@@ -688,7 +706,7 @@ button:focus-visible {
   padding: 9px 10px;
   color: var(--text-main);
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 8px;
   font-size: 13px;
 }
@@ -716,7 +734,7 @@ button:focus-visible {
   padding: 16px;
   color: var(--text-main);
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 10px;
   cursor: pointer;
   text-align: left;
@@ -740,7 +758,7 @@ button:focus-visible {
   background: var(--accent-bg);
   border-radius: 50%;
   font-size: 21px;
-  font-weight: 300;
+  font-weight: 400;
 }
 
 .dashboard-action-card > span:nth-child(2) {
@@ -821,7 +839,7 @@ button:focus-visible {
   padding: 14px;
   color: var(--text-main);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 9px;
   cursor: pointer;
   text-align: left;
@@ -862,7 +880,7 @@ button:focus-visible {
   width: 100%;
   padding: 7px 8px;
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 6px;
   font-size: 11px;
 }
@@ -873,7 +891,7 @@ button:focus-visible {
   padding: 6px 8px;
   color: var(--text-secondary);
   background: transparent;
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   font-size: 10px;
@@ -931,7 +949,7 @@ button:focus-visible {
   padding: 7px 9px;
   color: var(--text-secondary);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   cursor: pointer;
   font-size: 11px;
@@ -956,7 +974,7 @@ button:focus-visible {
 .policy-item {
   padding: 10px;
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 8px;
 }
 
@@ -976,7 +994,7 @@ button:focus-visible {
   padding: 4px 7px;
   color: var(--text-muted);
   background: transparent;
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 5px;
   cursor: pointer;
   font-size: 10px;
@@ -1011,7 +1029,7 @@ button:focus-visible {
   padding: 7px 8px;
   color: var(--text-main);
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 6px;
   font-size: 11px;
 }
@@ -1036,7 +1054,7 @@ button:focus-visible {
   padding: 9px 10px;
   color: var(--text-main);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   font: inherit;
   font-size: 13px;
@@ -1051,7 +1069,7 @@ button:focus-visible {
 }
 
 .metadata-form small {
-  color: #b65b5b;
+  color: var(--danger-text);
   font-size: 11px;
 }
 
@@ -1069,9 +1087,9 @@ button:focus-visible {
   width: min(100%, 430px);
   padding: 20px;
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 18px 48px rgb(28 36 32 / 22%);
+  box-shadow: none;
 }
 
 .base-modal__header {
@@ -1124,7 +1142,7 @@ button:focus-visible {
   padding: 8px 12px;
   color: var(--text-secondary);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   cursor: pointer;
   font-size: 11px;
@@ -1137,8 +1155,8 @@ button:focus-visible {
 }
 
 .base-modal__actions .base-modal__confirm--danger {
-  color: #a44747;
-  border-color: #dfb2b2;
+  color: var(--danger-text);
+  border-color: var(--danger-border);
 }
 
 .template-editor-shell {
@@ -1153,7 +1171,7 @@ button:focus-visible {
   gap: 20px;
   padding: 20px;
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 10px;
 }
 
@@ -1173,7 +1191,7 @@ button:focus-visible {
   padding: 8px 11px;
   color: var(--text-secondary);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   cursor: pointer;
   font-size: 11px;
@@ -1195,7 +1213,7 @@ button:focus-visible {
   padding: 8px 12px;
   color: var(--text-secondary);
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   cursor: pointer;
   font-size: 11px;
@@ -1255,7 +1273,7 @@ button:focus-visible {
   padding: 8px 11px;
   color: var(--text-secondary);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   cursor: pointer;
   font-size: 11px;
@@ -1309,7 +1327,7 @@ button:focus-visible {
   padding: 9px 10px;
   color: var(--text-main);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   font: inherit;
 }
@@ -1337,7 +1355,7 @@ button:focus-visible {
   padding: 9px 10px;
   color: var(--text-main);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   font: inherit;
   resize: vertical;
@@ -1356,14 +1374,14 @@ button:focus-visible {
 
 .deployment-preparation__field-error,
 .deployment-preparation__errors span {
-  color: #b65b5b;
+  color: var(--danger-text);
   font-size: 11px;
 }
 
 .deployment-preparation__preview {
   padding: 14px;
   background: var(--sidebar-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 8px;
 }
 
@@ -1401,16 +1419,16 @@ button:focus-visible {
 .deployment-preparation__warning {
   margin: 14px 0 0;
   padding: 10px;
-  color: #8a6726;
-  background: #fff8e7;
+  color: var(--warning-text);
+  background: var(--warning-bg);
   border-radius: 7px;
   font-size: 11px;
 }
 
 .deployment-preparation__created {
   padding: 12px;
-  color: #176b57;
-  background: #edf9f4;
+  color: var(--success-text);
+  background: var(--success-bg);
   border-radius: 7px;
   font-size: 12px;
 }
@@ -1419,7 +1437,7 @@ button:focus-visible {
   display: grid;
   gap: 5px;
   padding: 10px;
-  background: #fff3f3;
+  background: var(--danger-bg);
   border-radius: 7px;
 }
 
@@ -1486,7 +1504,7 @@ button:focus-visible {
   padding: 8px 11px;
   color: var(--text-secondary);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   cursor: pointer;
   font-size: 11px;
@@ -1502,7 +1520,7 @@ button:focus-visible {
   gap: 8px;
   margin: 20px 0;
   padding-top: 14px;
-  border-top: 0.5px solid var(--border);
+  border-top: var(--border-width) solid var(--border);
 }
 
 .template-step {
@@ -1518,7 +1536,7 @@ button:focus-visible {
   width: 20px;
   height: 20px;
   place-items: center;
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 50%;
   font-size: 10px;
   font-weight: 500;
@@ -1550,7 +1568,7 @@ button:focus-visible {
   padding: 8px 12px;
   color: var(--text-secondary);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   cursor: pointer;
   font-size: 11px;
@@ -1574,7 +1592,7 @@ button:focus-visible {
 }
 
 .wizard-ready-state__icon { color: var(--accent-text); background: var(--accent-bg); }
-.wizard-error-state__icon { color: #a44747; background: #f8e7e7; }
+.wizard-error-state__icon { color: var(--danger-text); background: var(--danger-bg); }
 
 .wizard-ready-state h2,
 .wizard-error-state h2 { margin: 0; font-size: 18px; font-weight: 500; }
@@ -1595,7 +1613,7 @@ button:focus-visible {
   padding: 9px 11px;
   color: var(--text-main);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 8px;
   font-size: 13px;
 }
@@ -1618,7 +1636,7 @@ button:focus-visible {
   align-items: center;
   gap: 10px;
   padding: 8px;
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 8px;
 }
 
@@ -1656,7 +1674,7 @@ button:focus-visible {
   padding: 7px 10px;
   color: var(--text-secondary);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 7px;
   cursor: pointer;
   font-size: 11px;
@@ -1717,7 +1735,7 @@ button:focus-visible {
   place-items: center;
   color: var(--accent-text);
   background: var(--accent-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 50%;
   font-size: 13px;
   font-weight: 500;
@@ -1752,9 +1770,9 @@ button:focus-visible {
   gap: 5px;
   padding: 12px 14px;
   background: var(--card-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgb(28 36 32 / 12%);
+  box-shadow: none;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-4px);
@@ -1806,7 +1824,7 @@ button:focus-visible {
   padding: 12px;
   color: var(--accent-text);
   background: var(--accent-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 8px;
   font-size: 12px;
   text-decoration: none;
@@ -1836,7 +1854,7 @@ button:focus-visible {
   margin-bottom: 16px;
   padding: 4px;
   background: var(--sidebar-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 20px;
 }
 
@@ -1844,7 +1862,7 @@ button:focus-visible {
   padding: 7px 11px;
   color: var(--text-secondary);
   background: transparent;
-  border: 0.5px solid transparent;
+  border: var(--border-width) solid transparent;
   border-radius: 20px;
   cursor: pointer;
   font-size: 11px;
@@ -1870,7 +1888,7 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
   padding: 11px 12px;
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 8px;
   font-size: 13px;
 }
@@ -1960,7 +1978,7 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
   padding: 8px 10px;
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 4px;
   font-size: 12px;
 }
@@ -1993,7 +2011,7 @@ button:focus-visible {
   padding: 6px 9px;
   color: var(--text-secondary);
   background: var(--page-bg);
-  border: 0.5px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   font-size: 11px;
@@ -2012,7 +2030,7 @@ button:focus-visible {
 .revision-detail {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 0.5px solid var(--border);
+  border-top: var(--border-width) solid var(--border);
 }
 
 .revision-detail__metadata {
