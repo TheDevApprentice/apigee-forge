@@ -292,10 +292,33 @@ button:focus-visible {
 }
 
 .base-button:hover,
-.base-button--active {
+.base-button--active,
+.base-button--primary {
   color: var(--accent-active);
   background: var(--accent-bg);
   border-color: var(--border);
+}
+
+.base-button--secondary {
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  border-color: var(--border);
+}
+
+.base-button--danger {
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+}
+
+.base-button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.base-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .base-button svg {
@@ -366,7 +389,7 @@ button:focus-visible {
   color: var(--text-secondary);
   background: var(--page-bg);
   border: var(--border-width) solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--control-radius);
   font-size: 12px;
 }
 
@@ -408,7 +431,7 @@ button:focus-visible {
   color: var(--accent-text);
   background: var(--accent-bg);
   border: var(--border-width) solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--chip-radius);
   font-size: 11px;
 }
 
@@ -424,9 +447,29 @@ button:focus-visible {
   padding: 0 10px;
   color: var(--accent-text);
   background: var(--accent-bg);
-  border-radius: 20px;
+  border-radius: var(--chip-radius);
   font-size: 11px;
   font-weight: 400;
+}
+
+.base-chip--success {
+  color: var(--success-text);
+  background: var(--success-bg);
+}
+
+.base-chip--warning {
+  color: var(--warning-text);
+  background: var(--warning-bg);
+}
+
+.base-chip--danger {
+  color: var(--danger-text);
+  background: var(--danger-bg);
+}
+
+.base-chip--neutral {
+  color: var(--text-secondary);
+  background: var(--sidebar-bg);
 }
 
 .main-content {
@@ -465,7 +508,7 @@ button:focus-visible {
 }
 
 .base-card {
-  padding: 16px;
+  padding: var(--space-card);
   background: var(--card-bg);
   border: var(--border-width) solid var(--border);
   border-radius: var(--card-radius);

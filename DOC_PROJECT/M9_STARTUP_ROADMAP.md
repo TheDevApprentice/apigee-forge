@@ -144,12 +144,12 @@ refactor(gui): align CSS tokens with design specification
 
 ### M9-02 — Composants base et grammaire des états
 
-- [ ] Harmoniser `BaseButton` : variantes, états disabled, focus-visible, action primaire/secondaire.
-- [ ] Harmoniser `BaseCard`, `BaseChip`, `BaseModal`, `BaseEmptyState`, `BaseErrorState` et `BaseSpinner`.
-- [ ] Définir les styles communs loading, success, warning, error et not-deployed.
-- [ ] Vérifier les contrastes et la lisibilité des textes sur fond accent.
-- [ ] Conserver les composants base sans logique de domaine ni appel Tauri.
-- [ ] Ajouter les tests de rendu/comportement des variantes accessibles.
+- [x] Harmoniser `BaseButton` : variantes, états disabled, focus-visible, action primaire/secondaire.
+- [x] Harmoniser `BaseCard`, `BaseChip`, `BaseModal`, `BaseEmptyState`, `BaseErrorState` et `BaseSpinner`.
+- [x] Définir les styles communs loading, success, warning, error et not-deployed.
+- [x] Vérifier les contrastes et la lisibilité des textes sur fond accent.
+- [x] Conserver les composants base sans logique de domaine ni appel Tauri.
+- [x] Ajouter les tests de rendu/comportement des variantes accessibles.
 
 Commit prévu :
 
@@ -159,12 +159,12 @@ refactor(gui): harmonize base components and state styles
 
 ### M9-03 — Sidebar, topbar et navigation
 
-- [ ] Aligner la sidebar sur 56px, les icônes outline 20px et les couleurs active/inactive normatives.
-- [ ] Harmoniser les tooltips, labels ARIA et focus clavier des entrées de navigation.
-- [ ] Améliorer la hiérarchie de la topbar workspace sans augmenter inutilement sa hauteur.
-- [ ] Harmoniser les sélecteurs organisation/environnement et le switch Live/Demo.
-- [ ] Corriger les libellés historiques pour distinguer `Create proxy`, `Create revision`, `Review deployment` et `Deploy revision`.
-- [ ] Tester la navigation au clavier et le redimensionnement horizontal.
+- [x] Aligner la sidebar sur 56px, les icônes outline 20px et les couleurs active/inactive normatives.
+- [x] Harmoniser les tooltips, labels ARIA et focus clavier des entrées de navigation.
+- [x] Améliorer la hiérarchie de la topbar workspace sans augmenter inutilement sa hauteur.
+- [x] Harmoniser les sélecteurs organisation/environnement et le switch Live/Demo.
+- [x] Corriger les libellés historiques pour distinguer `Create proxy`, `Create revision`, `Review deployment` et `Deploy revision`.
+- [x] Tester la navigation au clavier et le redimensionnement horizontal.
 
 Commit prévu :
 

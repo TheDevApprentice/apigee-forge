@@ -691,7 +691,7 @@ const appInfo = {
   version: packageJson.version,
   build: 'Development desktop build',
   stack: 'Vue + Tauri + Rust',
-  branch: 'feature/m6-bis-gui',
+  branch: 'feature/m9-design-polish',
 }
 
 const profileIdentity = computed(() => authContext.value?.identity || (isDemo.value ? 'Demo workspace' : 'Not signed in'))
