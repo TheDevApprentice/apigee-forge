@@ -728,7 +728,7 @@ void templateEditor
 
 <template>
   <div class="app-shell" :class="{ 'app-shell--locked': !isAuthenticated }">
-    <aside class="sidebar" aria-label="Primary navigation">
+    <aside v-if="isAuthenticated" class="sidebar" aria-label="Primary navigation">
       <div class="brand-mark" aria-label="Apigee Forge" title="Apigee Forge">AF</div>
       <nav class="sidebar__nav">
         <BaseButton
@@ -1010,6 +1010,7 @@ void templateEditor
                 <button type="button" class="proxy-list__button" @click="openProxy(proxy)">
                   <span>{{ proxy.name }}</span>
                   <span class="proxy-list__revision">revision {{ proxy.revisions.at(-1)?.number || '—' }}</span>
+                  <BaseChip :label="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" />
                 </button>
               </li>
             </ul>
@@ -1057,7 +1058,7 @@ void templateEditor
               <li v-for="proxy in visibleProxies" :key="proxy.name">
                 <button type="button" class="proxy-list__button" @click="openProxy(proxy)">
                   <span>{{ proxy.name }}</span>
-                  <span class="proxy-list__revision">{{ proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed' }}</span>
+                  <BaseChip :label="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" />
                 </button>
               </li>
             </ul>
