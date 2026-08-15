@@ -584,6 +584,13 @@ function retryProxies() {
   }
 }
 
+function closeProxyDrawer() {
+  selectedProxy.value = null
+  selectedRevision.value = null
+  revisionDetail.value = null
+  revisionDetailError.value = null
+}
+
 function openProxy(proxy: ProxyDto) {
   deployment.reset()
   selectedProxy.value = proxy
@@ -1063,7 +1070,16 @@ void templateEditor
               </li>
             </ul>
           </BaseCard>
-          <BaseCard v-if="selectedProxy" eyebrow="Selected proxy details">
+          <Teleport to="body">
+          <div v-if="selectedProxy" class="proxy-drawer-backdrop" role="presentation" @click.self="closeProxyDrawer">
+            <aside class="proxy-drawer" role="dialog" aria-modal="true" aria-labelledby="proxy-drawer-title" @keydown.esc="closeProxyDrawer">
+              <div class="proxy-drawer__header">
+                <div>
+                  <p class="base-card__eyebrow">Selected proxy details</p>
+                  <h2 id="proxy-drawer-title">{{ selectedProxy.name }}</h2>
+                </div>
+                <button type="button" class="proxy-drawer__close" aria-label="Close proxy details" @click="closeProxyDrawer">×</button>
+              </div>
             <div class="proxy-detail">
               <div class="proxy-detail__header">
                 <div>
@@ -1104,7 +1120,9 @@ void templateEditor
                 </li>
               </ul>
             </div>
-          </BaseCard>
+            </aside>
+          </div>
+          </Teleport>
         </template>
         <template v-else-if="activeView === 'Templates'">
           <template v-if="templateView === 'catalogue'">

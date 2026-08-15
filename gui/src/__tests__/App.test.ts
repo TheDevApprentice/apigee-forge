@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App.vue'
 
 const invokeMock = vi.hoisted(() => vi.fn())
@@ -11,6 +12,10 @@ vi.mock('@tauri-apps/api/core', () => ({
 describe('App M6-Bis flow', () => {
   beforeEach(() => {
     invokeMock.mockReset()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
   })
 
   it('shows the safe offline login state without an Apigee account', async () => {
@@ -191,7 +196,8 @@ describe('App M6-Bis flow', () => {
     await wrapper.findAll('button').find((button) => button.text() === 'Back to templates')?.trigger('click')
     await vi.waitFor(() => expect(wrapper.find('.proxy-list__button').exists()).toBe(true))
     await wrapper.find('.proxy-list__button').trigger('click')
-    await wrapper.find('.revision-row__actions button').trigger('click')
+    document.querySelector<HTMLButtonElement>('.revision-row__actions button')?.click()
+    await nextTick()
     await wrapper.find('button.primary-action').trigger('click')
     document.querySelector<HTMLButtonElement>('.base-modal__actions button:last-child')?.click()
     await flushPromises()
@@ -203,6 +209,30 @@ describe('App M6-Bis flow', () => {
       proxyName: 'api-orders',
       revision: 2,
     })
+  })
+
+  it('opens selected proxy details in a right drawer and closes it', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
+      if (command === 'list_organizations') return [{ id: 'demo-org', project_id: 'demo-project', location: null }]
+      if (command === 'list_environments') return [{ name: 'demo' }]
+      if (command === 'list_templates') return []
+      if (command === 'list_proxies') return [{ name: 'orders', revisions: [{ number: 1, deployed: false, status: 'NotDeployed' }] }]
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.find('button[aria-label="Proxies"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('.proxy-list__button').exists()).toBe(true))
+    await wrapper.find('.proxy-list__button').trigger('click')
+    expect(document.querySelector('.proxy-drawer')).not.toBeNull()
+    expect(wrapper.text()).toContain('orders')
+
+    document.querySelector<HTMLButtonElement>('.proxy-drawer__close')?.click()
+    await nextTick()
+    await flushPromises()
+    expect(document.querySelector('.proxy-drawer')).toBeNull()
   })
 
   it('reviews an existing not-deployed revision before any deploy command', async () => {
@@ -221,9 +251,10 @@ describe('App M6-Bis flow', () => {
     await vi.waitFor(() => expect(invokeMock).toHaveBeenCalledWith('list_proxies', { organization: 'demo-org', environment: 'demo' }))
     await vi.waitFor(() => expect(wrapper.find('.proxy-list__button').exists()).toBe(true))
     await wrapper.find('.proxy-list__button').trigger('click')
-    await vi.waitFor(() => expect(wrapper.find('.revision-row__actions button').exists()).toBe(true))
+    await vi.waitFor(() => expect(document.querySelector('.revision-row__actions button')).not.toBeNull())
 
-    await wrapper.find('.revision-row__actions button').trigger('click')
+    document.querySelector<HTMLButtonElement>('.revision-row__actions button')?.click()
+    await nextTick()
     expect(wrapper.text()).toContain('Review proxy revision')
     expect(wrapper.text()).toContain('demo-org')
     expect(wrapper.text()).toContain('Confirm review')
