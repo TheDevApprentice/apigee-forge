@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 import packageJson from '../package.json'
 import { useAuth } from './composables/useAuth'
 import { useSession } from './composables/useSession'
-import type { AppMode, ProxyDto, ProxyRevisionDto, RevisionDetailDto, SessionDto, TemplateDto } from './types/bridge'
+import type { AppMode, DeploymentDto, ProxyDto, ProxyRevisionDto, RevisionDetailDto, SessionDto, TemplateDto } from './types/bridge'
 import { useOrganizations } from './composables/useOrganizations'
 import { useProxies } from './composables/useProxies'
 import { useDeployment } from './composables/useDeployment'
@@ -22,6 +22,7 @@ import ProxyCreationPreparation from './components/ProxyCreationPreparation.vue'
 import FlowDiagram from './components/FlowDiagram.vue'
 import ProxyDetailsDrawer from './components/ProxyDetailsDrawer.vue'
 import TemplateDetailsDrawer from './components/TemplateDetailsDrawer.vue'
+import DeploymentDetailsDrawer from './components/DeploymentDetailsDrawer.vue'
 
 type NavigationItem = {
   label: string
@@ -627,6 +628,15 @@ function selectDeploymentCandidate(proxy: ProxyDto, revision: ProxyRevisionDto) 
   revisionDetail.value = null
 }
 
+function closeDeploymentDetails() {
+  deployment.stopPolling()
+  selectedProxy.value = null
+  deploymentRevision.value = null
+  deploymentReviewConfirmed.value = false
+  deploymentReviewError.value = null
+  deployment.reset()
+}
+
 function reviewDeploymentRevision(revision: ProxyRevisionDto) {
   if (!selectedProxy.value) return
   if (revision.status === 'Succeeded') {
@@ -917,40 +927,25 @@ void templateEditor
               </li>
             </ul>
           </BaseCard>
-          <BaseCard v-if="selectedProxy && selectedDeploymentRevision" eyebrow="Deployment review">
-            <div class="deployment-review">
-              <div class="deployment-preparation__header">
-                <div>
-                  <h2>Review proxy revision</h2>
-                  <p>Confirm the existing revision and target before deployment. Deployment starts only after this review is confirmed.</p>
-                </div>
-                <BaseChip :label="deploymentReviewConfirmed ? 'Review confirmed' : 'Confirmation required'" :tone="deploymentReviewConfirmed ? 'success' : 'warning'" />
-              </div>
-              <dl class="review-grid">
-                <div><span>Mode</span><strong>{{ isDemo ? 'Demo' : 'Live' }}</strong></div>
-                <div><span>Organization</span><strong>{{ selectedOrganization }}</strong></div>
-                <div><span>Environment</span><strong>{{ selectedEnvironment }}</strong></div>
-                <div><span>Proxy</span><strong>{{ selectedProxy.name }}</strong></div>
-                <div><span>Revision</span><strong>{{ selectedDeploymentRevision.number }}</strong></div>
-                <div><span>Current status</span><strong>{{ deploymentResult?.status || selectedDeploymentRevision.status }}</strong></div>
-              </dl>
-              <div v-if="deploymentResult" class="deployment-preparation__created" role="status" aria-live="polite">
-                Deployment status: <strong>{{ deploymentResult.status }}</strong>
-                <span v-if="deploymentLastUpdated"> · updated {{ deploymentLastUpdated.toLocaleTimeString() }}</span>
-              </div>
-              <p v-if="deploymentStatus === 'polling'" class="deployment-preparation__next-step" role="status" aria-live="polite">Apigee is still processing the revision. The GUI will continue polling for up to five minutes.</p>
-              <p v-if="deploymentReviewError || deploymentError" class="deployment-preparation__warning" role="alert">{{ deploymentReviewError || deploymentError }}</p>
-              <div class="review-actions">
-                <button type="button" @click="activeView = 'Proxies'">Back to proxies</button>
-                <button v-if="!deploymentReviewConfirmed" type="button" class="primary-action" @click="confirmDeploymentReview">Confirm review</button>
-                <button v-else type="button" class="primary-action" :disabled="deploymentStatus === 'deploying' || deploymentStatus === 'polling' || deploymentStatus === 'succeeded'" @click="executeDeployment">
-                  {{ deploymentStatus === 'deploying' ? 'Deploying…' : deploymentStatus === 'polling' ? 'Waiting for status…' : deploymentStatus === 'succeeded' ? 'Deployment succeeded' : 'Deploy revision' }}
-                </button>
-                <button v-if="deploymentStatus === 'polling'" type="button" @click="deployment.stopPolling()">Stop polling</button>
-                <button v-else-if="['failed', 'error', 'timeout', 'stopped'].includes(deploymentStatus)" type="button" @click="executeDeployment">Retry deployment</button>
-              </div>
-            </div>
-          </BaseCard>
+          <DeploymentDetailsDrawer
+            v-if="selectedProxy && selectedDeploymentRevision"
+            :open="true"
+            :proxy="selectedProxy"
+            :revision="selectedDeploymentRevision"
+            :organization="selectedOrganization"
+            :environment="selectedEnvironment"
+            :demo="isDemo"
+            :confirmed="deploymentReviewConfirmed"
+            :deployment="deploymentResult"
+            :status="deploymentStatus"
+            :last-updated="deploymentLastUpdated"
+            :error="deploymentReviewError || deploymentError"
+            @close="closeDeploymentDetails"
+            @confirm="confirmDeploymentReview"
+            @deploy="executeDeployment"
+            @stop="deployment.stopPolling()"
+            @retry="executeDeployment"
+          />
         </template>
 
         <template v-else-if="activeView === 'Settings'">

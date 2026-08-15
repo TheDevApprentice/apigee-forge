@@ -206,8 +206,8 @@ describe('App M6-Bis flow', () => {
     expect(wrapper.text()).toContain('Revision 3')
 
     await wrapper.find('.deployment-revision-list__button').trigger('click')
-    expect(wrapper.text()).toContain('Review proxy revision')
-    expect(wrapper.text()).toContain('Confirm review')
+    expect(document.body.textContent).toContain('Deployment review')
+    expect(document.body.textContent).toContain('Confirm review')
   })
 
   it('completes the Demo creation-to-deployment journey', async () => {
@@ -258,11 +258,13 @@ describe('App M6-Bis flow', () => {
     await wrapper.find('.proxy-list__button').trigger('click')
     document.querySelector<HTMLButtonElement>('.revision-row__actions button')?.click()
     await nextTick()
-    await wrapper.find('button.primary-action').trigger('click')
+    document.querySelector<HTMLButtonElement>('.base-drawer .primary-action')?.click()
+    await nextTick()
     document.querySelector<HTMLButtonElement>('.base-modal__actions button:last-child')?.click()
+    await nextTick()
     await flushPromises()
-    await wrapper.findAll('button').find((button) => button.text() === 'Deploy revision')?.trigger('click')
-    await vi.waitFor(() => expect(wrapper.text()).toContain('Deployment succeeded'))
+    document.querySelector<HTMLButtonElement>('.base-drawer .primary-action')?.click()
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Deployment succeeded'))
     expect(invokeMock).toHaveBeenCalledWith('get_deployment_status', {
       organization: 'demo-org',
       environment: 'demo',
@@ -315,15 +317,17 @@ describe('App M6-Bis flow', () => {
 
     document.querySelector<HTMLButtonElement>('.revision-row__actions button')?.click()
     await nextTick()
-    expect(wrapper.text()).toContain('Review proxy revision')
-    expect(wrapper.text()).toContain('demo-org')
-    expect(wrapper.text()).toContain('Confirm review')
+    expect(document.body.textContent).toContain('Deployment review')
+    expect(document.body.textContent).toContain('demo-org')
+    expect(document.body.textContent).toContain('Confirm review')
 
-    await wrapper.find('button.primary-action').trigger('click')
+    document.querySelector<HTMLButtonElement>('.base-drawer .primary-action')?.click()
+    await nextTick()
     await flushPromises()
     document.querySelector<HTMLButtonElement>('.base-modal__actions button:last-child')?.click()
+    await nextTick()
     await flushPromises()
-    expect(wrapper.text()).toContain('Review confirmed')
+    expect(document.body.textContent).toContain('Review confirmed')
     expect(invokeMock).not.toHaveBeenCalledWith('deploy_proxy', expect.anything())
   })
 
