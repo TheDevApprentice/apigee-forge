@@ -817,7 +817,6 @@ void templateEditor
         <div class="page-heading">
           <div>
             <p class="page-heading__eyebrow">{{ isAuthenticated ? activeView : 'Login' }}</p>
-            <h1>Apigee Forge</h1>
           </div>
           <span class="page-heading__status">{{ isAuthenticated ? 'Workspace connected' : 'Local mode' }}</span>
         </div>
@@ -1016,8 +1015,10 @@ void templateEditor
               <li v-for="proxy in visibleProxies" :key="proxy.name">
                 <button type="button" class="proxy-list__button" @click="openProxy(proxy)">
                   <span>{{ proxy.name }}</span>
-                  <span class="proxy-list__revision">revision {{ proxy.revisions.at(-1)?.number || '—' }}</span>
-                  <BaseChip :label="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" />
+                  <span class="proxy-list__meta">
+                    <span class="proxy-list__revision">revision {{ proxy.revisions.at(-1)?.number || '—' }}</span>
+                    <BaseChip :label="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" />
+                  </span>
                 </button>
               </li>
             </ul>
@@ -1083,7 +1084,6 @@ void templateEditor
             <div class="proxy-detail">
               <div class="proxy-detail__header">
                 <div>
-                  <h2>{{ selectedProxy.name }}</h2>
                   <p>{{ selectedProxy.source === 'cloud' ? 'Live Apigee proxy' : 'Demo proxy' }}</p>
                 </div>
                 <BaseChip :label="selectedProxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="selectedProxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" />
