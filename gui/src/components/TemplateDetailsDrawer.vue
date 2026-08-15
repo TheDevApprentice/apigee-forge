@@ -42,7 +42,7 @@ const policyCount = computed(() => {
         <div><dt>Name convention</dt><dd>{{ metadata.naming_convention?.prefix || 'No prefix' }} · {{ metadata.naming_convention?.case || 'kebab-case' }}</dd></div>
       </dl>
       <div class="template-drawer__actions">
-        <button type="button" class="primary-action" @click="emit('prepareProxy')">Create proxy from template</button>
+        <button type="button" class="primary-action template-drawer__prepare" @click="emit('prepareProxy')">Create proxy from template</button>
         <button type="button" class="template-drawer__edit" @click="emit('edit')">Edit template</button>
         <button type="button" class="template-drawer__delete" :disabled="deletePending" @click="emit('delete')">{{ deletePending ? 'Deleting…' : 'Delete template' }}</button>
       </div>

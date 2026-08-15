@@ -1129,16 +1129,12 @@ void templateEditor
               <template #title>No templates match</template>
               <template #hint>Try another search term.</template>
             </BaseEmptyState>
-            <ul v-else class="template-list">
+            <ul v-else class="proxy-list template-list">
               <li v-for="template in visibleTemplates" :key="template.name" :class="{ 'template-list__item--selected': currentTemplate?.name === template.name }">
-                <button type="button" class="template-list__select" @click="openTemplateDrawer(template)">
-                  <strong>{{ template.name || 'Untitled template' }}</strong>
-                  <span>{{ templateOwner(template) }}</span>
+                <button type="button" class="proxy-list__button template-list__select" @click="openTemplateDrawer(template)">
+                  <span>{{ template.name || 'Untitled template' }}</span>
+                  <span class="template-list__owner">{{ templateOwner(template) }}</span>
                 </button>
-                <div class="template-list__actions">
-                  <button type="button" class="template-list__prepare" @click="prepareProxyCreation(template.name)">Prepare proxy creation</button>
-                  <button type="button" class="template-list__delete" :disabled="templateDeletePending === template.name" @click="deleteTemplate(template.name)">Delete</button>
-                </div>
               </li>
             </ul>
           </BaseCard>

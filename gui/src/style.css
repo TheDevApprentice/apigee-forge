@@ -1740,7 +1740,7 @@ textarea:focus-visible {
   text-align: left;
 }
 
-.template-list__select span {
+.template-list__owner {
   color: var(--text-muted);
   font-size: 11px;
 }
@@ -1752,8 +1752,6 @@ textarea:focus-visible {
   gap: 6px;
 }
 
-.template-list__prepare,
-.template-list__delete,
 .template-editor-actions button {
   padding: 7px 10px;
   color: var(--text-secondary);
@@ -1764,14 +1762,11 @@ textarea:focus-visible {
   font-size: 11px;
 }
 
-.template-list__prepare:hover,
-.template-list__delete:hover,
 .template-editor-actions button:hover {
   color: var(--accent-active);
   border-color: var(--accent-active);
 }
 
-.template-list__delete:disabled,
 .template-editor-actions button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
