@@ -188,6 +188,28 @@ describe('App M6-Bis flow', () => {
     expect(invokeMock).not.toHaveBeenCalledWith('deploy_proxy', expect.anything())
   })
 
+  it('lists non-deployed revisions directly in Deployments', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
+      if (command === 'list_organizations') return [{ id: 'demo-org', project_id: 'demo-project', location: null }]
+      if (command === 'list_environments') return [{ name: 'demo' }]
+      if (command === 'list_templates') return []
+      if (command === 'list_proxies') return [{ name: 'orders-api', revisions: [{ number: 3, deployed: false, status: 'NotDeployed' }] }]
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.find('button[aria-label="Deployments"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('.deployment-revision-list__button').exists()).toBe(true))
+    expect(wrapper.text()).toContain('orders-api')
+    expect(wrapper.text()).toContain('Revision 3')
+
+    await wrapper.find('.deployment-revision-list__button').trigger('click')
+    expect(wrapper.text()).toContain('Review proxy revision')
+    expect(wrapper.text()).toContain('Confirm review')
+  })
+
   it('completes the Demo creation-to-deployment journey', async () => {
     let proxyListCalls = 0
     invokeMock.mockImplementation(async (command: string) => {

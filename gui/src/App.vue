@@ -617,6 +617,16 @@ function openProxy(proxy: ProxyDto) {
   activeView.value = 'Proxies'
 }
 
+function selectDeploymentCandidate(proxy: ProxyDto, revision: ProxyRevisionDto) {
+  deployment.reset()
+  selectedProxy.value = proxy
+  selectedRevision.value = null
+  deploymentRevision.value = revision.number
+  deploymentReviewConfirmed.value = false
+  deploymentReviewError.value = null
+  revisionDetail.value = null
+}
+
 function reviewDeploymentRevision(revision: ProxyRevisionDto) {
   if (!selectedProxy.value) return
   if (revision.status === 'Succeeded') {
@@ -719,6 +729,10 @@ const selectedDeploymentRevision = computed<ProxyRevisionDto | null>(() => {
   if (!selectedProxy.value || deploymentRevision.value === null) return null
   return selectedProxy.value.revisions.find((revision) => revision.number === deploymentRevision.value) || null
 })
+
+const availableDeploymentRevisions = computed(() => proxyList.value.flatMap((proxy) => proxy.revisions
+  .filter((revision) => revision.status === 'NotDeployed')
+  .map((revision) => ({ proxy, revision }))))
 
 const dashboardMetrics = computed(() => ({
   proxies: proxyList.value.length,
@@ -883,6 +897,26 @@ void templateEditor
 
 
         <template v-else-if="activeView === 'Deployments'">
+          <BaseCard eyebrow="Revisions awaiting deployment">
+            <p class="deployment-catalogue__intro">Review an existing Apigee proxy revision before deploying it to the selected environment.</p>
+            <BaseSpinner v-if="proxiesLoading" />
+            <BaseErrorState v-else-if="proxiesError" @retry="retryProxies">
+              <template #title>Revisions unavailable</template>
+              <template #hint>{{ proxiesError }}</template>
+            </BaseErrorState>
+            <BaseEmptyState v-else-if="!availableDeploymentRevisions.length">
+              <template #title>No revisions awaiting deployment</template>
+              <template #hint>Upload a proxy revision or return later when a revision is available for deployment.</template>
+            </BaseEmptyState>
+            <ul v-else class="deployment-revision-list">
+              <li v-for="candidate in availableDeploymentRevisions" :key="`${candidate.proxy.name}-${candidate.revision.number}`" :class="{ 'deployment-revision-list__item--selected': selectedProxy?.name === candidate.proxy.name && selectedDeploymentRevision?.number === candidate.revision.number }">
+                <button type="button" class="deployment-revision-list__button" @click="selectDeploymentCandidate(candidate.proxy, candidate.revision)">
+                  <span>{{ candidate.proxy.name }}</span>
+                  <span class="deployment-revision-list__meta">Revision {{ candidate.revision.number }} <BaseChip label="Not deployed" tone="neutral" /></span>
+                </button>
+              </li>
+            </ul>
+          </BaseCard>
           <BaseCard v-if="selectedProxy && selectedDeploymentRevision" eyebrow="Deployment review">
             <div class="deployment-review">
               <div class="deployment-preparation__header">
@@ -916,12 +950,6 @@ void templateEditor
                 <button v-else-if="['failed', 'error', 'timeout', 'stopped'].includes(deploymentStatus)" type="button" @click="executeDeployment">Retry deployment</button>
               </div>
             </div>
-          </BaseCard>
-          <BaseCard v-else eyebrow="Deploy existing revision">
-            <BaseEmptyState>
-              <template #title>No revision selected</template>
-              <template #hint>Select an existing proxy revision from the Proxies catalogue to review and deploy it.</template>
-            </BaseEmptyState>
           </BaseCard>
         </template>
 
