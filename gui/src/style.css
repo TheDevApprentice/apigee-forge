@@ -3153,3 +3153,15 @@ textarea:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .core-ring { animation: none; }
 }
+
+/* The authenticated shell already uses the full frame. Keep the Login story full-width too. */
+.app-shell--locked .main-content {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.login-experience {
+  width: 100%;
+  max-width: none;
+}
