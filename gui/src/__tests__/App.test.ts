@@ -30,7 +30,7 @@ describe('App M6-Bis flow', () => {
     const wrapper = mount(App)
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Connect your Apigee workspace.')
+    expect(wrapper.text()).toContain('Shape your APIs.')
     expect(wrapper.text()).toContain('Sign in with Google')
     expect(wrapper.find('button.primary-action').exists()).toBe(true)
   })

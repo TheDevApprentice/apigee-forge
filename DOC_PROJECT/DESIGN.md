@@ -2,6 +2,8 @@
 
 *Tokens visuels validés. Thème clair uniquement — pas de mode sombre pour ce projet.*
 
+> La référence complète du design system GUI, de la page Login vitrine, du motion design et des règles UX est désormais `DOC_PROJECT/GUI_DESIGN_SYSTEM.md`. Ce document conserve les tokens historiques et doit rester cohérent avec cette référence complète.
+
 ---
 
 ## 1. Direction générale

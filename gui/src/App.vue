@@ -90,6 +90,7 @@ const modal = ref<{ title: string; message: string; confirmLabel?: string; tone?
 const modalAction = ref<(() => void | Promise<void>) | null>(null)
 const authContext = auth.context
 const authLoading = auth.loading
+const authState = auth.state
 const authError = auth.error
 const organizationList = organizations.organizations
 const environmentList = organizations.environments
@@ -857,51 +858,100 @@ void templateEditor
       </header>
 
       <main class="main-content">
-        <div class="page-heading">
+        <div v-if="isAuthenticated" class="page-heading">
           <div>
-            <p class="page-heading__eyebrow">{{ isAuthenticated ? activeView : 'Login' }}</p>
+            <p class="page-heading__eyebrow">{{ activeView }}</p>
           </div>
-          <span class="page-heading__status">{{ isAuthenticated ? 'Workspace connected' : 'Local mode' }}</span>
+          <span class="page-heading__status">Workspace connected</span>
         </div>
 
         <template v-if="authLoading && !auth.context">
-          <BaseCard eyebrow="Authentication">
-            <div class="loading-state"><BaseSpinner /> <span>Checking session…</span></div>
-          </BaseCard>
+          <section class="login-loading" aria-live="polite">
+            <div class="login-loading__mark" aria-hidden="true"><span></span><span></span><span></span></div>
+            <p class="login-eyebrow">Apigee Forge</p>
+            <h1>{{ authState === 'restoring' ? 'Restoring your workspace' : 'Preparing your workspace' }}</h1>
+            <p>{{ authState === 'restoring' ? 'Checking your saved Google session securely…' : 'Getting things ready…' }}</p>
+          </section>
         </template>
 
         <template v-else-if="!isAuthenticated">
-          <div class="login-screen__header">
-            <span>Apigee Forge</span>
-            <label class="mode-switcher">
-              <span>Mode</span>
-              <select v-model="selectedMode" @change="changeMode(selectedMode as AppMode)">
-                <option value="cloud">Live</option>
-                <option value="demo">Demo</option>
-              </select>
-            </label>
-          </div>
-          <BaseCard eyebrow="Welcome">
-            <section class="login-panel" aria-labelledby="login-title">
-              <div class="login-panel__copy">
-                <h2 id="login-title">Connect your Apigee workspace.</h2>
-                <p>Use the desktop OAuth flow to load organizations, environments and proxies. No credentials are required for this local preview.</p>
+          <section class="login-experience" aria-labelledby="login-title">
+            <header class="login-experience__nav">
+              <a class="login-brand" href="#login-title" aria-label="Apigee Forge home"><span class="login-brand__mark">AF</span><span>Apigee Forge</span></a>
+              <label class="mode-switcher">
+                <span>Workspace</span>
+                <select v-model="selectedMode" @change="changeMode(selectedMode as AppMode)">
+                  <option value="cloud">Live</option>
+                  <option value="demo">Demo</option>
+                </select>
+              </label>
+            </header>
+
+            <div class="login-hero reveal-on-scroll">
+              <div class="login-hero__copy">
+                <p class="login-eyebrow">API delivery, made calm.</p>
+                <h1 id="login-title">Shape your APIs.<br /><span>Ship with confidence.</span></h1>
+                <p class="login-hero__lead">Apigee Forge brings templates, governance and deployments together in one thoughtful workspace for your APIs.</p>
+                <div class="login-hero__actions">
+                  <button class="primary-action login-hero__button" type="button" :disabled="authLoading" @click="auth.login">
+                    <span class="google-g">G</span>{{ authLoading ? 'Connecting securely…' : 'Sign in with Google' }}
+                  </button>
+                  <a href="#how-it-works" class="login-text-link">See how it works <span aria-hidden="true">↓</span></a>
+                </div>
+                <p class="login-hero__note">Your Google session is restored automatically when it is still valid.</p>
               </div>
-              <button class="primary-action" type="button" :disabled="authLoading" @click="auth.login">
-                {{ authLoading ? 'Opening sign-in…' : 'Sign in with Google' }}
-              </button>
+              <div class="login-hero__visual" aria-label="Apigee Forge workflow illustration" role="img">
+                <div class="workflow-orbit workflow-orbit--outer"></div>
+                <div class="workflow-orbit workflow-orbit--inner"></div>
+                <div class="workflow-card workflow-card--main"><span class="workflow-card__icon">✦</span><span><b>Proxy workflow</b><small>Ready to deploy</small></span><strong>✓</strong></div>
+                <div class="workflow-card workflow-card--template"><span class="workflow-dot workflow-dot--blue"></span><span><b>Template</b><small>Governance</small></span></div>
+                <div class="workflow-card workflow-card--deploy"><span class="workflow-dot workflow-dot--green"></span><span><b>Revision 03</b><small>Live · eval</small></span></div>
+                <svg class="workflow-lines" viewBox="0 0 420 360" aria-hidden="true"><path d="M88 114C120 60 178 49 213 105M260 166C303 173 316 208 322 238" /><circle cx="88" cy="114" r="4" /><circle cx="322" cy="238" r="4" /></svg>
+              </div>
+            </div>
+
+            <div id="how-it-works" class="login-story">
+              <div class="login-story__intro reveal-on-scroll"><p class="login-eyebrow">A clear path from idea to production</p><h2>Everything your API team needs.<br /><span>Nothing in the way.</span></h2></div>
+              <div class="login-feature-grid">
+                <article class="login-feature reveal-on-scroll"><div class="feature-visual feature-visual--flow"><span class="feature-node feature-node--active">01</span><i></i><span class="feature-node">02</span><i></i><span class="feature-node">03</span></div><p class="login-eyebrow">01 · Compose</p><h3>Make standards reusable.</h3><p>Turn your governance rules into visual templates that stay readable, versionable and ready for every team.</p></article>
+                <article class="login-feature reveal-on-scroll"><div class="feature-visual feature-visual--layers"><span></span><span></span><span></span><b>OpenAPI</b></div><p class="login-eyebrow">02 · Prepare</p><h3>See the whole picture.</h3><p>Bring an OpenAPI specification and a template together, review the target and generate a bundle locally before anything changes.</p></article>
+                <article class="login-feature reveal-on-scroll"><div class="feature-visual feature-visual--signal"><span></span><span></span><span></span><span></span><b>Live status</b></div><p class="login-eyebrow">03 · Deliver</p><h3>Deploy deliberately.</h3><p>Review the exact revision and environment, confirm once, then follow the deployment until Apigee is done.</p></article>
+              </div>
+            </div>
+
+            <section class="login-capabilities" aria-labelledby="capabilities-title">
+              <div class="login-story__intro reveal-on-scroll"><p class="login-eyebrow">One product, two ways to work</p><h2 id="capabilities-title">From a local idea<br /><span>to a governed API.</span></h2><p class="login-section-lead">Forge gives platform teams a shared language for API delivery, whether they prefer a visual desktop workflow or an automated pipeline.</p></div>
+              <div class="capability-row capability-row--reverse reveal-on-scroll">
+                <div class="capability-copy"><p class="login-eyebrow">The shared core</p><h3>Rules that travel with your APIs.</h3><p>Templates encode ownership, naming conventions and security policies once. The Rust core validates every input and produces a predictable Apigee bundle, so your standards stay consistent from laptop to pipeline.</p><div class="capability-points"><span>Strict template validation</span><span>OpenAPI 3.x parsing</span><span>Secure XML rendering</span></div></div>
+                <div class="capability-visual capability-visual--core" aria-hidden="true"><div class="core-ring core-ring--one"></div><div class="core-ring core-ring--two"></div><div class="core-core">CORE</div><span class="core-label core-label--top">Templates</span><span class="core-label core-label--left">OpenAPI</span><span class="core-label core-label--right">Policies</span><span class="core-label core-label--bottom">Bundle</span></div>
+              </div>
+              <div class="capability-row reveal-on-scroll">
+                <div class="capability-copy"><p class="login-eyebrow">The desktop workspace</p><h3>A calmer way to manage Apigee.</h3><p>Connect with your Google identity, select an organization and environment, then see proxies, revisions and deployment status in one focused workspace.</p><div class="capability-points"><span>Live and Demo modes</span><span>Template editor</span><span>Deployment review</span></div></div>
+                <div class="capability-visual capability-visual--workspace" aria-hidden="true"><div class="workspace-window"><span class="workspace-window__top"><i></i><i></i><i></i></span><span class="workspace-window__line workspace-window__line--long"></span><span class="workspace-window__line"></span><span class="workspace-window__line workspace-window__line--short"></span><span class="workspace-window__badge">Ready</span></div></div>
+              </div>
+              <div class="capability-row capability-row--reverse reveal-on-scroll">
+                <div class="capability-copy"><p class="login-eyebrow">The command line</p><h3>Automation when you need it.</h3><p>Use the same core from a terminal or CI/CD pipeline. Generate bundles, import revisions, deploy to an environment and read machine-friendly JSON results without a GUI.</p><div class="terminal-snippet" aria-label="Example Apigee Forge CLI commands"><code><span>$</span> apigee-forge generate</code><code><span>$</span> apigee-forge deploy --json</code><code><span>✓</span> pipeline ready</code></div></div>
+                <div class="capability-visual capability-visual--pipeline" aria-hidden="true"><span class="pipeline-node">CLI</span><i></i><span class="pipeline-node pipeline-node--active">CI/CD</span><i></i><span class="pipeline-node">Apigee</span><div class="pipeline-track"></div></div>
+              </div>
             </section>
-          </BaseCard>
-          <BaseErrorState v-if="authError" @retry="auth.refresh">
-            <template #title>Authentication is not configured</template>
-            <template #hint>{{ authError }} Set APIGEE_FORGE_OAUTH_CLIENT_ID before starting the GUI; the optional keyring alias defaults to desktop.</template>
-          </BaseErrorState>
-          <BaseCard v-if="isDemo" eyebrow="Demo workspace">
-            <BaseEmptyState>
-              <template #title>Offline workspace ready</template>
-              <template #hint>The GUI is intentionally usable without a provisioned Apigee organization.</template>
-            </BaseEmptyState>
-          </BaseCard>
+
+            <section class="login-journey reveal-on-scroll" aria-labelledby="journey-title"><div class="login-journey__header"><p class="login-eyebrow">A workflow with intention</p><h2 id="journey-title">Every step has a place.</h2><p>Nothing is hidden behind a button. Forge separates local preparation from remote mutations, so teams can move quickly without losing trust.</p></div><div class="journey-steps"><article><span>01</span><b>Compose</b><p>Create a reusable template with visual policies.</p></article><article><span>02</span><b>Prepare</b><p>Combine OpenAPI and standards into a preview.</p></article><article><span>03</span><b>Generate</b><p>Render and package a safe local bundle.</p></article><article><span>04</span><b>Deliver</b><p>Upload, review the revision and deploy deliberately.</p></article></div></section>
+
+            <section class="login-security reveal-on-scroll" aria-labelledby="security-title"><div><p class="login-eyebrow">Safe by default</p><h2 id="security-title">Confidence is a feature.</h2><p>Google OAuth, OS credential storage, SQLCipher local state, strict validation and explicit confirmations protect the path from source to production.</p></div><div class="security-list"><span><b>✓</b> Google identity and IAM permissions</span><span><b>✓</b> No credentials in the interface</span><span><b>✓</b> Demo mode without network access</span><span><b>✓</b> Explicit review before mutations</span></div></section>
+
+            <div class="login-trust reveal-on-scroll"><span>Built around your existing tools</span><b>Google Cloud</b><b>OpenAPI</b><b>Apigee</b><b>Rust</b></div>
+
+            <BaseErrorState v-if="authError" class="login-error" @retry="auth.refresh">
+              <template #title>Authentication is not configured</template>
+              <template #hint>{{ authError }} Set APIGEE_FORGE_OAUTH_CLIENT_ID before starting the GUI; the optional keyring alias defaults to desktop.</template>
+            </BaseErrorState>
+            <BaseCard v-if="isDemo" class="login-demo-card" eyebrow="Demo workspace">
+              <BaseEmptyState>
+                <template #title>Offline workspace ready</template>
+                <template #hint>The GUI is intentionally usable without a provisioned Apigee organization.</template>
+              </BaseEmptyState>
+            </BaseCard>
+          </section>
         </template>
 
 

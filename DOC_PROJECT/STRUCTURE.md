@@ -163,6 +163,7 @@ DOC_PROJECT/
 ├── MVP_FEATURES.md
 ├── ARCHITECTURE.md
 ├── DESIGN.md
+├── GUI_DESIGN_SYSTEM.md         # référence normative du design GUI et de la page Login
 ├── ROADMAP.md
 ├── STARTUP_ROADMAP.md
 ├── M2_STARTUP_ROADMAP.md

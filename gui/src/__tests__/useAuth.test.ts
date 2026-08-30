@@ -58,4 +58,29 @@ describe('useAuth', () => {
     expect(auth.context.value?.authenticated).toBe(false)
     expect(auth.context.value?.selected_organization).toBeNull()
   })
+
+  it('marks a restored Google session as authenticated', async () => {
+    const invoke: Invoke = vi.fn().mockResolvedValue(authenticated)
+    const auth = useAuth(invoke)
+
+    await auth.restore()
+
+    expect(auth.state.value).toBe('authenticated')
+    expect(auth.context.value?.identity).toBe('developer@example.com')
+    expect(invoke).toHaveBeenCalledWith('auth_restore')
+  })
+
+  it('requests a fresh sign-in when no refresh session is stored', async () => {
+    const invoke: Invoke = vi.fn(async (command) => {
+      if (command === 'auth_restore') return unauthenticated
+      if (command === 'auth_storage_status') return { refresh_token_stored: false }
+      throw new Error(`Unexpected command ${command}`)
+    })
+    const auth = useAuth(invoke)
+
+    await auth.restore()
+
+    expect(auth.state.value).toBe('reauthentication_required')
+    expect(auth.error.value).toContain('connected once')
+  })
 })
