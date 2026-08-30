@@ -239,9 +239,11 @@ describe('App M6-Bis flow', () => {
     await wrapper.findAll('.dashboard-action-card')[1].trigger('click')
     await vi.waitFor(() => expect(wrapper.find('select[aria-label="Select proxy template"]').exists()).toBe(true))
     await wrapper.find('select[aria-label="Select proxy template"]').setValue('orders')
-    await wrapper.findAll('.workspace-selectors select')[0].setValue('demo-org')
-    await vi.waitFor(() => expect(wrapper.find('.workspace-selectors select option[value="demo"]').exists()).toBe(true))
-    await wrapper.findAll('.workspace-selectors select')[1].setValue('demo')
+    await wrapper.findAll('.workspace-selectors .base-select__trigger')[0].trigger('click')
+    await wrapper.findAll('.base-select__option').find((option) => option.text() === 'demo-org')?.trigger('click')
+    await vi.waitFor(() => expect(wrapper.findAll('.workspace-selectors .base-select__trigger')).toHaveLength(2))
+    await wrapper.findAll('.workspace-selectors .base-select__trigger')[1].trigger('click')
+    await wrapper.findAll('.base-select__option').find((option) => option.text().includes('demo'))?.trigger('click')
     await flushPromises()
     await vi.waitFor(() => expect(wrapper.text()).toContain('Organizationdemo-org'))
     await wrapper.find('input[placeholder="openapi.yaml"]').setValue('orders.yaml')
@@ -358,7 +360,7 @@ describe('App M6-Bis flow', () => {
     await flushPromises()
     await flushPromises()
 
-    await vi.waitFor(() => expect(wrapper.findAll('.workspace-selectors select')).toHaveLength(2))
+    await vi.waitFor(() => expect(wrapper.findAll('.workspace-selectors .base-select__trigger')).toHaveLength(2))
     await vi.waitFor(() => expect(wrapper.text()).toContain('hello-world'))
     expect(wrapper.find('.sidebar__avatar').text()).toBe('DE')
     expect(wrapper.find('.sidebar__profile-tooltip').text()).toContain('developer@example.com')
@@ -369,5 +371,24 @@ describe('App M6-Bis flow', () => {
     await flushPromises()
     expect(invokeMock).toHaveBeenCalledWith('auth_logout', undefined)
     expect(wrapper.find('button.primary-action').exists()).toBe(true)
+  })
+
+  it('reconnects a valid Google session and opens the workspace automatically', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'cloud', status: 'authentication_required', identity: null, organization: null, environment: null, error: null }
+      if (command === 'auth_restore') return { authenticated: true, mode: 'desktop', identity: 'developer@example.com', given_name: 'Ada', family_name: 'Lovelace', name: 'Ada Lovelace', picture: null, project_id: null, selected_organization: null }
+      if (command === 'list_organizations') return [{ id: 'org-one', project_id: 'project-one', location: null }]
+      if (command === 'list_environments') return [{ name: 'test' }]
+      if (command === 'list_proxies') return [{ name: 'hello-world', revisions: [{ number: 1, deployed: false, status: 'NotDeployed' }] }]
+      if (command === 'list_templates') return []
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Welcome back, Ada Lovelace.'))
+    await vi.waitFor(() => expect(wrapper.text()).toContain('hello-world'))
+    expect(invokeMock).toHaveBeenCalledWith('auth_restore', undefined)
+    expect(invokeMock).toHaveBeenCalledWith('list_organizations', undefined)
+    expect(invokeMock).toHaveBeenCalledWith('list_proxies', { organization: 'org-one', environment: 'test' })
   })
 })

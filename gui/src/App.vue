@@ -17,6 +17,7 @@ import BaseEmptyState from './components/base/BaseEmptyState.vue'
 import BaseModal from './components/base/BaseModal.vue'
 import BaseErrorState from './components/base/BaseErrorState.vue'
 import BaseSpinner from './components/base/BaseSpinner.vue'
+import BaseSelect from './components/base/BaseSelect.vue'
 import TemplateEditorShell from './components/template/TemplateEditorShell.vue'
 import ProxyCreationPreparation from './components/ProxyCreationPreparation.vue'
 import FlowDiagram from './components/FlowDiagram.vue'
@@ -856,24 +857,27 @@ void templateEditor
         <div class="topbar__workspace">
           <p class="topbar__eyebrow">Workspace</p>
           <div class="workspace-selectors">
-            <label>
+            <label class="workspace-selector">
               <span>Organization</span>
-              <select v-model="selectedOrganization" :disabled="organizationsLoading">
-                <option value="">Select an organization</option>
-                <option v-for="organization in organizationList" :key="organization.id" :value="organization.id">
-                  {{ organization.id }}
-                </option>
-              </select>
+              <BaseSelect
+                v-model="selectedOrganization"
+                label="Organization"
+                placeholder="Select an organization"
+                :disabled="organizationsLoading"
+                :options="organizationList.map((organization) => ({ value: organization.id, label: organization.id, description: organization.project_id }))"
+              />
             </label>
-            <span class="workspace-selector__separator">/</span>
-            <label>
+            <span class="workspace-selector__separator" aria-hidden="true">/</span>
+            <label class="workspace-selector">
               <span>Environment</span>
-              <select v-if="selectedOrganization" v-model="selectedEnvironment" :disabled="organizationsLoading || !environmentList.length">
-                <option value="">Select an environment</option>
-                <option v-for="environment in environmentList" :key="environment.name" :value="environment.name">
-                  {{ environment.name }}
-                </option>
-              </select>
+              <BaseSelect
+                v-if="selectedOrganization"
+                v-model="selectedEnvironment"
+                label="Environment"
+                placeholder="Select an environment"
+                :disabled="organizationsLoading || !environmentList.length"
+                :options="environmentList.map((environment) => ({ value: environment.name, label: environment.name, description: 'Apigee environment' }))"
+              />
               <span v-else class="workspace-selectors__placeholder">Select organization first</span>
             </label>
           </div>
@@ -1081,71 +1085,69 @@ void templateEditor
         </template>
         <template v-else>
           <template v-if="activeView === 'Dashboard'">
-            <BaseSpinner v-if="organizationsLoading" />
-            <BaseErrorState v-else-if="organizationsError" @retry="retryContext">
+            <section class="dashboard-welcome dashboard-reveal" aria-labelledby="dashboard-title">
+              <div class="dashboard-welcome__copy">
+                <p class="dashboard-eyebrow">{{ isDemo ? 'Demo workspace' : 'Your Apigee workspace' }}</p>
+                <h1 id="dashboard-title">{{ profileName ? `Welcome back, ${profileName}.` : 'Welcome back.' }}</h1>
+                <p>Everything is in place to shape, review and deliver your APIs.</p>
+              </div>
+              <div class="dashboard-welcome__context">
+                <span class="dashboard-status-dot" aria-hidden="true"></span>
+                <div><span>Current workspace</span><strong>{{ selectedOrganization || 'Select an organization' }}</strong><small>{{ selectedEnvironment || 'Select an environment' }}</small></div>
+                <BaseChip :label="isDemo ? 'Demo' : 'Live'" :tone="isDemo ? 'warning' : 'success'" />
+              </div>
+            </section>
+
+            <BaseErrorState v-if="organizationsError" class="dashboard-reveal" @retry="retryContext">
               <template #title>Workspace context unavailable</template>
               <template #hint>{{ organizationsError }}</template>
             </BaseErrorState>
-            <BaseErrorState v-else-if="!isDemo && !organizationList.length">
+            <BaseErrorState v-else-if="!isDemo && !organizationList.length && !organizationsLoading" class="dashboard-reveal">
               <template #title>No Apigee organization linked</template>
               <template #hint>Google authentication succeeded, but this account has no accessible Apigee organization or project.</template>
             </BaseErrorState>
-            <BaseEmptyState v-else-if="!organizationList.length">
-              <template #title>No Demo data loaded</template>
-              <template #hint>The Demo dataset is intentionally deferred until the post-MVP tutorial.</template>
-            </BaseEmptyState>
-
-          <section class="dashboard-actions" aria-label="Quick actions">
-            <button type="button" class="dashboard-action-card" @click="newTemplate">
-              <span class="dashboard-action-card__icon">+</span>
-              <span><strong>Create template</strong><small>Build a reusable template for the CLI and future proxies.</small></span>
-              <span class="dashboard-action-card__arrow">→</span>
-            </button>
-            <button type="button" class="dashboard-action-card" @click="openCreateProxy">
-              <span class="dashboard-action-card__icon">+</span>
-              <span><strong>Create proxy</strong><small>Start the guided Apigee proxy workflow.</small></span>
-              <span class="dashboard-action-card__arrow">→</span>
-            </button>
-          </section>
-
-          <section class="dashboard-metrics" aria-label="Workspace summary">
-            <BaseCard eyebrow="API proxies">
-              <strong class="metric-card__value">{{ dashboardMetrics.proxies }}</strong>
-              <span class="metric-card__hint">Visible in this environment</span>
+            <BaseCard v-else-if="isDemo && !organizationList.length && !organizationsLoading" class="dashboard-reveal" eyebrow="Demo workspace">
+              <BaseEmptyState>
+                <template #title>No Demo data loaded</template>
+                <template #hint>The Demo dataset is intentionally deferred until the post-MVP tutorial.</template>
+              </BaseEmptyState>
             </BaseCard>
-            <BaseCard eyebrow="Revisions">
-              <strong class="metric-card__value">{{ dashboardMetrics.revisions }}</strong>
-              <span class="metric-card__hint">Available revisions</span>
-            </BaseCard>
-            <BaseCard eyebrow="Deployed proxies">
-              <strong class="metric-card__value">{{ dashboardMetrics.deployedProxies }}</strong>
-              <span class="metric-card__hint">{{ dashboardMetrics.deployedRevisions }} deployed revisions</span>
-            </BaseCard>
-          </section>
 
-          <BaseCard eyebrow="Proxies">
-            <div v-if="proxiesLoading" class="loading-state"><BaseSpinner /> <span>Loading proxies…</span></div>
-            <BaseErrorState v-else-if="proxiesError" @retry="retryProxies">
-              <template #title>Proxies unavailable</template>
-              <template #hint>{{ proxiesError }}</template>
-            </BaseErrorState>
-            <BaseEmptyState v-else-if="!selectedEnvironment || !proxyList.length">
-              <template #title>{{ selectedEnvironment ? 'No proxies found' : 'Select an environment' }}</template>
-              <template #hint>{{ selectedEnvironment ? 'This organization has no visible proxies.' : 'Choose an organization and environment to load proxies.' }}</template>
-            </BaseEmptyState>
-            <ul v-else class="proxy-list">
-              <li v-for="proxy in visibleProxies" :key="proxy.name">
-                <button type="button" class="proxy-list__button" @click="openProxy(proxy)">
-                  <span>{{ proxy.name }}</span>
-                  <span class="proxy-list__meta">
-                    <span class="proxy-list__revision">revision {{ proxy.revisions.at(-1)?.number || '—' }}</span>
-                    <BaseChip :label="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" />
-                  </span>
+            <section class="dashboard-actions dashboard-reveal" aria-labelledby="quick-actions-title">
+              <div class="dashboard-section-heading"><div><p class="dashboard-eyebrow">Start here</p><h2 id="quick-actions-title">What would you like to do?</h2></div><span class="dashboard-section-heading__hint">Two simple ways to begin</span></div>
+              <div class="dashboard-action-grid">
+                <button type="button" class="dashboard-action-card" @click="newTemplate">
+                  <span class="dashboard-action-card__icon" aria-hidden="true">+</span>
+                  <span><strong>Create template</strong><small>Build a reusable template for the CLI and future proxies.</small></span>
+                  <span class="dashboard-action-card__arrow">→</span>
                 </button>
-              </li>
-            </ul>
-          </BaseCard>
-        </template>
+                <button type="button" class="dashboard-action-card dashboard-action-card--accent" @click="openCreateProxy">
+                  <span class="dashboard-action-card__icon" aria-hidden="true">+</span>
+                  <span><strong>Create proxy</strong><small>Start the guided Apigee proxy workflow.</small></span>
+                  <span class="dashboard-action-card__arrow">→</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="dashboard-metrics dashboard-reveal" aria-labelledby="summary-title">
+              <div class="dashboard-section-heading dashboard-section-heading--compact"><div><p class="dashboard-eyebrow">At a glance</p><h2 id="summary-title">Workspace summary</h2></div><span v-if="organizationsLoading || proxiesLoading" class="dashboard-syncing"><BaseSpinner /> Syncing</span></div>
+              <div class="dashboard-metric-grid">
+                <BaseCard class="dashboard-metric-card"><span class="dashboard-metric-card__icon dashboard-metric-card__icon--blue">◇</span><span class="dashboard-metric-card__label">API proxies</span><strong class="metric-card__value">{{ dashboardMetrics.proxies }}</strong><span class="metric-card__hint">Visible in this environment</span></BaseCard>
+                <BaseCard class="dashboard-metric-card"><span class="dashboard-metric-card__icon dashboard-metric-card__icon--teal">↗</span><span class="dashboard-metric-card__label">Revisions</span><strong class="metric-card__value">{{ dashboardMetrics.revisions }}</strong><span class="metric-card__hint">Available revisions</span></BaseCard>
+                <BaseCard class="dashboard-metric-card"><span class="dashboard-metric-card__icon dashboard-metric-card__icon--green">✓</span><span class="dashboard-metric-card__label">Deployed proxies</span><strong class="metric-card__value">{{ dashboardMetrics.deployedProxies }}</strong><span class="metric-card__hint">{{ dashboardMetrics.deployedRevisions }} deployed revisions</span></BaseCard>
+              </div>
+            </section>
+
+            <BaseCard class="dashboard-proxy-card dashboard-reveal" eyebrow="Workspace activity">
+              <div class="dashboard-card-heading"><div><p class="dashboard-eyebrow">Your APIs</p><h2>Recent proxies</h2></div><button type="button" class="dashboard-link" @click="activeView = 'Proxies'">View all <span aria-hidden="true">→</span></button></div>
+              <div v-if="proxiesLoading" class="dashboard-proxy-loading" aria-live="polite"><span v-for="item in 3" :key="item" class="dashboard-skeleton-row"><i></i><i></i></span><span class="dashboard-loading-label"><BaseSpinner /> Loading proxies…</span></div>
+              <BaseErrorState v-else-if="proxiesError" @retry="retryProxies"><template #title>Proxies unavailable</template><template #hint>{{ proxiesError }}</template></BaseErrorState>
+              <BaseEmptyState v-else-if="!selectedEnvironment || !proxyList.length"><template #title>{{ selectedEnvironment ? 'No proxies found' : 'Select an environment' }}</template><template #hint>{{ selectedEnvironment ? 'This organization has no visible proxies.' : 'Choose an organization and environment to load proxies.' }}</template></BaseEmptyState>
+              <ul v-else class="proxy-list dashboard-proxy-list">
+                <li v-for="proxy in visibleProxies.slice(0, 5)" :key="proxy.name"><button type="button" class="proxy-list__button" @click="openProxy(proxy)"><span><strong>{{ proxy.name }}</strong><small>revision {{ proxy.revisions.at(-1)?.number || '—' }}</small></span><span class="proxy-list__meta"><BaseChip :label="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" /><span class="proxy-list__arrow">→</span></span></button></li>
+              </ul>
+            </BaseCard>
+          </template>
         <template v-else-if="activeView === 'Proxies'">
           <BaseCard v-if="proxyCreationMode" eyebrow="Proxy creation">
             <ProxyCreationPreparation
