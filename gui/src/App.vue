@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import packageJson from '../package.json'
 import { useAuth } from './composables/useAuth'
@@ -101,6 +101,22 @@ const proxiesLoading = proxies.loading
 const proxiesError = proxies.error
 const isDemo = computed(() => appSession.session.value?.mode === 'demo')
 const isAuthenticated = computed(() => isDemo.value || auth.context.value?.authenticated === true)
+let loginObserver: IntersectionObserver | null = null
+
+function setupLoginObserver() {
+  loginObserver?.disconnect()
+  const sections = [...document.querySelectorAll<HTMLElement>('.login-experience .reveal-on-scroll')]
+  if (!sections.length) return
+  if (!('IntersectionObserver' in window)) {
+    sections.forEach((section) => section.classList.add('is-visible'))
+    return
+  }
+  const root = document.querySelector<HTMLElement>('.main-content')
+  loginObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => entry.target.classList.toggle('is-visible', entry.isIntersecting))
+  }, { root, threshold: 0.12, rootMargin: '0px 0px -8% 0px' })
+  sections.forEach((section) => loginObserver?.observe(section))
+}
 
 onMounted(async () => {
   try {
@@ -111,6 +127,20 @@ onMounted(async () => {
   if (!isDemo.value) {
     void auth.restore()
   }
+})
+
+watch([authLoading, isAuthenticated], async ([loading, authenticated]) => {
+  if (!loading && !authenticated) {
+    await nextTick()
+    setupLoginObserver()
+  } else if (authenticated) {
+    loginObserver?.disconnect()
+    loginObserver = null
+  }
+})
+
+onBeforeUnmount(() => {
+  loginObserver?.disconnect()
 })
 
 async function changeMode(mode: AppMode) {
@@ -922,8 +952,8 @@ void templateEditor
             <section class="login-capabilities" aria-labelledby="capabilities-title">
               <div class="login-story__intro reveal-on-scroll"><p class="login-eyebrow">One product, two ways to work</p><h2 id="capabilities-title">From a local idea<br /><span>to a governed API.</span></h2><p class="login-section-lead">Forge gives platform teams a shared language for API delivery, whether they prefer a visual desktop workflow or an automated pipeline.</p></div>
               <div class="capability-row capability-row--reverse reveal-on-scroll">
-                <div class="capability-copy"><p class="login-eyebrow">The shared core</p><h3>Rules that travel with your APIs.</h3><p>Templates encode ownership, naming conventions and security policies once. The Rust core validates every input and produces a predictable Apigee bundle, so your standards stay consistent from laptop to pipeline.</p><div class="capability-points"><span>Strict template validation</span><span>OpenAPI 3.x parsing</span><span>Secure XML rendering</span></div></div>
-                <div class="capability-visual capability-visual--core" aria-hidden="true"><div class="core-ring core-ring--one"></div><div class="core-ring core-ring--two"></div><div class="core-core">CORE</div><span class="core-label core-label--top">Templates</span><span class="core-label core-label--left">OpenAPI</span><span class="core-label core-label--right">Policies</span><span class="core-label core-label--bottom">Bundle</span></div>
+                <div class="capability-copy"><p class="login-eyebrow">The visual editor</p><h3>Design your proxy flow at a glance.</h3><p>Place security, traffic control and transformation policies exactly where they belong. The visual flow makes each request and response step easy to understand before you save the template.</p><div class="capability-points"><span>PreFlow and PostFlow</span><span>Conditional flows</span><span>Guided policies</span></div></div>
+                <div class="capability-visual capability-visual--core capability-visual--editor" aria-hidden="true"><div class="core-ring core-ring--one"></div><div class="core-ring core-ring--two"></div><div class="core-core">FLOW</div><span class="core-label core-label--top">PreFlow</span><span class="core-label core-label--left">Request</span><span class="core-label core-label--right">Response</span><span class="core-label core-label--bottom">PostFlow</span></div>
               </div>
               <div class="capability-row reveal-on-scroll">
                 <div class="capability-copy"><p class="login-eyebrow">The desktop workspace</p><h3>A calmer way to manage Apigee.</h3><p>Connect with your Google identity, select an organization and environment, then see proxies, revisions and deployment status in one focused workspace.</p><div class="capability-points"><span>Live and Demo modes</span><span>Template editor</span><span>Deployment review</span></div></div>
