@@ -1,0 +1,91 @@
+{
+  "articles": [
+    {
+      "id": "getting-started",
+      "category": "Support",
+      "eyebrow": "Start here",
+      "title": "Getting started with Apigee Forge",
+      "summary": "Understand the two modes, connect your Google identity and enter your first Apigee workspace.",
+      "reading_time": "3 min read",
+      "sections": [
+        {
+          "heading": "Choose the right workspace",
+          "paragraphs": [
+            "Live connects to your real Apigee organizations through Google OAuth and the permissions granted to your identity. Demo is a local, network-free workspace for exploring the product safely.",
+            "The mode is explicit: Forge never silently falls back to Demo when a Live connection fails."
+          ],
+          "steps": ["Choose Live or Demo in the titlebar.", "In Live, sign in with Google when prompted.", "Select an organization, then an environment.", "Enter the workspace and start with a template or proxy."]
+        },
+        {
+          "heading": "Returning to Forge",
+          "paragraphs": [
+            "When your saved Google session is still valid, Forge restores it automatically at startup. The access token stays in memory and the refresh token remains in the operating system credential store.",
+            "If the session has expired or been revoked, Forge asks you to sign in again instead of exposing a broken workspace."
+          ],
+          "note": "Your Google IAM permissions remain the source of truth for access to Apigee."
+        }
+      ]
+    },
+    {
+      "id": "templates",
+      "category": "Support",
+      "eyebrow": "Build once, reuse often",
+      "title": "Templates",
+      "summary": "Create a visual, versionable description of the policies and flow rules your proxies should follow.",
+      "reading_time": "4 min read",
+      "sections": [
+        {
+          "heading": "Create your first template",
+          "paragraphs": ["Templates combine metadata, naming conventions and a proxy flow. Policies can be placed in request or response lanes across PreFlow, conditional flows and PostFlow."],
+          "steps": ["Open Templates and choose New template.", "Complete the details and naming convention.", "Add conditional flows when a route needs a specific rule.", "Add and order the guided policies.", "Review validation feedback, then save locally."]
+        },
+        {
+          "heading": "Use templates with the CLI",
+          "paragraphs": ["Templates are stored as readable JSON files. The same format can be versioned in Git and passed to the non-interactive CLI for repeatable bundle generation and CI/CD workflows."],
+          "note": "A saved template is a reusable configuration, not a deployed Apigee resource."
+        }
+      ]
+    },
+    {
+      "id": "proxy-delivery",
+      "category": "Support",
+      "eyebrow": "From source to revision",
+      "title": "Proxy delivery",
+      "summary": "Prepare an OpenAPI source, preview the target, generate locally and deploy a revision deliberately.",
+      "reading_time": "5 min read",
+      "sections": [
+        {
+          "heading": "Create a proxy revision",
+          "paragraphs": ["The creation flow keeps local preparation separate from remote changes. You can inspect the template, OpenAPI source, target environment and policy count before generating anything."],
+          "steps": ["Choose Create proxy from the Dashboard or Proxies page.", "Select a validated template and provide an OpenAPI file.", "Confirm the organization, environment and proxy name.", "Generate the bundle locally.", "Upload it explicitly to create a proxy or revision."]
+        },
+        {
+          "heading": "Review before deployment",
+          "paragraphs": ["An uploaded revision starts as Not deployed. Select it from Proxies or Deployments, review the exact organization, environment and revision, then confirm the deployment separately."],
+          "note": "Generation does not contact Apigee. Upload and deployment are separate, explicit mutations."
+        }
+      ]
+    },
+    {
+      "id": "deployment-status",
+      "category": "Support",
+      "eyebrow": "Keep visibility",
+      "title": "Deployment status",
+      "summary": "Understand the deployment review, status polling and recovery actions available in the workspace.",
+      "reading_time": "3 min read",
+      "sections": [
+        {
+          "heading": "Follow the operation",
+          "paragraphs": ["After confirmation, Forge reports Pending, InProgress, Succeeded or Failed. The GUI polls the Apigee status with a bounded timeout and prevents an older request from overwriting a newer one."],
+          "steps": ["Open Deployments to see revisions awaiting deployment.", "Select a revision to review its target.", "Confirm the review before deploying.", "Wait for a terminal status or stop polling and retry."]
+        }
+      ]
+    }
+  ],
+  "faqs": [
+    { "id": "modes", "question": "What is the difference between Live and Demo?", "answer": "Live connects to your real Apigee organizations through Google OAuth. Demo is a local workspace designed for exploring the product without network requests." },
+    { "id": "generation", "question": "Is generating a bundle a remote action?", "answer": "No. Generation is local. Apigee is only contacted when you explicitly upload the bundle or deploy a revision." },
+    { "id": "credentials", "question": "Where are my Google credentials stored?", "answer": "The access token stays in memory and the refresh token is kept in the operating system credential store. Credentials are never shown in the interface." },
+    { "id": "cli", "question": "Can I use the same template in CI/CD?", "answer": "Yes. Templates are stored as versionable JSON and the Rust core is shared by the desktop GUI and the non-interactive CLI." }
+  ]
+}

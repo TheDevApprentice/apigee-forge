@@ -30,6 +30,8 @@ const DEFAULT_AUTHORIZATION_URL: &str = "https://accounts.google.com/o/oauth2/v2
 const DEFAULT_TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
 const DEFAULT_USERINFO_URL: &str = "https://openidconnect.googleapis.com/v1/userinfo";
 const MAX_CALLBACK_BYTES: usize = 8 * 1024;
+const OAUTH_CALLBACK_HTML: &[u8] = br#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Apigee Forge</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#fafaf9 0%,#eef8f4 100%);color:#1c2420;font:16px system-ui,sans-serif}.card{width:min(360px,calc(100% - 40px));padding:34px;text-align:center;background:rgb(255 255 255 / 94%);border:1px solid #e2e5e3;border-radius:20px;box-shadow:0 18px 48px rgb(15 110 86 / 12%)}.brand{margin:0 0 20px;color:#0f6e56;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase}.mark{display:grid;width:46px;height:46px;margin:0 auto 16px;place-items:center;color:#085041;background:#e1f5ee;border-radius:14px;font-size:12px;font-weight:600}.eyebrow{margin:0 0 8px;color:#0f6e56;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}.ok{display:grid;width:34px;height:34px;margin:0 auto 14px;place-items:center;color:#188038;background:#e6f4ea;border-radius:50%;font-size:20px;animation:success-pulse 2.2s ease-in-out infinite}.card h1{margin:0;font-size:24px;font-weight:500;letter-spacing:-.03em}.hint{margin:12px 0 0;color:#5b635f;font-size:13px;line-height:1.6}@keyframes success-pulse{50%{transform:scale(1.1);box-shadow:0 0 0 8px rgb(24 128 56 / 10%);opacity:.78}}@media (prefers-reduced-motion: reduce){.ok,.state{animation:none!important}}</style></head><body><main class="card"><p class="brand">Apigee Forge</p><div class="ok">&#10003;</div><h1>Connected successfully</h1><p class="hint">You can return to Apigee Forge. This window will close automatically when your browser allows it.</p></main><script>window.setTimeout(function(){window.close()},250)</script></body></html>"#;
+const OAUTH_CALLBACK_FAILURE_HTML: &[u8] = br#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Apigee Forge</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#fafaf9 0%,#fff3f1 100%);color:#1c2420;font:16px system-ui,sans-serif}.card{width:min(360px,calc(100% - 40px));padding:34px;text-align:center;background:rgb(255 255 255 / 94%);border:1px solid #e2e5e3;border-radius:20px;box-shadow:0 18px 48px rgb(217 48 37 / 10%)}.brand{margin:0 0 20px;color:#0f6e56;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase}.state{display:grid;width:34px;height:34px;margin:0 auto 14px;place-items:center;color:#d93025;background:#fce8e6;border-radius:50%;font-size:20px;font-weight:500;animation:pulse 2s ease-in-out infinite}.card h1{margin:0;font-size:24px;font-weight:500;letter-spacing:-.03em}.hint{margin:12px 0 0;color:#5b635f;font-size:13px;line-height:1.6}@keyframes pulse{50%{transform:scale(1.08);opacity:.72}}@media (prefers-reduced-motion: reduce){.ok,.state{animation:none!important}}</style></head><body><main class="card"><p class="brand">Apigee Forge</p><div class="state">!</div><h1>Connection not completed</h1><p class="hint">Google sign-in was cancelled or could not be completed. You can close this window and try again in Apigee Forge.</p></main><script>window.setTimeout(function(){window.close()},250)</script></body></html>"#;
 
 #[derive(Debug, Clone)]
 pub struct OAuthDesktopConfig {
@@ -408,15 +410,24 @@ async fn receive_callback(
         .next()
         .and_then(|line| line.split_whitespace().nth(1))
         .ok_or(AuthError::Callback)?;
-    let parsed = parse_callback_target(target)?;
+    let parsed = parse_callback_target(target);
+    let page = if parsed.is_ok() {
+        OAUTH_CALLBACK_HTML
+    } else {
+        OAUTH_CALLBACK_FAILURE_HTML
+    };
 
     stream
         .write_all(
-            b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nAuthentication complete. You can close this window.",
+            b"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n",
         )
         .await
         .map_err(|_| AuthError::Callback)?;
-    Ok(parsed)
+    stream
+        .write_all(page)
+        .await
+        .map_err(|_| AuthError::Callback)?;
+    parsed
 }
 
 fn parse_callback_target(target: &str) -> Result<(String, String), AuthError> {
@@ -510,7 +521,7 @@ mod tests {
 
     use super::{
         parse_callback_target, BrowserLauncher, OAuthDesktopAuthProvider, OAuthDesktopConfig,
-        RefreshTokenStore,
+        RefreshTokenStore, OAUTH_CALLBACK_FAILURE_HTML, OAUTH_CALLBACK_HTML,
     };
     use reqwest::Client;
 
@@ -582,6 +593,26 @@ mod tests {
 
         assert!(was_deleted);
         Ok(())
+    }
+
+    #[test]
+    fn callback_failure_page_is_safe_and_attempts_browser_close() {
+        let page = String::from_utf8_lossy(OAUTH_CALLBACK_FAILURE_HTML);
+        assert!(page.contains("Connection not completed"));
+        assert!(page.contains("window.close()"));
+        assert!(page.contains("try again"));
+        assert!(!page.contains("access_token"));
+        assert!(!page.contains("refresh_token"));
+    }
+
+    #[test]
+    fn callback_success_page_is_safe_and_attempts_browser_close() {
+        let page = String::from_utf8_lossy(OAUTH_CALLBACK_HTML);
+        assert!(page.contains("Connected successfully"));
+        assert!(page.contains("window.close()"));
+        assert!(page.contains("return to Apigee Forge"));
+        assert!(!page.contains("access_token"));
+        assert!(!page.contains("refresh_token"));
     }
 
     #[test]

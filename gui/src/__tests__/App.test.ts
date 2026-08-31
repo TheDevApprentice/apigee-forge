@@ -239,10 +239,10 @@ describe('App M6-Bis flow', () => {
     await wrapper.findAll('.dashboard-action-card')[1].trigger('click')
     await vi.waitFor(() => expect(wrapper.find('select[aria-label="Select proxy template"]').exists()).toBe(true))
     await wrapper.find('select[aria-label="Select proxy template"]').setValue('orders')
-    await wrapper.findAll('.workspace-selectors .base-select__trigger')[0].trigger('click')
+    await wrapper.findAll('.desktop-titlebar__workspace .base-select__trigger')[0].trigger('click')
     await wrapper.findAll('.base-select__option').find((option) => option.text() === 'demo-org')?.trigger('click')
-    await vi.waitFor(() => expect(wrapper.findAll('.workspace-selectors .base-select__trigger')).toHaveLength(2))
-    await wrapper.findAll('.workspace-selectors .base-select__trigger')[1].trigger('click')
+    await vi.waitFor(() => expect(wrapper.findAll('.desktop-titlebar__workspace .base-select__trigger')).toHaveLength(2))
+    await wrapper.findAll('.desktop-titlebar__workspace .base-select__trigger')[1].trigger('click')
     await wrapper.findAll('.base-select__option').find((option) => option.text().includes('demo'))?.trigger('click')
     await flushPromises()
     await vi.waitFor(() => expect(wrapper.text()).toContain('Organizationdemo-org'))
@@ -360,8 +360,8 @@ describe('App M6-Bis flow', () => {
     await flushPromises()
     await flushPromises()
 
-    await vi.waitFor(() => expect(wrapper.findAll('.workspace-selectors .base-select__trigger')).toHaveLength(2))
-    await vi.waitFor(() => expect(wrapper.text()).toContain('hello-world'))
+    await vi.waitFor(() => expect(wrapper.findAll('.desktop-titlebar__workspace .base-select__trigger')).toHaveLength(2))
+    await vi.waitFor(() => expect(wrapper.text()).toContain('hello-world'), { timeout: 5000 })
     expect(wrapper.find('.sidebar__avatar').text()).toBe('DE')
     expect(wrapper.find('.sidebar__profile-tooltip').text()).toContain('developer@example.com')
     expect(invokeMock).toHaveBeenCalledWith('list_environments', { organization: 'org-one' })
@@ -390,5 +390,24 @@ describe('App M6-Bis flow', () => {
     expect(invokeMock).toHaveBeenCalledWith('auth_restore', undefined)
     expect(invokeMock).toHaveBeenCalledWith('list_organizations', undefined)
     expect(invokeMock).toHaveBeenCalledWith('list_proxies', { organization: 'org-one', environment: 'test' })
+  })
+
+  it('shows the full-page login handoff immediately while OAuth is pending', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'cloud', status: 'authentication_required', identity: null, organization: null, environment: null, error: null }
+      if (command === 'auth_restore') return { authenticated: false }
+      if (command === 'auth_storage_status') return { refresh_token_stored: false }
+      if (command === 'auth_login') return new Promise(() => undefined)
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.find('button.primary-action').trigger('click')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Connecting your workspace')
+    expect(wrapper.text()).toContain('Waiting for Google to confirm your identity securely')
+    expect(wrapper.find('.auth-transition--loading').exists()).toBe(true)
   })
 })

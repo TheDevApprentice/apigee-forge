@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import BaseButton from '../components/base/BaseButton.vue'
 import BaseChip from '../components/base/BaseChip.vue'
 import BaseModal from '../components/base/BaseModal.vue'
+import CollectionList from '../components/base/CollectionList.vue'
 
 
 describe('base components', () => {
@@ -22,6 +23,22 @@ describe('base components', () => {
 
     expect(wrapper.classes()).toContain('base-chip--warning')
     expect(wrapper.text()).toBe('Not deployed')
+  })
+
+  it('configures a reusable collection list with search and filter events', async () => {
+    const wrapper = mount(CollectionList, {
+      props: {
+        title: 'Proxy catalogue',
+        searchValue: '',
+        filters: [{ value: 'all', label: 'All', count: 2 }, { value: 'live', label: 'Live', count: 1 }],
+      },
+    })
+
+    await wrapper.get('.collection-list__search').setValue('orders')
+    await wrapper.findAll('.collection-list__filter')[1].trigger('click')
+
+    expect(wrapper.emitted('update:searchValue')?.[0]).toEqual(['orders'])
+    expect(wrapper.emitted('update:activeFilter')?.[0]).toEqual(['live'])
   })
 
   it('provides modal dialog descriptions and a stable confirm hook', async () => {

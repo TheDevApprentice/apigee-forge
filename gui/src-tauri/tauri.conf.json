@@ -13,6 +13,7 @@
     "windows": [
       {
         "title": "Apigee Forge",
+        "decorations": false,
         "width": 1200,
         "height": 760,
         "minWidth": 960,

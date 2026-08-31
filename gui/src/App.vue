@@ -17,7 +17,12 @@ import BaseEmptyState from './components/base/BaseEmptyState.vue'
 import BaseModal from './components/base/BaseModal.vue'
 import BaseErrorState from './components/base/BaseErrorState.vue'
 import BaseSpinner from './components/base/BaseSpinner.vue'
-import BaseSelect from './components/base/BaseSelect.vue'
+import CollectionList from './components/base/CollectionList.vue'
+import DesktopTitlebar from './components/navigation/DesktopTitlebar.vue'
+import SupportView from './components/support/SupportView.vue'
+import SupportArticleView from './components/support/SupportArticleView.vue'
+import supportContent from './data/support-content.json'
+import type { SupportContent } from './types/support'
 import TemplateEditorShell from './components/template/TemplateEditorShell.vue'
 import ProxyCreationPreparation from './components/ProxyCreationPreparation.vue'
 import FlowDiagram from './components/FlowDiagram.vue'
@@ -36,6 +41,7 @@ const navigation: NavigationItem[] = [
   { label: 'Proxies', path: 'M5 7h14M5 12h14M5 17h14' },
   { label: 'Deployments', path: 'M12 3v13M7 11l5 5 5-5M5 21h14' },
   { label: 'Settings', path: 'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1' },
+  { label: 'Support', path: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM9.5 9a2.5 2.5 0 1 1 4.1 1.9c-.9.7-1.6 1.1-1.6 2.6M12 17h.01' },
 ]
 
 const activeView = ref('Dashboard')
@@ -52,6 +58,14 @@ const revisionDetail = ref<RevisionDetailDto | null>(null)
 const revisionDetailLoading = ref(false)
 const revisionDetailError = ref<string | null>(null)
 const proxyFilter = ref<'all' | 'deployed' | 'not-deployed'>('all')
+const deploymentSearch = ref('')
+const deploymentFilter = ref<'all' | 'not-deployed'>('all')
+const searchQuery = ref('')
+const supportArticle = ref<string | null>(null)
+const loginTransition = ref<'idle' | 'pending' | 'success' | 'error'>('idle')
+let loginTransitionTimer: ReturnType<typeof setTimeout> | null = null
+const supportContentData = supportContent as SupportContent
+const currentSupportArticle = computed(() => supportContentData.articles.find((article) => article.id === supportArticle.value) || null)
 const auth = useAuth()
 const appSession = useSession()
 const selectedMode = appSession.selectedMode
@@ -102,6 +116,60 @@ const proxiesLoading = proxies.loading
 const proxiesError = proxies.error
 const isDemo = computed(() => appSession.session.value?.mode === 'demo')
 const isAuthenticated = computed(() => isDemo.value || auth.context.value?.authenticated === true)
+type SearchResult = { id: string; title: string; description: string; target: string }
+type SearchGroup = { category: string; results: SearchResult[] }
+const supportSearchResults = supportContentData.articles.map((article): SearchResult => ({
+  id: article.id,
+  title: article.title,
+  description: article.summary,
+  target: `article:${article.id}`,
+}))
+const searchResults = computed<SearchGroup[]>(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return []
+  const matches = (result: SearchResult) => `${result.title} ${result.description}`.toLowerCase().includes(query)
+  const groups: SearchGroup[] = [{ category: 'Support', results: supportSearchResults.filter(matches) }]
+  if (isAuthenticated.value) {
+    groups.push({ category: 'Proxy', results: proxyList.value.filter((proxy) => proxy.name.toLowerCase().includes(query)).slice(0, 6).map((proxy) => ({ id: `proxy-${proxy.name}`, title: proxy.name, description: `${proxy.revisions.length} revision${proxy.revisions.length === 1 ? '' : 's'} in this workspace`, target: 'Proxies' })) })
+    groups.push({ category: 'Deployment', results: visibleDeploymentRevisions.value.filter(({ proxy, revision }) => `${proxy.name} ${revision.number}`.toLowerCase().includes(query)).slice(0, 6).map(({ proxy, revision }) => ({ id: `deployment-${proxy.name}-${revision.number}`, title: `${proxy.name} · Revision ${revision.number}`, description: 'Review a revision ready for deployment', target: 'Deployments' })) })
+    groups.push({ category: 'Settings', results: [{ id: 'settings-workspace', title: 'Workspace settings', description: 'Identity, context and application resources', target: 'Settings' }].filter(matches) })
+  }
+  return groups.filter((group) => group.results.length > 0)
+})
+
+function handleSearchNavigate(target: string) {
+  if (target.startsWith('article:')) {
+    activeView.value = 'Support'
+    supportArticle.value = target.slice('article:'.length)
+  } else {
+    activeView.value = target
+    supportArticle.value = null
+  }
+  searchQuery.value = ''
+}
+
+function openSupportArticle(id: string) {
+  activeView.value = 'Support'
+  supportArticle.value = id
+}
+
+function closeSupportArticle() {
+  supportArticle.value = null
+}
+
+async function startLogin() {
+  loginTransition.value = 'pending'
+  if (loginTransitionTimer) clearTimeout(loginTransitionTimer)
+  await nextTick()
+  await auth.login()
+  if (auth.context.value?.authenticated) {
+    loginTransition.value = 'success'
+    loginTransitionTimer = setTimeout(() => { loginTransition.value = 'idle' }, 3200)
+  } else {
+    loginTransition.value = 'error'
+    loginTransitionTimer = setTimeout(() => { loginTransition.value = 'idle' }, 2200)
+  }
+}
 let loginObserver: IntersectionObserver | null = null
 
 function setupLoginObserver() {
@@ -142,6 +210,7 @@ watch([authLoading, isAuthenticated], async ([loading, authenticated]) => {
 
 onBeforeUnmount(() => {
   loginObserver?.disconnect()
+  if (loginTransitionTimer) clearTimeout(loginTransitionTimer)
 })
 
 async function changeMode(mode: AppMode) {
@@ -776,6 +845,15 @@ const availableDeploymentRevisions = computed(() => proxyList.value.flatMap((pro
   .filter((revision) => revision.status === 'NotDeployed')
   .map((revision) => ({ proxy, revision }))))
 
+const visibleDeploymentRevisions = computed(() => {
+  const query = deploymentSearch.value.trim().toLowerCase()
+  return availableDeploymentRevisions.value.filter(({ proxy, revision }) => {
+    const matchesSearch = !query || proxy.name.toLowerCase().includes(query) || String(revision.number).includes(query)
+    const matchesFilter = deploymentFilter.value === 'all' || revision.status === 'NotDeployed'
+    return matchesSearch && matchesFilter
+  })
+})
+
 const dashboardMetrics = computed(() => ({
   proxies: proxyList.value.length,
   revisions: proxyList.value.reduce((total, proxy) => total + proxy.revisions.length, 0),
@@ -809,9 +887,27 @@ void templateEditor
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'app-shell--locked': !isAuthenticated }">
+  <div class="app-root">
+    <DesktopTitlebar
+      :identity="profileIdentity"
+      :demo="isDemo"
+      :authenticated="isAuthenticated"
+      :mode="selectedMode"
+      :organization="selectedOrganization"
+      :environment="selectedEnvironment"
+      :organizations="organizationList.map((organization) => ({ value: organization.id, label: organization.id, description: organization.project_id }))"
+      :environments="environmentList.map((environment) => ({ value: environment.name, label: environment.name, description: 'Apigee environment' }))"
+      :loading="organizationsLoading"
+      :search-query="searchQuery"
+      :search-results="searchResults"
+      @update:mode="changeMode"
+      @update:organization="selectedOrganization = $event"
+      @update:environment="selectedEnvironment = $event"
+      @update:search-query="searchQuery = $event"
+      @navigate="handleSearchNavigate"
+    />
+    <div class="app-shell" :class="{ 'app-shell--locked': !isAuthenticated }">
     <aside v-if="isAuthenticated" class="sidebar" aria-label="Primary navigation">
-      <div class="brand-mark" aria-label="Apigee Forge" title="Apigee Forge">AF</div>
       <nav class="sidebar__nav">
         <BaseButton
           v-for="item in navigation"
@@ -853,53 +949,32 @@ void templateEditor
     </aside>
 
     <div class="app-frame">
-      <header v-if="isAuthenticated" class="topbar">
-        <div class="topbar__workspace">
-          <p class="topbar__eyebrow">Workspace</p>
-          <div class="workspace-selectors">
-            <label class="workspace-selector">
-              <span>Organization</span>
-              <BaseSelect
-                v-model="selectedOrganization"
-                label="Organization"
-                placeholder="Select an organization"
-                :disabled="organizationsLoading"
-                :options="organizationList.map((organization) => ({ value: organization.id, label: organization.id, description: organization.project_id }))"
-              />
-            </label>
-            <span class="workspace-selector__separator" aria-hidden="true">/</span>
-            <label class="workspace-selector">
-              <span>Environment</span>
-              <BaseSelect
-                v-if="selectedOrganization"
-                v-model="selectedEnvironment"
-                label="Environment"
-                placeholder="Select an environment"
-                :disabled="organizationsLoading || !environmentList.length"
-                :options="environmentList.map((environment) => ({ value: environment.name, label: environment.name, description: 'Apigee environment' }))"
-              />
-              <span v-else class="workspace-selectors__placeholder">Select organization first</span>
-            </label>
-          </div>
-        </div>
-        <label class="mode-switcher">
-          <span>Mode</span>
-          <select v-model="selectedMode" @change="changeMode(selectedMode as AppMode)">
-            <option value="cloud">Live</option>
-            <option value="demo">Demo</option>
-          </select>
-        </label>
-      </header>
-
       <main class="main-content">
-        <div v-if="isAuthenticated" class="page-heading">
+        <div v-if="isAuthenticated && loginTransition !== 'success'" class="page-heading">
           <div>
             <p class="page-heading__eyebrow">{{ activeView }}</p>
           </div>
           <span class="page-heading__status">Workspace connected</span>
         </div>
 
-        <template v-if="authLoading && !auth.context">
+        <template v-if="loginTransition === 'pending'">
+          <section class="auth-transition auth-transition--loading" aria-live="polite">
+            <!-- <div class="auth-transition__dots" aria-hidden="true"><i></i><i></i><i></i></div> -->
+            <p class="login-eyebrow">Apigee Forge</p><h1>Connecting your workspace</h1><p>Waiting for Google to confirm your identity securely…</p></section>
+        </template>
+        <template v-else-if="loginTransition === 'success'">
+          <section class="auth-transition auth-transition--success" aria-live="polite"><div class="auth-transition__orb"><span>✓</span><i></i><i></i><i></i></div><p class="login-eyebrow">Apigee Forge</p><h1>Connected successfully</h1><p>Your workspace is ready. Taking you to the dashboard…</p><div class="auth-transition__progress"><span></span></div></section>
+        </template>
+        <template v-else-if="loginTransition === 'error'">
+          <section class="auth-transition auth-transition--error" aria-live="assertive"><div class="auth-transition__orb"><span>!</span><i></i><i></i></div><p class="login-eyebrow">Apigee Forge</p><h1>Connection not completed</h1><p>Google sign-in was cancelled or could not be completed. Returning to sign in…</p><div class="auth-transition__progress"><span></span></div></section>
+        </template>
+
+        <template v-else-if="activeView === 'Support'">
+          <SupportArticleView v-if="currentSupportArticle" :article="currentSupportArticle" @back="closeSupportArticle" />
+          <SupportView v-else :authenticated="isAuthenticated" @navigate="handleSearchNavigate" @open-article="openSupportArticle" />
+        </template>
+
+        <template v-else-if="authLoading && !auth.context">
           <section class="login-loading" aria-live="polite">
             <div class="login-loading__mark" aria-hidden="true"><span></span><span></span><span></span></div>
             <p class="login-eyebrow">Apigee Forge</p>
@@ -912,13 +987,7 @@ void templateEditor
           <section class="login-experience" aria-labelledby="login-title">
             <header class="login-experience__nav">
               <a class="login-brand" href="#login-title" aria-label="Apigee Forge home"><span class="login-brand__mark">AF</span><span>Apigee Forge</span></a>
-              <label class="mode-switcher">
-                <span>Workspace</span>
-                <select v-model="selectedMode" @change="changeMode(selectedMode as AppMode)">
-                  <option value="cloud">Live</option>
-                  <option value="demo">Demo</option>
-                </select>
-              </label>
+              <button type="button" class="login-support-link" @click="activeView = 'Support'">Need help? <span>Support</span></button>
             </header>
 
             <div class="login-hero reveal-on-scroll">
@@ -927,7 +996,7 @@ void templateEditor
                 <h1 id="login-title">Shape your APIs.<br /><span>Ship with confidence.</span></h1>
                 <p class="login-hero__lead">Apigee Forge brings templates, governance and deployments together in one thoughtful workspace for your APIs.</p>
                 <div class="login-hero__actions">
-                  <button class="primary-action login-hero__button" type="button" :disabled="authLoading" @click="auth.login">
+                  <button class="primary-action login-hero__button" type="button" :disabled="authLoading" @click="startLogin">
                     <span class="google-g">G</span>{{ authLoading ? 'Connecting securely…' : 'Sign in with Google' }}
                   </button>
                   <a href="#how-it-works" class="login-text-link">See how it works <span aria-hidden="true">↓</span></a>
@@ -991,26 +1060,31 @@ void templateEditor
 
 
         <template v-else-if="activeView === 'Deployments'">
-          <BaseCard eyebrow="Revisions awaiting deployment">
-            <p class="deployment-catalogue__intro">Review an existing Apigee proxy revision before deploying it to the selected environment.</p>
-            <BaseSpinner v-if="proxiesLoading" />
-            <BaseErrorState v-else-if="proxiesError" @retry="retryProxies">
-              <template #title>Revisions unavailable</template>
-              <template #hint>{{ proxiesError }}</template>
-            </BaseErrorState>
-            <BaseEmptyState v-else-if="!availableDeploymentRevisions.length">
-              <template #title>No revisions awaiting deployment</template>
-              <template #hint>Upload a proxy revision or return later when a revision is available for deployment.</template>
-            </BaseEmptyState>
-            <ul v-else class="deployment-revision-list">
-              <li v-for="candidate in availableDeploymentRevisions" :key="`${candidate.proxy.name}-${candidate.revision.number}`" :class="{ 'deployment-revision-list__item--selected': selectedProxy?.name === candidate.proxy.name && selectedDeploymentRevision?.number === candidate.revision.number }">
+          <CollectionList
+            eyebrow="Deployments"
+            section-label="Ready to deploy"
+            title="Revisions awaiting deployment"
+            description="Review an existing proxy revision before deploying it to the selected environment."
+            search-placeholder="Search proxies or revisions"
+            v-model:search-value="deploymentSearch"
+            v-model:active-filter="deploymentFilter"
+            :filters="[{ value: 'all', label: 'All', count: availableDeploymentRevisions.length }, { value: 'not-deployed', label: 'Not deployed', count: availableDeploymentRevisions.length }]"
+            :loading="proxiesLoading"
+            :error="proxiesError"
+            :empty="!visibleDeploymentRevisions.length"
+            empty-title="No revisions awaiting deployment"
+            empty-hint="Upload a proxy revision or change your search to find another revision."
+            @retry="retryProxies"
+          >
+            <ul class="deployment-revision-list">
+              <li v-for="candidate in visibleDeploymentRevisions" :key="`${candidate.proxy.name}-${candidate.revision.number}`" :class="{ 'deployment-revision-list__item--selected': selectedProxy?.name === candidate.proxy.name && selectedDeploymentRevision?.number === candidate.revision.number }">
                 <button type="button" class="deployment-revision-list__button" @click="selectDeploymentCandidate(candidate.proxy, candidate.revision)">
-                  <span>{{ candidate.proxy.name }}</span>
-                  <span class="deployment-revision-list__meta">Revision {{ candidate.revision.number }} <BaseChip label="Not deployed" tone="neutral" /></span>
+                  <span><strong>{{ candidate.proxy.name }}</strong><small>Revision {{ candidate.revision.number }}</small></span>
+                  <span class="deployment-revision-list__meta"><BaseChip label="Not deployed" tone="neutral" /><span class="deployment-row__arrow">→</span></span>
                 </button>
               </li>
             </ul>
-          </BaseCard>
+          </CollectionList>
           <DeploymentDetailsDrawer
             v-if="selectedProxy && selectedDeploymentRevision"
             :open="true"
@@ -1033,55 +1107,41 @@ void templateEditor
         </template>
 
         <template v-else-if="activeView === 'Settings'">
-          <BaseCard eyebrow="Application">
-            <div class="settings-grid">
-              <div class="settings-item"><span>Version</span><strong>{{ appInfo.version }}</strong></div>
-              <div class="settings-item"><span>Build</span><strong>{{ appInfo.build }}</strong></div>
-              <div class="settings-item"><span>Technology</span><strong>{{ appInfo.stack }}</strong></div>
-              <div class="settings-item"><span>Source branch</span><strong>{{ appInfo.branch }}</strong></div>
-            </div>
-          </BaseCard>
-          <BaseCard eyebrow="User profile">
-            <div class="settings-profile">
-              <div class="settings-profile__avatar" aria-hidden="true">
-                <img v-if="profilePicture && !profileImageFailed" :src="profilePicture" alt="" @error="profileImageFailed = true" />
-                <span v-else>{{ profileInitials }}</span>
+          <section class="settings-hero settings-reveal" aria-labelledby="settings-title">
+            <div><p class="settings-eyebrow">Settings</p><h1 id="settings-title">Your workspace, your way.</h1><p>Manage your connection context, review your local setup and keep the tools around your API workflow close at hand.</p></div>
+            <div class="settings-hero__mark" aria-hidden="true"><span>AF</span><i></i><i></i><i></i></div>
+          </section>
+
+          <div class="settings-layout">
+            <BaseCard class="settings-card settings-profile-card settings-reveal" eyebrow="Your account">
+              <div class="settings-profile settings-profile--expanded">
+                <div class="settings-profile__avatar" aria-hidden="true">
+                  <img v-if="profilePicture && !profileImageFailed" :src="profilePicture" alt="" @error="profileImageFailed = true" />
+                  <span v-else>{{ profileInitials }}</span>
+                </div>
+                <div class="settings-profile__summary"><strong>{{ profileName || profileIdentity }}</strong><span>{{ profileIdentity }}</span><span class="settings-profile__status"><i></i>{{ isAuthenticated ? 'Connected account' : 'Not connected' }}</span></div>
+                <BaseChip :label="isDemo ? 'Demo mode' : 'Live mode'" :tone="isDemo ? 'warning' : 'success'" />
               </div>
-              <div class="settings-profile__summary">
-                <strong>{{ profileName || profileIdentity }}</strong>
-                <span>{{ profileIdentity }}</span>
-                <span>{{ isAuthenticated ? 'Connected account' : 'Not connected' }}</span>
-              </div>
-              <div class="settings-profile__hover" role="status">
-                <strong>{{ profileName || profileIdentity }}</strong>
-                <span>{{ profileIdentity }}</span>
-                <span>{{ isDemo ? 'Demo mode' : 'Live mode' }}</span>
-                <span>{{ isAuthenticated ? 'Session active' : 'Sign in to connect' }}</span>
-              </div>
-            </div>
-          </BaseCard>
-          <BaseCard eyebrow="Workspace session">
-            <div class="settings-grid">
-              <div class="settings-item"><span>Mode</span><strong>{{ isDemo ? 'Demo' : 'Live' }}</strong></div>
-              <div class="settings-item"><span>Organization</span><strong>{{ selectedOrganization || 'Not selected' }}</strong></div>
-              <div class="settings-item"><span>Environment</span><strong>{{ selectedEnvironment || 'Not selected' }}</strong></div>
-              <div class="settings-item"><span>Identity</span><strong>{{ authContext?.identity || 'Local workspace' }}</strong></div>
-            </div>
-          </BaseCard>
-          <BaseCard eyebrow="Resources">
-            <nav class="resource-links" aria-label="Project resources">
-              <a href="https://github.com/TheDevApprentice/apigee-forge" target="_blank" rel="noreferrer">Project on GitHub</a>
-              <a href="https://cloud.google.com/apigee/docs" target="_blank" rel="noreferrer">Apigee documentation</a>
-              <a href="https://cloud.google.com/apigee/docs/reference/apis/apigee/rest" target="_blank" rel="noreferrer">Apigee Management API</a>
-              <a href="https://cloud.google.com/apigee/support" target="_blank" rel="noreferrer">Apigee support</a>
-            </nav>
-          </BaseCard>
-          <BaseCard eyebrow="Available configuration">
-            <BaseEmptyState>
-              <template #title>No editable preferences yet</template>
-              <template #hint>Authentication, storage and appearance preferences will appear here as they become configurable.</template>
-            </BaseEmptyState>
-          </BaseCard>
+              <p class="settings-card__hint">Your Google identity is used to access the Apigee organizations and permissions available to you.</p>
+            </BaseCard>
+
+            <BaseCard class="settings-card settings-session-card settings-reveal" eyebrow="Active context">
+              <div class="settings-context-heading"><span class="settings-context-dot"></span><div><strong>{{ selectedOrganization || 'No organization selected' }}</strong><small>{{ selectedEnvironment || 'Choose an environment from the workspace bar' }}</small></div></div>
+              <div class="settings-context-pills"><span><b>Mode</b>{{ isDemo ? 'Demo' : 'Live' }}</span><span><b>Source</b>{{ isDemo ? 'Local workspace' : 'Google Cloud' }}</span></div>
+            </BaseCard>
+
+            <BaseCard class="settings-card settings-app-card settings-reveal" eyebrow="Application">
+              <div class="settings-card__heading"><div><p class="settings-card__section-label">Build details</p><h2>About this build</h2><p>The tools behind your API workspace.</p></div><span class="settings-version">v{{ appInfo.version }}</span></div>
+              <div class="settings-grid settings-grid--four"><div class="settings-item"><span>Build</span><strong>{{ appInfo.build }}</strong></div><div class="settings-item"><span>Technology</span><strong>{{ appInfo.stack }}</strong></div><div class="settings-item"><span>Source branch</span><strong>{{ appInfo.branch }}</strong></div><div class="settings-item"><span>Session</span><strong>{{ isDemo ? 'Offline' : 'Connected' }}</strong></div></div>
+            </BaseCard>
+
+            <BaseCard class="settings-card settings-resources-card settings-reveal" eyebrow="Resources">
+              <div class="settings-card__heading"><div><p class="settings-card__section-label">Resource hub</p><h2>Keep exploring</h2><p>Useful places for building and operating your APIs.</p></div><span class="settings-card__symbol" aria-hidden="true">↗</span></div>
+              <nav class="resource-links resource-links--cards" aria-label="Project resources"><a href="https://github.com/TheDevApprentice/apigee-forge" target="_blank" rel="noreferrer"><span>⌘</span><strong>Project on GitHub</strong><small>Source and releases</small><b>→</b></a><a href="https://cloud.google.com/apigee/docs" target="_blank" rel="noreferrer"><span>◇</span><strong>Apigee documentation</strong><small>Guides and concepts</small><b>→</b></a><a href="https://cloud.google.com/apigee/docs/reference/apis/apigee/rest" target="_blank" rel="noreferrer"><span>↔</span><strong>Management API</strong><small>Reference endpoints</small><b>→</b></a><a href="https://cloud.google.com/apigee/support" target="_blank" rel="noreferrer"><span>?</span><strong>Apigee support</strong><small>Get help when needed</small><b>→</b></a></nav>
+            </BaseCard>
+
+            <BaseCard class="settings-card settings-config-card settings-reveal" eyebrow="Available configuration"><div class="settings-config"><span class="settings-config__icon">✦</span><div><p class="settings-card__section-label">Coming next</p><h2>A focused setup</h2><p>Authentication, storage and appearance preferences will appear here as they become configurable.</p></div><BaseChip label="Coming later" tone="neutral" /></div></BaseCard>
+          </div>
         </template>
         <template v-else>
           <template v-if="activeView === 'Dashboard'">
@@ -1138,15 +1198,25 @@ void templateEditor
               </div>
             </section>
 
-            <BaseCard class="dashboard-proxy-card dashboard-reveal" eyebrow="Workspace activity">
-              <div class="dashboard-card-heading"><div><p class="dashboard-eyebrow">Your APIs</p><h2>Recent proxies</h2></div><button type="button" class="dashboard-link" @click="activeView = 'Proxies'">View all <span aria-hidden="true">→</span></button></div>
-              <div v-if="proxiesLoading" class="dashboard-proxy-loading" aria-live="polite"><span v-for="item in 3" :key="item" class="dashboard-skeleton-row"><i></i><i></i></span><span class="dashboard-loading-label"><BaseSpinner /> Loading proxies…</span></div>
-              <BaseErrorState v-else-if="proxiesError" @retry="retryProxies"><template #title>Proxies unavailable</template><template #hint>{{ proxiesError }}</template></BaseErrorState>
-              <BaseEmptyState v-else-if="!selectedEnvironment || !proxyList.length"><template #title>{{ selectedEnvironment ? 'No proxies found' : 'Select an environment' }}</template><template #hint>{{ selectedEnvironment ? 'This organization has no visible proxies.' : 'Choose an organization and environment to load proxies.' }}</template></BaseEmptyState>
-              <ul v-else class="proxy-list dashboard-proxy-list">
+            <CollectionList
+              class="dashboard-proxy-card dashboard-reveal"
+              eyebrow="Workspace activity"
+              section-label="Your APIs"
+              title="Recent proxies"
+              description="Your APIs in the selected environment."
+              :searchable="false"
+              :loading="proxiesLoading"
+              :error="proxiesError"
+              :empty="!selectedEnvironment || !proxyList.length"
+              :empty-title="selectedEnvironment ? 'No proxies found' : 'Select an environment'"
+              :empty-hint="selectedEnvironment ? 'This organization has no visible proxies.' : 'Choose an organization and environment to load proxies.'"
+              @retry="retryProxies"
+            >
+              <template #actions><button type="button" class="dashboard-link" @click="activeView = 'Proxies'">View all <span aria-hidden="true">→</span></button></template>
+              <ul class="proxy-list collection-list__items dashboard-proxy-list">
                 <li v-for="proxy in visibleProxies.slice(0, 5)" :key="proxy.name"><button type="button" class="proxy-list__button" @click="openProxy(proxy)"><span><strong>{{ proxy.name }}</strong><small>revision {{ proxy.revisions.at(-1)?.number || '—' }}</small></span><span class="proxy-list__meta"><BaseChip :label="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" /><span class="proxy-list__arrow">→</span></span></button></li>
               </ul>
-            </BaseCard>
+            </CollectionList>
           </template>
         <template v-else-if="activeView === 'Proxies'">
           <BaseCard v-if="proxyCreationMode" eyebrow="Proxy creation">
@@ -1172,32 +1242,33 @@ void templateEditor
               @cancel="cancelProxyCreationPreparation"
             />
           </BaseCard>
-          <BaseCard v-else eyebrow="Proxy catalogue">
-            <div class="proxy-catalogue__header">
-              <div>
-                <p class="proxy-catalogue__intro">Manage proxies in the selected Apigee organization and environment.</p>
-                <input v-model="proxySearch" class="proxy-search" type="search" placeholder="Search proxies" aria-label="Search proxies" />
-              </div>
-              <button type="button" class="primary-action" @click="openCreateProxy">Create proxy</button>
-            </div>
-            <div class="proxy-filter" role="group" aria-label="Proxy deployment filter">
-              <button type="button" :class="{ 'proxy-filter--active': proxyFilter === 'all' }" @click="proxyFilter = 'all'">All</button>
-              <button type="button" :class="{ 'proxy-filter--active': proxyFilter === 'deployed' }" @click="proxyFilter = 'deployed'">Deployed</button>
-              <button type="button" :class="{ 'proxy-filter--active': proxyFilter === 'not-deployed' }" @click="proxyFilter = 'not-deployed'">Not deployed</button>
-            </div>
-            <BaseEmptyState v-if="!visibleProxies.length">
-              <template #title>No proxies match this filter</template>
-              <template #hint>Choose another deployment state or change the workspace context.</template>
-            </BaseEmptyState>
-            <ul v-else class="proxy-list">
+          <CollectionList
+            v-else
+            eyebrow="Proxies"
+            section-label="Your APIs"
+            title="Proxy catalogue"
+            description="Manage proxies in the selected Apigee organization and environment."
+            search-placeholder="Search proxies"
+            v-model:search-value="proxySearch"
+            v-model:active-filter="proxyFilter"
+            :filters="[{ value: 'all', label: 'All' }, { value: 'deployed', label: 'Deployed' }, { value: 'not-deployed', label: 'Not deployed' }]"
+            :loading="proxiesLoading"
+            :error="proxiesError"
+            :empty="!visibleProxies.length"
+            empty-title="No proxies match this filter"
+            empty-hint="Choose another deployment state or change the workspace context."
+            @retry="retryProxies"
+          >
+            <template #actions><button type="button" class="primary-action" @click="openCreateProxy">Create proxy</button></template>
+            <ul class="proxy-list collection-list__items">
               <li v-for="proxy in visibleProxies" :key="proxy.name">
                 <button type="button" class="proxy-list__button" @click="openProxy(proxy)">
-                  <span>{{ proxy.name }}</span>
-                  <BaseChip :label="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" />
+                  <span><strong>{{ proxy.name }}</strong><small>{{ proxy.revisions.length }} revision{{ proxy.revisions.length === 1 ? '' : 's' }}</small></span>
+                  <span class="proxy-list__meta"><BaseChip :label="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'Deployed' : 'Not deployed'" :tone="proxy.revisions.some((revision) => revision.status === 'Succeeded') ? 'success' : 'neutral'" /><span class="collection-row__arrow">→</span></span>
                 </button>
               </li>
             </ul>
-          </BaseCard>
+          </CollectionList>
           <ProxyDetailsDrawer
             :open="Boolean(selectedProxy)"
             :proxy="selectedProxy"
@@ -1215,34 +1286,30 @@ void templateEditor
         </template>
         <template v-else-if="activeView === 'Templates'">
           <template v-if="templateView === 'catalogue'">
-          <BaseCard eyebrow="Template catalogue">
-            <p class="template-catalogue__intro">Start from an existing template or create a new one. Your templates are stored locally and can be reused by the CLI.</p>
-            <div class="template-toolbar">
-              <input v-model="templateSearch" type="search" placeholder="Search templates" aria-label="Search templates" />
-              <button type="button" class="primary-action" @click="newTemplate">New template</button>
-            </div>
-            <div v-if="templatesLoading" class="loading-state"><BaseSpinner /> <span>Loading templates…</span></div>
-            <BaseErrorState v-else-if="templatesError">
-              <template #title>Templates unavailable</template>
-              <template #hint>{{ templatesError }}</template>
-            </BaseErrorState>
-            <BaseEmptyState v-else-if="!templateList.length">
-              <template #title>No templates loaded</template>
-              <template #hint>Create your first local template to start the M7 editor.</template>
-            </BaseEmptyState>
-            <BaseEmptyState v-else-if="!visibleTemplates.length">
-              <template #title>No templates match</template>
-              <template #hint>Try another search term.</template>
-            </BaseEmptyState>
-            <ul v-else class="proxy-list template-list">
+          <CollectionList
+            eyebrow="Templates"
+            section-label="Local templates"
+            title="Template catalogue"
+            description="Build reusable governance templates locally and reuse them from the GUI or CLI."
+            search-placeholder="Search templates"
+            v-model:search-value="templateSearch"
+            :filters="[{ value: 'all', label: 'All', count: templateList.length }]"
+            :loading="templatesLoading"
+            :error="templatesError"
+            :empty="!visibleTemplates.length"
+            :empty-title="templateList.length ? 'No templates match' : 'No templates loaded'"
+            :empty-hint="templateList.length ? 'Try another search term.' : 'Create your first local template to start the editor.'"
+          >
+            <template #actions><button type="button" class="primary-action" @click="newTemplate">New template</button></template>
+            <ul class="proxy-list collection-list__items template-list">
               <li v-for="template in visibleTemplates" :key="template.name" :class="{ 'template-list__item--selected': currentTemplate?.name === template.name }">
                 <button type="button" class="proxy-list__button template-list__select" @click="openTemplateDrawer(template)">
-                  <span>{{ template.name || 'Untitled template' }}</span>
-                  <span class="template-list__owner">{{ templateOwner(template) }}</span>
+                  <span><strong>{{ template.name || 'Untitled template' }}</strong><small>{{ templateOwner(template) }}</small></span>
+                  <span class="collection-row__arrow">→</span>
                 </button>
               </li>
             </ul>
-          </BaseCard>
+          </CollectionList>
           <TemplateDetailsDrawer
             :open="Boolean(selectedTemplate)"
             :template="selectedTemplate"
@@ -1325,4 +1392,5 @@ void templateEditor
       </main>
     </div>
   </div>
+</div>
 </template>
