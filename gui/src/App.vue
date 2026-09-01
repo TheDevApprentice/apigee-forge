@@ -163,6 +163,8 @@ async function startLogin() {
   await nextTick()
   await auth.login()
   if (auth.context.value?.authenticated) {
+    activeView.value = 'Dashboard'
+    supportArticle.value = null
     loginTransition.value = 'success'
     loginTransitionTimer = setTimeout(() => { loginTransition.value = 'idle' }, 3200)
   } else {
@@ -223,6 +225,9 @@ async function changeMode(mode: AppMode) {
 
 watch(isAuthenticated, (authenticated) => {
   if (authenticated) {
+    if (activeView.value === 'Login') {
+      activeView.value = 'Dashboard'
+    }
     void organizations.loadOrganizations()
     void loadTemplates()
   }
@@ -997,9 +1002,9 @@ void templateEditor
                 <p class="login-hero__lead">Apigee Forge brings templates, governance and deployments together in one thoughtful workspace for your APIs.</p>
                 <div class="login-hero__actions">
                   <button class="primary-action login-hero__button" type="button" :disabled="authLoading" @click="startLogin">
-                    <span class="google-g">G</span>{{ authLoading ? 'Connecting securely…' : 'Sign in with Google' }}
+                    <span class="google-g" aria-hidden="true">G</span>{{ authLoading ? 'Connecting securely…' : 'Sign in with Google' }}
                   </button>
-                  <a href="#how-it-works" class="login-text-link">See how it works <span aria-hidden="true">↓</span></a>
+                  <a href="#how-it-works" class="login-text-link"><span>See how it works</span><span class="login-text-link__arrow" aria-hidden="true"><svg viewBox="0 0 20 20" focusable="false"><path d="M10 4.5v11M6.5 12l3.5 3.5 3.5-3.5" /></svg></span></a>
                 </div>
                 <p class="login-hero__note">Your Google session is restored automatically when it is still valid.</p>
               </div>

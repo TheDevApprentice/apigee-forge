@@ -3711,6 +3711,13 @@ textarea:focus-visible {
 @media (prefers-reduced-motion: reduce) { .settings-reveal, .resource-links--cards a { animation: none; transition: none; } }
 
 /* CollectionList reference treatment: the former Workspace Activity hierarchy. */
+.desktop-titlebar { position: relative; z-index: 100; overflow: visible; }
+.desktop-titlebar__left,
+.desktop-titlebar__workspace { position: relative; z-index: 200; overflow: visible; }
+.collection-list .proxy-list__button:focus-visible,
+.collection-list .deployment-revision-list__button:focus-visible { outline: 2px solid var(--accent-active); outline-offset: -2px; }
+.collection-list .proxy-list__button:hover,
+.collection-list .deployment-revision-list__button:hover { transform: none; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .collection-list__section-label { margin: 0 0 8px; color: var(--accent-active); font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
 .collection-list__label { margin: 0; font-size: 18px; line-height: 1.15; }
@@ -3881,6 +3888,22 @@ textarea:focus-visible {
 .login-support-link { padding: 7px 10px; color: var(--text-secondary); background: transparent; border: 0; border-radius: 999px; cursor: pointer; font-size: 11px; }
 .login-support-link:hover, .login-support-link:focus-visible { color: var(--accent-active); background: var(--accent-bg); outline: none; }
 
+/* Support navigation and form actions use Forge teal, never the Google-blue auth action. */
+.support-form .primary-action { color: var(--text-on-solid); background: var(--accent-active); border-color: var(--accent-active); box-shadow: 0 5px 14px rgb(15 110 86 / 16%); transition: background-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease, transform var(--motion-fast) var(--ease-mellow); }
+.support-form .primary-action:hover, .support-form .primary-action:focus-visible { background: var(--accent-text); box-shadow: 0 8px 20px rgb(15 110 86 / 22%); transform: translateY(-2px); }
+.support-form .primary-action:active { box-shadow: 0 3px 8px rgb(15 110 86 / 16%); transform: translateY(0) scale(.98); }
+.support-page__back,
+.support-article__back { display: inline-flex; align-items: center; gap: 9px; justify-self: start; padding: 8px 12px 8px 8px; color: var(--accent-text); background: var(--accent-bg); border: 1px solid rgb(15 110 86 / 16%); border-radius: 999px; cursor: pointer; font-size: 11px; transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, transform var(--motion-fast) var(--ease-mellow); }
+.support-page__back:hover, .support-page__back:focus-visible,
+.support-article__back:hover, .support-article__back:focus-visible { color: var(--accent-text); background: #cceee1; border-color: var(--accent-active); outline: none; transform: translateX(-3px); }
+.support-back-arrow,
+.support-page__back > span:first-child { display: grid; width: 22px; height: 22px; place-items: center; color: var(--accent-active); background: #fff; border-radius: 50%; font-size: 15px; transition: transform var(--motion-fast) var(--ease-mellow); }
+.support-page__back:hover > span:first-child,
+.support-article__back:hover .support-back-arrow { transform: translateX(-3px); }
+.support-page__back { margin-bottom: -3px; }
+@media (prefers-reduced-motion: reduce) { .support-page__back, .support-article__back, .support-back-arrow, .support-page__back > span:first-child, .support-form .primary-action { transition: none; transform: none; } }
+
+
 .support-article { display: grid; gap: 18px; width: min(100%, 900px); margin: 0 auto; padding: 10px 0 48px; }
 .support-article__back { justify-self: start; padding: 8px 0; color: var(--accent-active); background: transparent; border: 0; cursor: pointer; font-size: 11px; }
 .support-article__back:hover { color: var(--accent-text); }
@@ -3908,9 +3931,82 @@ textarea:focus-visible {
 .support-form__success strong { font-size: 13px; font-weight: 500; }
 .support-form__success p { margin: 4px 0 0; color: var(--text-secondary); font-size: 11px; }
 .support-form__success button { margin-left: auto; padding: 7px 10px; color: var(--accent-active); background: transparent; border: 0; cursor: pointer; font-size: 11px; }
+
+/* Shared navigation primitive for Support and every future article surface. */
+.base-back-button { display: inline-flex; align-items: center; gap: 9px; justify-self: start; padding: 8px 13px 8px 8px; color: var(--accent-text); background: var(--accent-bg); border: 1px solid rgb(15 110 86 / 16%); border-radius: 999px; cursor: pointer; font-size: 11px; transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, transform var(--motion-normal) var(--ease-mellow), box-shadow var(--motion-normal) var(--ease-mellow); }
+.base-back-button__icon { display: grid; width: 24px; height: 24px; place-items: center; flex: 0 0 24px; color: var(--accent-active); background: #fff; border-radius: 50%; transition: transform var(--motion-normal) var(--ease-mellow), background-color var(--motion-fast) ease; }
+.base-back-button__icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
+.base-back-button:hover, .base-back-button:focus-visible { color: var(--accent-text); background: #cceee1; border-color: var(--accent-active); outline: none; transform: translateX(-3px); box-shadow: 0 5px 14px rgb(15 110 86 / 12%); }
+.base-back-button:hover .base-back-button__icon, .base-back-button:focus-visible .base-back-button__icon { transform: translateX(-3px) scale(1.06); background: #fff; }
+.base-back-button:active { transform: translateX(-1px) scale(.98); box-shadow: none; }
+.support-page > .base-back-button { margin-bottom: -3px; }
+@media (prefers-reduced-motion: reduce) { .base-back-button, .base-back-button__icon { transition: none; transform: none; } }
+
+/* Back action: compact label at rest, arrow capsule revealed on intent. */
+.base-back-button { gap: 0; padding: 8px 13px; overflow: hidden; transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, transform var(--motion-normal) var(--ease-mellow), box-shadow var(--motion-normal) var(--ease-mellow), gap var(--motion-normal) var(--ease-mellow), padding var(--motion-normal) var(--ease-mellow); }
+.base-back-button__icon { width: 0; height: 24px; flex-basis: 0; overflow: hidden; opacity: 0; transform: translateX(-8px) scale(.6); transition: width var(--motion-normal) var(--ease-mellow), flex-basis var(--motion-normal) var(--ease-mellow), opacity var(--motion-fast) ease, transform var(--motion-normal) var(--ease-mellow), background-color var(--motion-fast) ease; }
+.base-back-button:hover,
+.base-back-button:focus-visible { gap: 9px; padding-left: 8px; }
+.base-back-button:hover .base-back-button__icon,
+.base-back-button:focus-visible .base-back-button__icon { width: 24px; flex-basis: 24px; opacity: 1; transform: translateX(0) scale(1.06); }
+.base-back-button:active { gap: 8px; }
+@media (prefers-reduced-motion: reduce) { .base-back-button { gap: 0; padding: 8px 13px; } .base-back-button:hover, .base-back-button:focus-visible { gap: 9px; padding-left: 8px; } .base-back-button__icon { width: 0; flex-basis: 0; opacity: 0; transform: none; } .base-back-button:hover .base-back-button__icon, .base-back-button:focus-visible .base-back-button__icon { width: 24px; flex-basis: 24px; opacity: 1; } }
+
+/* Google sign-in action: Forge teal with the same compact reveal as BackButton. */
+.login-hero__button { gap: 0; padding-left: 18px; padding-right: 18px; color: var(--text-on-solid); background: var(--accent-active); border-color: var(--accent-active); box-shadow: 0 5px 14px rgb(15 110 86 / 18%); transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, transform var(--motion-normal) var(--ease-mellow), box-shadow var(--motion-normal) var(--ease-mellow), gap var(--motion-normal) var(--ease-mellow), padding var(--motion-normal) var(--ease-mellow); }
+.login-hero__button:hover, .login-hero__button:focus-visible { gap: 10px; padding-left: 10px; background: var(--accent-text); border-color: var(--accent-text); box-shadow: 0 8px 20px rgb(15 110 86 / 25%); transform: translateY(-2px); }
+.login-hero__button:active { transform: translateY(0) scale(.98); box-shadow: 0 3px 8px rgb(15 110 86 / 16%); }
+.login-hero__button:disabled { color: #fff; background: var(--accent-active); border-color: var(--accent-active); }
+.login-hero__button .google-g { display: grid; width: 0; height: 24px; flex: 0 0 0; place-items: center; overflow: hidden; opacity: 0; color: transparent; background: #fff; border-radius: 50%; font-size: 15px; font-weight: 600; line-height: 1; transition: width var(--motion-normal) var(--ease-mellow), flex-basis var(--motion-normal) var(--ease-mellow), opacity var(--motion-fast) ease, transform var(--motion-normal) var(--ease-mellow); }
+.login-hero__button:hover .google-g, .login-hero__button:focus-visible .google-g { width: 24px; flex-basis: 24px; opacity: 1; transform: scale(1.04); }
+.login-hero__button .google-g { background: conic-gradient(from -45deg, #4285f4 0 25%, #34a853 25% 50%, #fbbc05 50% 75%, #ea4335 75% 100%); background-clip: text; -webkit-background-clip: text; }
+@media (prefers-reduced-motion: reduce) { .login-hero__button, .login-hero__button .google-g { transition: none; } .login-hero__button:hover, .login-hero__button:focus-visible { gap: 10px; padding-left: 10px; transform: none; } .login-hero__button .google-g { width: 24px; flex-basis: 24px; opacity: 1; transform: none; } }
 @media (max-width: 700px) { .support-article__hero { padding: 24px; } .support-article__hero .base-chip { display: none; } .support-article__section { grid-template-columns: 1fr; gap: 4px; } .support-form { grid-template-columns: 1fr; } .support-form__wide, .support-form__error { grid-column: auto; } }
 
 .login-support-link span { color: var(--accent-active); font-weight: 500; }
+
+/* Google action follows the compact-to-expanded BackButton interaction. */
+.login-hero__button { min-width: 0; width: max-content; max-width: 100%; gap: 0; padding: 0 15px; }
+.login-hero__button:hover, .login-hero__button:focus-visible { gap: 9px; padding-left: 8px; }
+.login-hero__button .google-g { position: relative; width: 0; height: 24px; flex-basis: 0; overflow: hidden; opacity: 0; color: transparent; background: #fff; border-radius: 50%; font-size: 0; transition: width var(--motion-normal) var(--ease-mellow), flex-basis var(--motion-normal) var(--ease-mellow), opacity var(--motion-fast) ease, transform var(--motion-normal) var(--ease-mellow); }
+.login-hero__button .google-g::before { content: 'G'; color: transparent; background: conic-gradient(from -45deg, #4285f4 0 25%, #34a853 25% 50%, #fbbc05 50% 75%, #ea4335 75% 100%); background-clip: text; -webkit-background-clip: text; font-size: 15px; font-weight: 600; }
+.login-hero__button:hover .google-g, .login-hero__button:focus-visible .google-g { width: 24px; flex-basis: 24px; opacity: 1; transform: scale(1.04); }
+.login-hero__button:active { transform: translateY(0) scale(.98); }
+@media (prefers-reduced-motion: reduce) { .login-hero__button, .login-hero__button .google-g { transition: none; } .login-hero__button:hover, .login-hero__button:focus-visible { gap: 9px; padding-left: 8px; } .login-hero__button .google-g { width: 24px; flex-basis: 24px; opacity: 1; transform: none; } }
+
+/* Final Google button proportions: compact at rest, clear white logo capsule on intent. */
+.login-hero__button { min-width: 0; width: max-content; max-width: 100%; padding: 0 15px; }
+.login-hero__button .google-g { width: 0; height: 26px; flex-basis: 0; overflow: hidden; background: rgb(248 252 251 / 92%); background-clip: border-box; -webkit-background-clip: border-box; border: 1px solid rgb(255 255 255 / 72%); font-size: 0; line-height: 1; }
+.login-hero__button .google-g::before { display: block; content: 'G'; font-size: 18px; font-weight: 700; line-height: 1; transform: translateY(1px); }
+.login-hero__button:hover .google-g, .login-hero__button:focus-visible .google-g { width: 26px; flex-basis: 26px; opacity: 1; transform: scale(1.04); }
+.login-hero__button:hover, .login-hero__button:focus-visible { gap: 9px; padding-left: 8px; }
+@media (prefers-reduced-motion: reduce) { .login-hero__button .google-g { width: 26px; flex-basis: 26px; opacity: 1; transform: none; } }
+
+.login-text-link { display: inline-flex; align-items: center; gap: 8px; padding: 6px 9px 6px 11px; color: var(--text-main); border: 1px solid transparent; border-radius: 999px; transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, transform var(--motion-normal) var(--ease-mellow); }
+.login-text-link > span { display: grid; width: 22px; height: 22px; place-items: center; color: var(--accent-text); background: var(--accent-bg); border-radius: 50%; font-size: 13px; line-height: 1; transition: transform var(--motion-normal) var(--ease-mellow), background-color var(--motion-fast) ease; }
+.login-text-link:hover, .login-text-link:focus-visible { color: var(--accent-text); background: var(--accent-bg); border-color: rgb(15 110 86 / 16%); outline: none; transform: translateY(-2px); }
+.login-text-link:hover > span, .login-text-link:focus-visible > span { background: #fff; transform: translateY(2px); }
+.login-text-link:active { transform: translateY(0) scale(.98); }
+@media (prefers-reduced-motion: reduce) { .login-text-link, .login-text-link > span { transition: none; } .login-text-link:hover, .login-text-link:focus-visible { transform: none; } }
+
+/* The two hero actions share one initial footprint; the secondary action grows rightward. */
+.login-hero__button,
+.login-text-link { min-width: 182px; min-height: 42px; box-sizing: border-box; justify-content: center; }
+.login-text-link { gap: 0; padding: 0 15px; color: var(--text-main); background: transparent; border-color: var(--border); overflow: hidden; transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, box-shadow var(--motion-normal) var(--ease-mellow), gap var(--motion-normal) var(--ease-mellow), padding var(--motion-normal) var(--ease-mellow), transform var(--motion-normal) var(--ease-mellow); }
+.login-text-link > span:first-child { display: block; width: auto; height: auto; margin: 0; padding: 0; color: inherit; background: transparent; border-radius: 0; font-size: 13px; line-height: 1; }
+.login-text-link__arrow { display: grid !important; width: 0 !important; height: 24px !important; flex: 0 0 0; place-items: center; overflow: hidden; opacity: 0; color: var(--accent-active); background: rgb(255 255 255 / 88%) !important; border-radius: 50% !important; transform: translateX(-6px) scale(.65); transition: width var(--motion-normal) var(--ease-mellow), flex-basis var(--motion-normal) var(--ease-mellow), opacity var(--motion-fast) ease, transform var(--motion-normal) var(--ease-mellow), background-color var(--motion-fast) ease; }
+.login-text-link__arrow svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
+.login-text-link:hover, .login-text-link:focus-visible { gap: 9px; padding-right: 8px; color: var(--accent-text); background: var(--accent-bg); border-color: rgb(15 110 86 / 28%); box-shadow: 0 5px 14px rgb(15 110 86 / 10%); outline: none; transform: translateY(-2px); }
+.login-text-link:hover .login-text-link__arrow, .login-text-link:focus-visible .login-text-link__arrow { width: 24px !important; flex-basis: 24px; opacity: 1; transform: translateX(0) scale(1.06); }
+.login-text-link:active { transform: translateY(0) scale(.98); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .login-text-link, .login-text-link__arrow { transition: none; } .login-text-link:hover, .login-text-link:focus-visible { gap: 9px; padding-right: 8px; transform: none; } .login-text-link__arrow { width: 24px !important; flex-basis: 24px; opacity: 1; transform: none; } }
+
+/* Final compact action sizing: no inherited minimum can inflate either hero pill. */
+.login-hero__button,
+.login-text-link { min-width: 0; width: auto; min-height: 42px; height: 42px; }
+.login-hero__button { padding: 0 15px; }
+.login-text-link { padding: 0 15px; }
+.login-text-link:hover, .login-text-link:focus-visible { padding-left: 15px; padding-right: 8px; }
 
 /* Full-screen auth handoff states keep the transition intentional before Dashboard. */
 .login-loading,

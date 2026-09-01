@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import BaseCard from '../base/BaseCard.vue'
 import BaseChip from '../base/BaseChip.vue'
+import BaseBackButton from '../base/BaseBackButton.vue'
 import supportContent from '../../data/support-content.json'
 import type { SupportContent } from '../../types/support'
 
@@ -28,6 +29,7 @@ function submitSupport() {
 
 <template>
   <div class="support-page" aria-labelledby="support-title">
+    <BaseBackButton class="support-reveal" :label="authenticated ? 'Back to Dashboard' : 'Back to Login'" @click="emit('navigate', authenticated ? 'Dashboard' : 'Login')" />
     <section class="support-hero support-reveal">
       <div><p class="support-eyebrow">Support centre</p><h1 id="support-title">A little help goes a long way.</h1><p>Find your way around Apigee Forge, understand each step and get back to building with confidence.</p></div>
       <div class="support-hero__illustration" aria-hidden="true"><span>?</span><i></i><i></i><i></i></div>
