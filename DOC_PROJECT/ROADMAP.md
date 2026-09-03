@@ -18,6 +18,8 @@ Séquence recommandée : chaque jalon doit être fonctionnel et testable avant d
 - [ ] **M9 — Polish design** : mise en cohérence visuelle (thème clair, accent teal, diagramme de flux soigné), tokens exacts dans DESIGN.md.
 - [ ] **M10 — Packaging et documentation** : mise en place du build/release CLI seul + installeur GUI+CLI (voir PACKAGING.md), README, captures d'écran, préparation du projet pour présentation en portfolio (et publication open source si souhaité à ce stade).
 
+> **Suite de référence après M9/M10 :** `ROADMAP_MVP_FINALIZATION.md` consolide les tâches non terminées ou partielles des roadmaps M2 à M10 et définit la gate de finalisation du MVP. Les documents historiques restent conservés pour la traçabilité.
+
 ---
 
 ## Partie 2 — Au-delà du MVP (v1.1, v2...)

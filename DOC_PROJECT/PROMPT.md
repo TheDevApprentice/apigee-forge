@@ -20,11 +20,12 @@ Avant d'écrire une seule ligne de code, lis l'intégralité des documents suiva
 14. **`M6_STARTUP_ROADMAP.md`** — étapes regroupées du squelette GUI Tauri/Vue
 15. **`M6_BIS_STARTUP_ROADMAP.md`** — stabilisation du GUI avec les modes Demo et Cloud
 16. **`M8_STARTUP_ROADMAP.md`** — étapes atomiques du déploiement et du suivi depuis le GUI
-17. **`REAL_APIGEE_VALIDATION.md`** — procédure de validation réelle Hello World sans exposer de credential
-18. **`REAL_APIGEE_HELLOWORLD_REPORT.md`** — rapport de la première validation réelle et des corrections de mapping
-19. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
-20. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
-21. **`schemas/template.schema.json`** et **`schemas/template.example.json`** — format de données central du projet
+17. **`M9_STARTUP_ROADMAP.md`** — étapes atomiques du polish visuel et de la cohérence du design system
+18. **`REAL_APIGEE_VALIDATION.md`** — procédure de validation réelle Hello World sans exposer de credential
+19. **`REAL_APIGEE_HELLOWORLD_REPORT.md`** — rapport de la première validation réelle et des corrections de mapping
+20. **`PACKAGING.md`** — stratégie de build et de distribution (CLI seul + GUI+CLI ensemble)
+21. **`GCP_SETUP.md`** — comment l'environnement Google Cloud de test est/sera provisionné
+22. **`schemas/template.schema.json`** et **`schemas/template.example.json`** — format de données central du projet
 
 Une fois ces documents lus, **résume-moi en quelques phrases** ce que tu as compris du projet, de son périmètre MVP, et de la méthode de travail attendue — avant de proposer quoi que ce soit. Je veux confirmer que le contexte est bien assimilé avant qu'on commence.
 

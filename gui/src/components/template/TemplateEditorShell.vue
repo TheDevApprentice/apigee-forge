@@ -19,7 +19,6 @@ const emit = defineEmits<{
   <section class="template-editor-shell" aria-label="Template editor">
     <header class="template-editor-shell__header">
       <div>
-        <span class="template-workspace__eyebrow">Template workspace</span>
         <span class="template-workspace__eyebrow">Editing template</span>
         <h2>{{ title || 'New template' }}</h2>
         <p>Complete each step, validate your template, then save it locally.</p>

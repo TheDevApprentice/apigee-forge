@@ -163,7 +163,9 @@ DOC_PROJECT/
 ├── MVP_FEATURES.md
 ├── ARCHITECTURE.md
 ├── DESIGN.md
+├── GUI_DESIGN_SYSTEM.md         # référence normative du design GUI et de la page Login
 ├── ROADMAP.md
+├── ROADMAP_MVP_FINALIZATION.md # roadmap consolidée de finalisation du MVP
 ├── STARTUP_ROADMAP.md
 ├── M2_STARTUP_ROADMAP.md
 ├── M3_STARTUP_ROADMAP.md
@@ -174,6 +176,7 @@ DOC_PROJECT/
 ├── M6_STARTUP_ROADMAP.md
 ├── M6_BIS_STARTUP_ROADMAP.md
 ├── M8_STARTUP_ROADMAP.md
+├── M9_STARTUP_ROADMAP.md
 ├── REAL_APIGEE_VALIDATION.md
 ├── REAL_APIGEE_HELLOWORLD_REPORT.md
 ├── SECURITY.md

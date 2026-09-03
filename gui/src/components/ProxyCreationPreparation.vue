@@ -58,7 +58,7 @@ async function loadOpenApiFile(event: Event) {
         <h2>Prepare proxy creation</h2>
         <p>Review the local inputs before generating and uploading a proxy revision to Apigee.</p>
       </div>
-      <BaseChip :label="ready ? 'Ready to generate' : 'Needs attention'" />
+      <BaseChip :label="ready ? 'Ready to generate' : 'Needs attention'" :tone="ready ? 'success' : 'warning'" />
     </div>
     <div class="deployment-preparation__form">
       <label>

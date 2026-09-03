@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App.vue'
 
 const invokeMock = vi.hoisted(() => vi.fn())
@@ -11,6 +12,10 @@ vi.mock('@tauri-apps/api/core', () => ({
 describe('App M6-Bis flow', () => {
   beforeEach(() => {
     invokeMock.mockReset()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
   })
 
   it('shows the safe offline login state without an Apigee account', async () => {
@@ -25,7 +30,7 @@ describe('App M6-Bis flow', () => {
     const wrapper = mount(App)
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Connect your Apigee workspace.')
+    expect(wrapper.text()).toContain('Shape your APIs.')
     expect(wrapper.text()).toContain('Sign in with Google')
     expect(wrapper.find('button.primary-action').exists()).toBe(true)
   })
@@ -56,7 +61,7 @@ describe('App M6-Bis flow', () => {
     await flushPromises()
 
     expect(wrapper.find('button.primary-action').exists()).toBe(true)
-    expect(wrapper.find('.sidebar').exists()).toBe(true)
+    expect(wrapper.find('.sidebar').exists()).toBe(false)
     expect(wrapper.find('.connection-dot--connected').exists()).toBe(false)
     expect(wrapper.text()).toContain('Sign in with Google')
   })
@@ -106,6 +111,41 @@ describe('App M6-Bis flow', () => {
     expect(wrapper.text()).toContain('api-orders')
   })
 
+  it('searches proxies and opens template details in the reusable drawer', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
+      if (command === 'list_organizations') return [{ id: 'demo-org', project_id: 'demo-project', location: null }]
+      if (command === 'list_environments') return [{ name: 'demo' }]
+      if (command === 'list_templates') return [
+        { name: 'orders', data: { metadata: { description: 'Order APIs', owner: 'platform' }, flow: { pre_flow: { request: [{}], response: [] }, post_flow: { request: [], response: [] }, conditional_flows: [] } } },
+        { name: 'billing', data: { metadata: { owner: 'finance' }, flow: {} } },
+      ]
+      if (command === 'list_proxies') return [
+        { name: 'orders-api', revisions: [{ number: 1, deployed: false, status: 'NotDeployed' }] },
+        { name: 'billing-api', revisions: [{ number: 1, deployed: true, status: 'Succeeded' }] },
+      ]
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.find('button[aria-label="Templates"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('.template-list__select').exists()).toBe(true))
+    await wrapper.find('.template-list__select').trigger('click')
+    expect(document.querySelector('.base-drawer')).not.toBeNull()
+    expect(document.body.textContent).toContain('Order APIs')
+    expect(document.body.textContent).toContain('Create proxy from template')
+    document.querySelector<HTMLButtonElement>('.base-drawer__close')?.click()
+    await nextTick()
+
+    await wrapper.find('button[aria-label="Proxies"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('.proxy-search').exists()).toBe(true))
+    await wrapper.find('.proxy-search').setValue('billing')
+    expect(wrapper.findAll('.proxy-list__button')).toHaveLength(1)
+    expect(wrapper.text()).toContain('billing-api')
+    expect(wrapper.text()).not.toContain('orders-api')
+  })
+
   it('prepares a non-mutating proxy creation preview from a saved template', async () => {
     invokeMock.mockImplementation(async (command: string) => {
       if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
@@ -127,9 +167,12 @@ describe('App M6-Bis flow', () => {
     await wrapper.find('button[aria-label="Templates"]').trigger('click')
     await flushPromises()
     await vi.waitFor(() => expect(invokeMock).toHaveBeenCalledWith('list_templates'))
-    await vi.waitFor(() => expect(wrapper.find('.template-list__prepare').exists()).toBe(true))
+    await vi.waitFor(() => expect(wrapper.find('.template-list__select').exists()).toBe(true))
 
-    await wrapper.find('.template-list__prepare').trigger('click')
+    await wrapper.find('.template-list__select').trigger('click')
+    await nextTick()
+    document.querySelector<HTMLButtonElement>('.template-drawer__prepare')?.click()
+    await nextTick()
     expect(wrapper.text()).toContain('Prepare proxy creation')
     expect(wrapper.text()).toContain('api-orders')
     expect(wrapper.text()).toContain('Provide a name for the OpenAPI specification.')
@@ -143,6 +186,28 @@ describe('App M6-Bis flow', () => {
     expect(wrapper.text()).toContain('Ready to generate')
     expect(invokeMock).not.toHaveBeenCalledWith('generate_proxy_bundle', expect.anything())
     expect(invokeMock).not.toHaveBeenCalledWith('deploy_proxy', expect.anything())
+  })
+
+  it('lists non-deployed revisions directly in Deployments', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
+      if (command === 'list_organizations') return [{ id: 'demo-org', project_id: 'demo-project', location: null }]
+      if (command === 'list_environments') return [{ name: 'demo' }]
+      if (command === 'list_templates') return []
+      if (command === 'list_proxies') return [{ name: 'orders-api', revisions: [{ number: 3, deployed: false, status: 'NotDeployed' }] }]
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.find('button[aria-label="Deployments"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('.deployment-revision-list__button').exists()).toBe(true))
+    expect(wrapper.text()).toContain('orders-api')
+    expect(wrapper.text()).toContain('Revision 3')
+
+    await wrapper.find('.deployment-revision-list__button').trigger('click')
+    expect(document.body.textContent).toContain('Deployment review')
+    expect(document.body.textContent).toContain('Confirm review')
   })
 
   it('completes the Demo creation-to-deployment journey', async () => {
@@ -174,9 +239,11 @@ describe('App M6-Bis flow', () => {
     await wrapper.findAll('.dashboard-action-card')[1].trigger('click')
     await vi.waitFor(() => expect(wrapper.find('select[aria-label="Select proxy template"]').exists()).toBe(true))
     await wrapper.find('select[aria-label="Select proxy template"]').setValue('orders')
-    await wrapper.findAll('.workspace-selectors select')[0].setValue('demo-org')
-    await vi.waitFor(() => expect(wrapper.find('.workspace-selectors select option[value="demo"]').exists()).toBe(true))
-    await wrapper.findAll('.workspace-selectors select')[1].setValue('demo')
+    await wrapper.findAll('.desktop-titlebar__workspace .base-select__trigger')[0].trigger('click')
+    await wrapper.findAll('.base-select__option').find((option) => option.text() === 'demo-org')?.trigger('click')
+    await vi.waitFor(() => expect(wrapper.findAll('.desktop-titlebar__workspace .base-select__trigger')).toHaveLength(2))
+    await wrapper.findAll('.desktop-titlebar__workspace .base-select__trigger')[1].trigger('click')
+    await wrapper.findAll('.base-select__option').find((option) => option.text().includes('demo'))?.trigger('click')
     await flushPromises()
     await vi.waitFor(() => expect(wrapper.text()).toContain('Organizationdemo-org'))
     await wrapper.find('input[placeholder="openapi.yaml"]').setValue('orders.yaml')
@@ -191,18 +258,45 @@ describe('App M6-Bis flow', () => {
     await wrapper.findAll('button').find((button) => button.text() === 'Back to templates')?.trigger('click')
     await vi.waitFor(() => expect(wrapper.find('.proxy-list__button').exists()).toBe(true))
     await wrapper.find('.proxy-list__button').trigger('click')
-    await wrapper.find('.revision-row__actions button').trigger('click')
-    await wrapper.find('button.primary-action').trigger('click')
+    document.querySelector<HTMLButtonElement>('.revision-row__actions button')?.click()
+    await nextTick()
+    document.querySelector<HTMLButtonElement>('.base-drawer .primary-action')?.click()
+    await nextTick()
     document.querySelector<HTMLButtonElement>('.base-modal__actions button:last-child')?.click()
+    await nextTick()
     await flushPromises()
-    await wrapper.findAll('button').find((button) => button.text() === 'Deploy revision')?.trigger('click')
-    await vi.waitFor(() => expect(wrapper.text()).toContain('Deployment succeeded'))
+    document.querySelector<HTMLButtonElement>('.base-drawer .primary-action')?.click()
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Deployment succeeded'))
     expect(invokeMock).toHaveBeenCalledWith('get_deployment_status', {
       organization: 'demo-org',
       environment: 'demo',
       proxyName: 'api-orders',
       revision: 2,
     })
+  })
+
+  it('opens selected proxy details in a right drawer and closes it', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'demo', status: 'ready', identity: null, organization: 'demo-org', environment: 'demo', error: null }
+      if (command === 'list_organizations') return [{ id: 'demo-org', project_id: 'demo-project', location: null }]
+      if (command === 'list_environments') return [{ name: 'demo' }]
+      if (command === 'list_templates') return []
+      if (command === 'list_proxies') return [{ name: 'orders', revisions: [{ number: 1, deployed: false, status: 'NotDeployed' }] }]
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.find('button[aria-label="Proxies"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('.proxy-list__button').exists()).toBe(true))
+    await wrapper.find('.proxy-list__button').trigger('click')
+    expect(document.querySelector('.base-drawer')).not.toBeNull()
+    expect(wrapper.text()).toContain('orders')
+
+    document.querySelector<HTMLButtonElement>('.base-drawer__close')?.click()
+    await nextTick()
+    await flushPromises()
+    expect(document.querySelector('.base-drawer')).toBeNull()
   })
 
   it('reviews an existing not-deployed revision before any deploy command', async () => {
@@ -221,18 +315,21 @@ describe('App M6-Bis flow', () => {
     await vi.waitFor(() => expect(invokeMock).toHaveBeenCalledWith('list_proxies', { organization: 'demo-org', environment: 'demo' }))
     await vi.waitFor(() => expect(wrapper.find('.proxy-list__button').exists()).toBe(true))
     await wrapper.find('.proxy-list__button').trigger('click')
-    await vi.waitFor(() => expect(wrapper.find('.revision-row__actions button').exists()).toBe(true))
+    await vi.waitFor(() => expect(document.querySelector('.revision-row__actions button')).not.toBeNull())
 
-    await wrapper.find('.revision-row__actions button').trigger('click')
-    expect(wrapper.text()).toContain('Review proxy revision')
-    expect(wrapper.text()).toContain('demo-org')
-    expect(wrapper.text()).toContain('Confirm review')
+    document.querySelector<HTMLButtonElement>('.revision-row__actions button')?.click()
+    await nextTick()
+    expect(document.body.textContent).toContain('Deployment review')
+    expect(document.body.textContent).toContain('demo-org')
+    expect(document.body.textContent).toContain('Confirm review')
 
-    await wrapper.find('button.primary-action').trigger('click')
+    document.querySelector<HTMLButtonElement>('.base-drawer .primary-action')?.click()
+    await nextTick()
     await flushPromises()
     document.querySelector<HTMLButtonElement>('.base-modal__actions button:last-child')?.click()
+    await nextTick()
     await flushPromises()
-    expect(wrapper.text()).toContain('Review confirmed')
+    expect(document.body.textContent).toContain('Review confirmed')
     expect(invokeMock).not.toHaveBeenCalledWith('deploy_proxy', expect.anything())
   })
 
@@ -263,8 +360,8 @@ describe('App M6-Bis flow', () => {
     await flushPromises()
     await flushPromises()
 
-    await vi.waitFor(() => expect(wrapper.findAll('.workspace-selectors select')).toHaveLength(2))
-    await vi.waitFor(() => expect(wrapper.text()).toContain('hello-world'))
+    await vi.waitFor(() => expect(wrapper.findAll('.desktop-titlebar__workspace .base-select__trigger')).toHaveLength(2))
+    await vi.waitFor(() => expect(wrapper.text()).toContain('hello-world'), { timeout: 5000 })
     expect(wrapper.find('.sidebar__avatar').text()).toBe('DE')
     expect(wrapper.find('.sidebar__profile-tooltip').text()).toContain('developer@example.com')
     expect(invokeMock).toHaveBeenCalledWith('list_environments', { organization: 'org-one' })
@@ -274,5 +371,43 @@ describe('App M6-Bis flow', () => {
     await flushPromises()
     expect(invokeMock).toHaveBeenCalledWith('auth_logout', undefined)
     expect(wrapper.find('button.primary-action').exists()).toBe(true)
+  })
+
+  it('reconnects a valid Google session and opens the workspace automatically', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'cloud', status: 'authentication_required', identity: null, organization: null, environment: null, error: null }
+      if (command === 'auth_restore') return { authenticated: true, mode: 'desktop', identity: 'developer@example.com', given_name: 'Ada', family_name: 'Lovelace', name: 'Ada Lovelace', picture: null, project_id: null, selected_organization: null }
+      if (command === 'list_organizations') return [{ id: 'org-one', project_id: 'project-one', location: null }]
+      if (command === 'list_environments') return [{ name: 'test' }]
+      if (command === 'list_proxies') return [{ name: 'hello-world', revisions: [{ number: 1, deployed: false, status: 'NotDeployed' }] }]
+      if (command === 'list_templates') return []
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Welcome back, Ada Lovelace.'))
+    await vi.waitFor(() => expect(wrapper.text()).toContain('hello-world'))
+    expect(invokeMock).toHaveBeenCalledWith('auth_restore', undefined)
+    expect(invokeMock).toHaveBeenCalledWith('list_organizations', undefined)
+    expect(invokeMock).toHaveBeenCalledWith('list_proxies', { organization: 'org-one', environment: 'test' })
+  })
+
+  it('shows the full-page login handoff immediately while OAuth is pending', async () => {
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === 'session_status') return { mode: 'cloud', status: 'authentication_required', identity: null, organization: null, environment: null, error: null }
+      if (command === 'auth_restore') return { authenticated: false }
+      if (command === 'auth_storage_status') return { refresh_token_stored: false }
+      if (command === 'auth_login') return new Promise(() => undefined)
+      throw new Error(`Unexpected command ${command}`)
+    })
+
+    const wrapper = mount(App)
+    await flushPromises()
+    await wrapper.find('button.primary-action').trigger('click')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Connecting your workspace')
+    expect(wrapper.text()).toContain('Waiting for Google to confirm your identity securely')
+    expect(wrapper.find('.auth-transition--loading').exists()).toBe(true)
   })
 })
