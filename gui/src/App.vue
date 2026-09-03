@@ -959,7 +959,6 @@ void templateEditor
           <div>
             <p class="page-heading__eyebrow">{{ activeView }}</p>
           </div>
-          <span class="page-heading__status">Workspace connected</span>
         </div>
 
         <template v-if="loginTransition === 'pending'">
@@ -1113,7 +1112,9 @@ void templateEditor
 
         <template v-else-if="activeView === 'Settings'">
           <section class="settings-hero settings-reveal" aria-labelledby="settings-title">
-            <div><p class="settings-eyebrow">Settings</p><h1 id="settings-title">Your workspace, your way.</h1><p>Manage your connection context, review your local setup and keep the tools around your API workflow close at hand.</p></div>
+            <div>
+              <!-- <p class="settings-eyebrow">Settings</p> -->
+              <h1 id="settings-title">Your workspace, your way.</h1><p>Manage your connection context, review your local setup and keep the tools around your API workflow close at hand.</p></div>
             <div class="settings-hero__mark" aria-hidden="true"><span>AF</span><i></i><i></i><i></i></div>
           </section>
 

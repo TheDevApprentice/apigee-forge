@@ -6,7 +6,7 @@ defineProps<{
 
 <template>
   <section class="base-card">
-    <p v-if="eyebrow" class="base-card__eyebrow">{{ eyebrow }}</p>
+    <!-- <p v-if="eyebrow" class="base-card__eyebrow">{{ eyebrow }}</p> -->
     <slot />
   </section>
 </template>

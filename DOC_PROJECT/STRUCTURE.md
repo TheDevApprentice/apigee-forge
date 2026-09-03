@@ -165,6 +165,7 @@ DOC_PROJECT/
 ├── DESIGN.md
 ├── GUI_DESIGN_SYSTEM.md         # référence normative du design GUI et de la page Login
 ├── ROADMAP.md
+├── ROADMAP_MVP_FINALIZATION.md # roadmap consolidée de finalisation du MVP
 ├── STARTUP_ROADMAP.md
 ├── M2_STARTUP_ROADMAP.md
 ├── M3_STARTUP_ROADMAP.md
